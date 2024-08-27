@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ArcGIS defaultAssembly="DataExtractor.dll"
+		defaultNamespace="DataExtractor"
+		xmlns="http://schemas.esri.com/DADF/Registry"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
+
+	<AddInInfo id="{454f6ef2-f0b6-4ef9-8da5-cb04e5937182}" version="1.0.4" desktopVersion="3.3.52636">
+		<Name>DataExtractor</Name>
+		<Description>DataExtractor is an ArcGIS .NET tool which lists available GIS layers and allows the user to select which layers to extract for the current data search, specifying a radius from a feature of interest. The output files are created as ESRI Shapefiles (.shp) files, Comma Separated Value (.csv) files or Text (.txt) files.</Description>
+		<Image>Images\AddinDesktop32.png</Image>
+		<Author>Andy Foy, andy@andyfoyconsulting.co.uk</Author>
+		<Company>Andy Foy Consulting</Company>
+		<Date>12/08/2024 17:20:00 AM</Date>
+		<Subject>Framework, Geodatabase</Subject>
+		<!-- Note subject can be one or more of these topics:
+                    Content, Framework, Editing, Geodatabase, Geometry, Geoprocessing, Layouts, Map Authoring, Map Exploration -->
+	</AddInInfo>
+
+	<dependencies>
+		<dependency name="{11a4897d-5c60-4521-b312-274e0ba2403e}" />
+	</dependencies>
+
+	<modules>
+		<insertModule id="DataExtractor_Module"
+					  className="DataExtractor"
+					  autoLoad="true"
+					  caption="Data Searches module">
+			<controls>
+				<button id="DataExtractor_btnDataExtractorDockPane"
+						caption="Data Searches"
+						className="DataExtractor.UI.DockpaneMain_ShowButton"
+						loadOnClick="true"
+						keytip="DS"
+						smallImage="pack://application:,,,/DataExtractor;component/Images/DataExtractor16.png"
+						largeImage="pack://application:,,,/DataExtractor;component/Images/DataExtractor32.png">
+					<tooltip heading="Data Searches tool"
+							 image="pack://application:,,,/DataExtractor;component/Images/DataExtractor16.png">
+						Automate spatial data searches.<disabledText />
+					</tooltip>
+				</button>
+			</controls>
+			<dockPanes>
+				<dockPane id="DataExtractor_UI_DockpaneMain"
+						  hasHelp="true"
+						  autoHide="false"
+						  caption="Data Searches"
+						  className="DataExtractor.UI.DockpaneMainViewModel"
+						  dock="group"
+						  dockWith="esri_core_projectDockPane">
+					<content className="DataExtractor.UI.DockpaneMainView" />
+				</dockPane>
+			</dockPanes>
+		</insertModule>
+
+		<updateModule refID="DataTools_Module">
+			<groups>
+				<updateGroup refID="Data_Group">
+					<insertButton refID="DataExtractor_btnDataExtractorDockPane"
+								  size="large" />
+				</updateGroup>
+			</groups>
+		</updateModule>
+	</modules>
+</ArcGIS>
