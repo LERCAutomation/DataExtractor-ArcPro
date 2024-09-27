@@ -14,12 +14,9 @@
 
         <Grid DockPanel.Dock="Top">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -27,105 +24,17 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid Name="GridSearchRef" Grid.Row="0" Margin="0,4,0,4" HorizontalAlignment="Stretch">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <Label Name="AsterixSearchRef"
-                       Content="*"
-                       Grid.Column="0"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelSearchRef"
-                       Content="Search Reference:"
-                       Grid.Column="1"
-                       Margin="0,0,4,0"
-                       Padding="0"
-                       VerticalAlignment="Center" />
-                <TextBox Name="TextSearchRef"
-                         Grid.Column="2"
-                         Margin="0,0,0,0"
-                         IsEnabled="True"
-                         IsReadOnly="False"
-                         Text="{Binding SearchRefText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         TextAlignment="Left"
-                         ToolTip="Enter a search reference" />
-            </Grid>
-
-            <Grid Name="GridSiteName" Grid.Row="1" Margin="0,4,0,4" HorizontalAlignment="Stretch" Visibility="{Binding Path=SiteNameTextVisibility}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width ="*" />
-                </Grid.ColumnDefinitions>
-
-                <Label Name="AsterixSiteName"
-                       Content="*"
-                       Grid.Column="0"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelSiteName"
-                       Content="Site Name:"
-                       Grid.Column="1"
-                       Margin="0,0,4,0"
-                       Padding="0"
-                       VerticalAlignment="Center" />
-                <TextBox Name="TextSiteName"
-                         Grid.Column="2"
-                         Margin="0,0,0,0"
-                         IsReadOnly="False"
-                         Text="{Binding SiteNameText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         TextAlignment="Left"
-                         ToolTip="{Binding SiteNameTooltip}" />
-            </Grid>
-
-            <Grid Name="GridOrganisation" Grid.Row="2" Margin="0,4,0,4" HorizontalAlignment="Stretch" Visibility="{Binding Path=OrganisationTextVisibility}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width ="*" />
-                </Grid.ColumnDefinitions>
-
-                <Label Name="AsterixOrganisation"
-                       Content="*"
-                       Grid.Column="0"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelOrganisation"
-                       Content="Organisation:"
-                       Grid.Column="1"
-                       Margin="0,0,4,0"
-                       Padding="0"
-                       VerticalAlignment="Center" />
-                <TextBox Name="TextOrganisation"
-                         Grid.Column="2"
-                         Margin="0,0,0,0"
-                         IsReadOnly="False"
-                         Text="{Binding OrganisationText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         TextAlignment="Left"
-                         ToolTip="{Binding OrganisationTooltip}" />
-            </Grid>
-
-            <Grid Name="GridLayers" Grid.Row="3" Margin="0,4,0,4">
+            <Grid Name="GridPartners" Grid.Row="0" Margin="0,0,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="280" />
+                    <RowDefinition Height="180" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="8" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Name="AsterixLayers"
+                <Label Name="AsterixPartners"
                        Content="*"
                        Grid.Row="0"
                        Grid.Column="0"
@@ -133,21 +42,21 @@
                        Padding="0"
                        Foreground="Red"
                        VerticalAlignment="Top" />
-                <Label Name="LabelLayers"
-                       Content="Layers to Search:"
+                <Label Name="LabelPartners"
+                       Content="Active Partners:"
                        Grid.Row="0"
                        Grid.Column="1"
                        Margin="0,0,0,2"
                        Padding="0"
                        VerticalAlignment="Center" />
-                <ListView Name="ListViewLayers"
+                <ListView Name="ListViewPartners"
                           Grid.Row="1"
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
-                          ItemsSource="{Binding OpenLayersList}"
+                          ItemsSource="{Binding PartnersList}"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          SelectionChanged="ListViewLayers_SelectionChanged"
-                          SelectedIndex="{Binding OpenLayersList_SelectedIndex}"
+                          SelectionChanged="ListViewPartners_SelectionChanged"
+                          SelectedIndex="{Binding PartnersList_SelectedIndex}"
                           SelectionMode="Extended">
                     <ListView.View>
                         <GridView AllowsColumnReorder="False">
@@ -156,7 +65,161 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}">
+                            <GridViewColumn DisplayMemberBinding="{Binding PartnerName}">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn DisplayMemberBinding="{Binding ShortName}">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="IsSelected" Value="{Binding IsSelected}" />
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" Value="LightSkyBlue" />
+                                    <Setter Property="BorderBrush" Value="DodgerBlue" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="DodgerBlue" />
+                                    <Setter Property="BorderBrush" Value="DodgerBlue" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+
+            <Grid Name="GridSQLTables" Grid.Row="1" Margin="0,4,0,4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="180" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Label Name="AsterixSQLTables"
+                       Content="*"
+                       Grid.Row="0"
+                       Grid.Column="0"
+                       Margin="0,0,0,0"
+                       Padding="0"
+                       Foreground="Red"
+                       VerticalAlignment="Top" />
+                <Label Name="LabelSQLTables"
+                       Content="SQL Tables:"
+                       Grid.Row="0"
+                       Grid.Column="1"
+                       Margin="0,0,0,2"
+                       Padding="0"
+                       VerticalAlignment="Center" />
+                <ListView Name="ListViewSQLTables"
+                          Grid.Row="1"
+                          Grid.Column="1"
+                          HorizontalContentAlignment="Stretch"
+                          ItemsSource="{Binding SQLTablesList}"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          SelectionChanged="ListViewSQLTables_SelectionChanged"
+                          SelectedIndex="{Binding SQLTablesList_SelectedIndex}"
+                          SelectionMode="Extended">
+                    <ListView.View>
+                        <GridView AllowsColumnReorder="False">
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="GridViewColumnHeader">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding SQLNodeGroupWidth}">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn DisplayMemberBinding="{Binding NodeTable}">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="IsSelected" Value="{Binding IsSelected}" />
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" Value="LightSkyBlue" />
+                                    <Setter Property="BorderBrush" Value="DodgerBlue" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="DodgerBlue" />
+                                    <Setter Property="BorderBrush" Value="DodgerBlue" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+
+            <Grid Name="GridMapLayers" Grid.Row="2" Margin="0,4,0,4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="180" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Label Name="AsterixMapLayers"
+                       Content="*"
+                       Grid.Row="0"
+                       Grid.Column="0"
+                       Margin="0,0,0,0"
+                       Padding="0"
+                       Foreground="Red"
+                       VerticalAlignment="Top" />
+                <Label Name="LabelMapLayers"
+                       Content="Map Layers:"
+                       Grid.Row="0"
+                       Grid.Column="1"
+                       Margin="0,0,0,2"
+                       Padding="0"
+                       VerticalAlignment="Center" />
+                <ListView Name="ListViewMapLayers"
+                          Grid.Row="1"
+                          Grid.Column="1"
+                          HorizontalContentAlignment="Stretch"
+                          ItemsSource="{Binding MapLayersList}"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          SelectionChanged="ListViewMapLayers_SelectionChanged"
+                          SelectedIndex="{Binding MapLayersList_SelectedIndex}"
+                          SelectionMode="Extended">
+                    <ListView.View>
+                        <GridView AllowsColumnReorder="False">
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="GridViewColumnHeader">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding MapNodeGroupWidth}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
@@ -192,190 +255,45 @@
                 </ListView>
             </Grid>
 
-            <Grid Name="GridBuffer" Grid.Row="4" Margin="0,4,0,4" HorizontalAlignment="Stretch">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="60" />
-                    <ColumnDefinition Width="10" />
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <Label Name="AsterixBufferSize"
-                       Content="*"
-                       Grid.Column="0"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelBufferSize"
-                       Content="Buffer Size:"
-                       Grid.Column="1"
-                       Margin="0,0,4,0"
-                       Padding="0"
-                       VerticalAlignment="Center" />
-                <TextBox Name="TextBufferSize"
-                         Grid.Column="2"
-                         Margin="0,0,0,0"
-                         IsEnabled="True"
-                         IsReadOnly="False"
-                         Text="{Binding BufferSizeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         TextAlignment="Left"
-                         ToolTip="Select a buffer size" />
-                <Label Name="AsterixBufferUnits"
-                       Content="*"
-                       Grid.Column="4"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelBufferUnits"
-                    Content="Units:"
-                    Grid.Column="5"
-                    Margin="0,0,4,0"
-                    Padding="0"
-                    VerticalAlignment="Center" />
-                <ComboBox Name="ComboBoxBufferUnits"
-                        Grid.Column="6"
-                        Margin="0,0,0,0"
-                        IsEditable="False"
-                        IsReadOnly="True"
-                        ToolTip="Select a buffer unit"
-                        IsEnabled="{Binding Path=BufferUnitsListEnabled}"
-                        ItemsSource="{Binding Path=BufferUnitsList,
-                                            Mode=OneWay,
-                                            UpdateSourceTrigger=PropertyChanged}"
-                        SelectedIndex="{Binding Path=SelectedBufferUnitsIndex}" />
-            </Grid>
-
-            <Grid Name="GridKeepLayers" Grid.Row="5" Margin="0,4,0,4" HorizontalAlignment="Right" Visibility="{Binding Path=KeepLayersVisibility}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <CheckBox Name="CheckBoxKeepLayers"
-                          Grid.Row="0"
-                          Grid.Column="1"
-                          Margin="0,0,4,0"
-                          Padding="0"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          ToolTip="Keep the selected output layers?"
-                          IsChecked="{Binding KeepSelectedLayers, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <Label Name="LabelKeepLayers"
-                       Content="Keep Layers?"
-                       Grid.Row="0"
-                       Grid.Column="2"
-                       Margin="2,0,0,0"
-                       Padding="0"
-                       VerticalAlignment="Center" />
-            </Grid>
-
-            <Grid Name="GridAddToMap" Grid.Row="6" Margin="0,4,0,4" HorizontalAlignment="Stretch" Visibility="{Binding Path=AddToMapListVisibility}">
+            <Grid Name="GridSelectionType" Grid.Row="3" Margin="0,4,0,4" HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="8" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width ="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Name="AsterixAddToMap"
+                <Label Name="AsterixSelectionType"
                        Content="*"
                        Grid.Column="0"
                        Margin="0,0,0,0"
                        Padding="0"
                        Foreground="Red"
                        VerticalAlignment="Top" />
-                <Label Name="LabelAddToMap"
-                    Content="Add Layers to Map:"
+                <Label Name="LabelSelectionType"
+                    Content="Selection Type:"
                     Grid.Column="1"
                     Margin="0,0,4,0"
                     Padding="0"
                     VerticalAlignment="Center" />
-                <ComboBox Name="ComboBoxAddToMap"
+                <ComboBox Name="ComboBoxSelectionType"
                         Grid.Column="2"
                         Margin="0,0,0,0"
                         IsEditable="False"
                         IsReadOnly="True"
-                        ToolTip="Select whether layers should be added to the map"
-                        IsEnabled="{Binding Path=AddToMapListEnabled}"
-                        ItemsSource="{Binding Path=AddToMapList,
+                        ToolTip="Select type of selection"
+                        IsEnabled="{Binding Path=SelectionTypeListEnabled}"
+                        ItemsSource="{Binding Path=SelectionTypeList,
                                             Mode=OneWay,
                                             UpdateSourceTrigger=PropertyChanged}"
-                        SelectedValue="{Binding Path=SelectedAddToMap}" />
+                        SelectedValue="{Binding Path=SelectionType}" />
             </Grid>
 
-            <Grid Name="GridOverwriteLabels" Grid.Row="7" Margin="0,4,0,4" HorizontalAlignment="Stretch" Visibility="{Binding Path=OverwriteLabelsListVisibility}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <Label Name="AsterixOverwriteLabels"
-                       Content="*"
-                       Grid.Column="0"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelOverwriteLabels"
-                    Content="Overwrite Labels:"
-                    Grid.Column="1"
-                    Margin="0,0,4,0"
-                    Padding="0"
-                    VerticalAlignment="Center" />
-                <ComboBox Name="ComboBoxOverwriteLabels"
-                        Grid.Column="2"
-                        Margin="0,0,0,0"
-                        IsEditable="False"
-                        IsReadOnly="True"
-                        ToolTip="Select whether to overwrite labels for map layers"
-                        IsEnabled="{Binding Path=OverwriteLabelsListEnabled}"
-                        ItemsSource="{Binding Path=OverwriteLabelsList,
-                                            Mode=OneWay,
-                                            UpdateSourceTrigger=PropertyChanged}"
-                        SelectedValue="{Binding Path=SelectedOverwriteLabels}" />
-            </Grid>
-
-            <Grid Name="GridCombinedSites" Grid.Row="8" Margin="0,4,0,4" HorizontalAlignment="Stretch" Visibility="{Binding Path=CombinedSitesListVisibility}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <Label Name="AsterixCombinedSites"
-                       Content="*"
-                       Grid.Column="0"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelCombinedSites"
-                    Content="Combined Sites Table:"
-                    Grid.Column="1"
-                    Margin="0,0,4,0"
-                    Padding="0"
-                    VerticalAlignment="Center" />
-                <ComboBox Name="ComboBoxCombinedSites"
-                        Grid.Column="2"
-                        Margin="0,0,0,0"
-                        IsEditable="False"
-                        IsReadOnly="True"
-                        ToolTip="Select whether the combined sites table should be created"
-                        IsEnabled="{Binding Path=CombinedSitesListEnabled}"
-                        ItemsSource="{Binding Path=CombinedSitesList,
-                                            Mode=OneWay,
-                                            UpdateSourceTrigger=PropertyChanged}"
-                        SelectedValue="{Binding Path=SelectedCombinedSites}" />
-            </Grid>
-
-            <Grid Name="GridOptions" Grid.Row="9" Margin="0,4,0,4">
+            <Grid Name="GridOptions" Grid.Row="4" Margin="0,4,0,4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="8" />
                     <ColumnDefinition Width="Auto" />
@@ -387,10 +305,70 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <CheckBox Name="CheckBoxClearLogFile"
+                <CheckBox Name="CheckBoxApplyExclusionClause"
                           Grid.Row="0"
                           Grid.Column="1"
-                          Margin="0,0,4,0"
+                          Margin="0,0,4,4"
+                          Padding="0"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          ToolTip="Apply the additional exclusion clause?"
+                          Visibility="{Binding Path=ApplyExclusionClauseVisibility}"
+                          IsChecked="{Binding ApplyExclusionClause, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Label Name="LabelApplyExclusionClause"
+                       Content="Apply Exclusion Clause?"
+                       Grid.Row="0"
+                       Grid.Column="2"
+                       Margin="2,0,0,4"
+                       Padding="0"
+                       VerticalAlignment="Center"
+                       Visibility="{Binding Path=ApplyExclusionClauseVisibility}"
+                       />
+
+                <CheckBox Name="CheckBoxUseCentroids"
+                          Grid.Row="1"
+                          Grid.Column="1"
+                          Margin="0,4,4,4"
+                          Padding="0"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          ToolTip="Select polygons by centroids?"
+                          Visibility="{Binding Path=UseCentroidsVisibility}"
+                          IsChecked="{Binding UseCentroids, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Label Name="LabelUseCentroids"
+                       Content="Use Centroids?"
+                       Grid.Row="1"
+                       Grid.Column="2"
+                       Margin="2,4,0,4"
+                       Padding="0"
+                       VerticalAlignment="Center"
+                       Visibility="{Binding Path=UseCentroidsVisibility}"
+                       />
+
+                <CheckBox Name="CheckBoxUploadToServer"
+                          Grid.Row="1"
+                          Grid.Column="5"
+                          Margin="0,4,4,4"
+                          Padding="0"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          ToolTip="Upload the partner table to the server when the process starts?"
+                          Visibility="{Binding Path=UploadToServerVisibility}"
+                          IsChecked="{Binding UploadToServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Label Name="LabelUploadToServer"
+                       Content="Upload to server"
+                       Grid.Row="1"
+                       Grid.Column="6"
+                       Margin="2,4,0,4"
+                       Padding="0"
+                       VerticalAlignment="Center"
+                       Visibility="{Binding Path=UploadToServerVisibility}"
+                       />
+
+                <CheckBox Name="CheckBoxClearLogFile"
+                          Grid.Row="2"
+                          Grid.Column="1"
+                          Margin="0,4,4,0"
                           Padding="0"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
@@ -398,15 +376,16 @@
                           IsChecked="{Binding ClearLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Label Name="LabelClearLogFile"
                        Content="Clear log file?"
-                       Grid.Row="0"
+                       Grid.Row="2"
                        Grid.Column="2"
-                       Margin="2,0,0,0"
+                       Margin="2,4,0,0"
                        Padding="0"
                        VerticalAlignment="Center" />
+
                 <CheckBox Name="CheckBoxOpenLogFile"
-                          Grid.Row="0"
+                          Grid.Row="2"
                           Grid.Column="5"
-                          Margin="0,0,4,0"
+                          Margin="0,4,4,0"
                           Padding="0"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
@@ -414,9 +393,9 @@
                           IsChecked="{Binding OpenLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Label Name="LabelOpenLogFile"
                        Content="Open log file when run?"
-                       Grid.Row="0"
+                       Grid.Row="2"
                        Grid.Column="6"
-                       Margin="2,0,2,0"
+                       Margin="2,4,2,0"
                        Padding="0"
                        VerticalAlignment="Center" />
             </Grid>

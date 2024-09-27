@@ -5,13 +5,13 @@
 		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
 
-	<AddInInfo id="{454f6ef2-f0b6-4ef9-8da5-cb04e5937182}" version="1.0.4" desktopVersion="3.3.52636">
+	<AddInInfo id="{2ad6fcf5-1ab0-41b3-a4aa-ace372bc7139}" version="1.0.0" desktopVersion="3.3.52636">
 		<Name>DataExtractor</Name>
-		<Description>DataExtractor is an ArcGIS .NET tool which lists available GIS layers and allows the user to select which layers to extract for the current data search, specifying a radius from a feature of interest. The output files are created as ESRI Shapefiles (.shp) files, Comma Separated Value (.csv) files or Text (.txt) files.</Description>
+		<Description>DataExtractor is an ArcGIS .Net tool and associated SQL scripts to extract data from SQL Server and ArcGIS map layers for pre-defined spatial areas. The output files can be created as ESRI Geodatabase tables (gdb), ESRI shapefile (.shp) and/or Comma Separated Value (.csv) files.</Description>
 		<Image>Images\AddinDesktop32.png</Image>
 		<Author>Andy Foy, andy@andyfoyconsulting.co.uk</Author>
 		<Company>Andy Foy Consulting</Company>
-		<Date>12/08/2024 17:20:00 AM</Date>
+		<Date>28/08/2024 15:50:00 AM</Date>
 		<Subject>Framework, Geodatabase</Subject>
 		<!-- Note subject can be one or more of these topics:
                     Content, Framework, Editing, Geodatabase, Geometry, Geoprocessing, Layouts, Map Authoring, Map Exploration -->
@@ -25,18 +25,18 @@
 		<insertModule id="DataExtractor_Module"
 					  className="DataExtractor"
 					  autoLoad="true"
-					  caption="Data Searches module">
+					  caption="Data Extractor module">
 			<controls>
 				<button id="DataExtractor_btnDataExtractorDockPane"
-						caption="Data Searches"
+						caption="Data Extractor"
 						className="DataExtractor.UI.DockpaneMain_ShowButton"
 						loadOnClick="true"
-						keytip="DS"
+						keytip="DE"
 						smallImage="pack://application:,,,/DataExtractor;component/Images/DataExtractor16.png"
 						largeImage="pack://application:,,,/DataExtractor;component/Images/DataExtractor32.png">
-					<tooltip heading="Data Searches tool"
+					<tooltip heading="Data Extractor tool"
 							 image="pack://application:,,,/DataExtractor;component/Images/DataExtractor16.png">
-						Automate spatial data searches.<disabledText />
+						Automate spatial data extracts.<disabledText />
 					</tooltip>
 				</button>
 			</controls>
@@ -44,7 +44,7 @@
 				<dockPane id="DataExtractor_UI_DockpaneMain"
 						  hasHelp="true"
 						  autoHide="false"
-						  caption="Data Searches"
+						  caption="Data Extractor"
 						  className="DataExtractor.UI.DockpaneMainViewModel"
 						  dock="group"
 						  dockWith="esri_core_projectDockPane">

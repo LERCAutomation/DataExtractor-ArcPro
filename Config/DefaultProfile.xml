@@ -23,70 +23,92 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 <configuration>
 <DataExtractor>
 
-  <!-- The existing file location where log files will be saved with output messages -->
+  <!-- The existing file location where log files will be saved with output messages. -->
   <LogFilePath>
 	<value>H:\Data\Thames\ExtractorExtracts</value>
   </LogFilePath>
 
-  <!-- The location of the SDE file that specifies which SQL Server database to connect to -->
-  <FileDSN>
-	<value>H:\Dev\LERCAutomation\DataSelector---ArcObjects\Config\TVERCConn2.sde</value>
-  </FileDSN>
+  <!-- The location of the SDE file that specifies which SQL Server database to connect to. -->
+  <SDEFile>
+	<value>D:\Data Tools\DataExtractor\Config\NBNExtract.sde</value>
+  </SDEFile>
 
-  <!-- Connection string for ADO connection (to allow stored procedures to be run with parameters) -->
-  <ConnectionString>
-	<value>Server=SONY-VAIO\SQLEXPRESS; Database=NBNData_TVERC; Integrated Security=True;</value>
-  </ConnectionString>
+  <!-- The stored procedure to execute spatial selection in SQL Server. -->
+  <SpatialStoredProcedure>
+	<value>AFSelectSppRecords</value>
+  </SpatialStoredProcedure>
 
-  <!-- Timeout (seconds) is the maximum number of seconds that the stored procedure is allowed to run . -->
-  <!-- If you are experiencing timeout errors while running the tool, increase this number -->
-  <!-- Default is 4,000 seconds -->
-  <TimeoutSeconds>
-  	<value></value>
-  </TimeoutSeconds>
+  <!-- The stored procedure to execute non-spatial subset selection in SQL Server. -->
+  <SubsetStoredProcedure>
+	<value>AFSelectSppSubset</value>
+  </SubsetStoredProcedure>
+
+  <!-- The stored procedure to clear selection in SQL Server. -->
+  <ClearStoredProcedure>
+	<value>AFClearSppSubset</value>
+  </ClearStoredProcedure>
 
   <!-- The existing file location under which all partner sub-folders will be created -->
   <DefaultPath>
 	<value>H:\Data\Thames\ExtractorExtracts</value>
   </DefaultPath>
 
-  <!-- The schema used in the SQL Server database -->
+  <!-- The output sub-folder in which each partner's file will be created. -->
+  <PartnerFolder>
+	<value>%partner%_DataExchange_%qq%_%ffff%</value>
+  </PartnerFolder>
+
+  <!-- The output sub-folder into which ArcGIS files will be saved. -->
+  <ArcGISFolder>
+	<value>ArcGIS</value>
+  </ArcGISFolder>
+
+  <!-- The output sub-folder into which CSV files will be saved. -->
+  <CSVFolder>
+	<value>CSV</value>
+  </CSVFolder>
+
+  <!-- The output sub-folder into which TXT files will be saved. -->
+  <TXTFolder>
+	<value></value>
+  </TXTFolder>
+
+  <!-- The schema used in the SQL Server database. -->
   <DatabaseSchema>
 	<value>dbo</value>
   </DatabaseSchema>
 
-	<!-- the Include wildcard for table names to list all the species tables in SQL Server that can be selected
-         by the user to extract from -->
+  <!-- the Include wildcard for table names to list all the species tables in SQL Server that can be selected
+       by the user to extract from. -->
   <IncludeWildcard>
-	<value>*TVERC_Spp_*</value><!--*TVERC_Spp_* -->
+	<value>Spp_PointPoly_*Names|Spp_Poly_*Names</value>
   </IncludeWildcard>
 
   <!-- the Exclude wildcard for table names that should NOT be used for species tables in SQL Server that can be selected
-       by the user to extract from -->
+       by the user to extract from. -->
   <ExcludeWildcard>
-	<value>*TVERC_Spp_*_*</value>
+	<value>Spp_*_*_*</value>
   </ExcludeWildcard>
 
-  <!--  The SQL statement used to list all the tables in SQL Server that can be selected
-       by the user to extract for each partner NOT USED
-  <TableListSQL>
-  	<value>Select table_name From information_schema.tables Where table_name Like 'TVERC[_]Spp[_]%' Order By table_name</value>
-  </TableListSQL> -->
+  <!-- Whether the map processing should be paused during processing? -->
+  <PauseMap>
+  	<value>Yes</value>
+  </PauseMap>
 
-  <!-- The name of the partner GIS layer in SQL Server used to select the records -->
+  <!-- The name of the partner GIS layer in SQL Server used to select the records. -->
   <PartnerTable>
 	<value>Partner_Extract_Boundaries</value>
   </PartnerTable>
 
   <!-- The name of the column in the partner GIS layer containing the partner name passed to SQL
-       Server by the tool to use as the partner's boundary for selecting the records -->
+       Server by the tool to use as the partner's boundary for selecting the records. -->
   <PartnerColumn>
 	<value>PartnerName</value>
   </PartnerColumn>
 
   <!-- The name of the column in the partner GIS layer containing the abbreviated name passed to
        SQL Server by the tool to use as the sub-folder name for the destination of extracted
-       records -->
+       records. -->
   <ShortColumn>
 	<value>ShortName</value>
   </ShortColumn>
@@ -104,19 +126,25 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   </ActiveColumn>
 
   <!-- The name of the column in the partner GIS layer containing the GIS format required for
-       the output records (SHP or GDB) -->
+       the output records (SHP or GDB). -->
   <FormatColumn>
 	<value>GISformat</value>
   </FormatColumn>
 
   <!-- The name of the column in the partner GIS layer indicating whether an export should also
-       be created as a CSV or TXT file. Leave blank for no export -->
+       be created as a CSV or TXT file. Leave blank for no export. -->
   <ExportColumn>
 	<value>ExportFormat</value>
   </ExportColumn>
 
+  <!-- The name of the column in the partner GIS layer indicating which SQL table should be
+       used for that partner. -->
+  <SQLTableColumn>
+	<value>SQLTable</value>
+  </SQLTableColumn>
+
   <!-- The name of the column in the partner GIS layer indicating which SQL files should be
-       created for each partner -->
+       created for each partner. -->
   <SQLFilesColumn>
 	<value>SQLFiles</value>
   </SQLFilesColumn>
@@ -128,92 +156,186 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   </MapFilesColumn>
 
   <!-- The name of the column in the partner GIS layer indicating which survey tags, if any
-       should be included in the export -->
+       should be included in the export. -->
   <TagsColumn>
 	<value>PartnerTags</value>
   </TagsColumn>
 
-  <!-- The name of the column in the partner GIS layer containing the spatial geometry -->
+  <!-- The name of the column in the partner GIS layer containing the spatial geometry. -->
   <SpatialColumn>
 	<value>Shape</value>
   </SpatialColumn>
 
-	<!-- The options for the selection types -->
+  <!-- The where clause to determine which partners to display. -->
+  <PartnerClause>
+	<value>Active = "Y"</value>
+  </PartnerClause>
+
+  <!-- The options for the selection types. -->
   <SelectTypeOptions>
 	<value>Spatial Only;Survey Tags Only;Spatial and Survey Tags</value>
   </SelectTypeOptions>
 
-  <!-- The default selection type (1 = spatial, 2 = tags, 3 = both) -->
+  <!-- The default selection type (1 = spatial, 2 = tags, 3 = both). -->
   <DefaultSelectType>
 	<value>3</value>
   </DefaultSelectType>
 
-  <!-- The default value for zipping the extract files -->
-  <DefaultZip>
-	<value>Yes</value>
-  </DefaultZip>
-
-  <!-- The SQL criteria for excluding any confidential species records -->
-  <ConfidentialClause>
+  <!-- The SQL criteria for excluding any unwanted records. -->
+  <ExclusionClause>
 	<value>SurveyName &lt;&gt; 'Bird Survey - Iffley Meadows' AND SurveyName &lt;&gt; 'Battersea Park Nature Reserve'</value>
-  </ConfidentialClause>
+  </ExclusionClause>
 
-  <!-- The default value for extracting confidential surveys -->
-  <DefaultConfidential>
+  <!-- The default value for including the exclusion clause. Leave blank to hide option in dialog. -->
+  <DefaultApplyExclusionClause>
 	<value>Yes</value>
-  </DefaultConfidential>
+  </DefaultApplyExclusionClause>
 
-  <!-- The default value for clearing the log file -->
-  <DefaultClearLogFile>
-  	<value>Yes</value>
-  </DefaultClearLogFile>
-
-  <!-- The default value for selecting polygons by centroids -->
+  <!-- By default, should centroids be used for selecting records? Leave blank to hide option in dialog. -->
   <DefaultUseCentroids>
   	<value>No</value>
   </DefaultUseCentroids>
 
+  <!-- The default value for uploading the partner table to the server. Leave blank to hide option in dialog. -->
+  <DefaultUploadToServer>
+	<value>Yes</value>
+  </DefaultUploadToServer>
+
+  <!-- By default, should an existing log file be cleared? -->
+  <DefaultClearLogFile>
+	<value>Yes</value>
+  </DefaultClearLogFile>
+
+  <!-- By default, should the log file be opened after running. -->
+  <DefaultOpenLogFile>
+  	<value>Yes</value>
+  </DefaultOpenLogFile>
+
   <!-- The table columns and SQL where clauses used to select all the required columns for
 	the extract tables -->
   <SQLTables>
-	<TVERC_AllSpp_S>
-		<TableName>
-			<Value>AllSpeciesSpatial</Value>
-		</TableName>
+	<AllSppPoint>
+		<OutputName>
+			<Value>Species_All_%partner%</Value>
+		</OutputName>
 		<Columns>
 			<Value>TaxonName, CommonName, TaxonClass, TaxonGroup, TaxonOrder, SP_GEOMETRY</Value>
 		</Columns>
-		<Clauses>
-			<Value>RecYear &gt;= 1985 AND (NegativeRec &lt;&gt; 'Y' OR NegativeRec IS NULL) AND GRPrecision &lt;= 100 AND GridRef IS NOT NULL AND VagueDateStart IS NOT NULL AND Recorder IS NOT NULL AND TaxonName &lt;&gt; 'Homo sapiens' AND Verification &lt;&gt; 'Considered incorrect'</Value>
-		</Clauses>
-	</TVERC_AllSpp_S>
-	<TVERC_AllSpp_NS>
-		<TableName>
-			<Value>WhitethroatNotSpatial</Value>
-		</TableName>
+		<WhereClause>
+			<Value>RECORDYEAR &gt;= 1985 AND (NEG_RECORD &lt;&gt; 'Y' OR NEG_RECORD IS NULL) AND GRPRECISION &lt;= 100 AND GRIDREF IS NOT NULL AND DATE_START IS NOT NULL AND RECORDER IS NOT NULL AND LATIN_NAME &lt;&gt; 'Homo sapiens' AND VERIFICATION &lt;&gt; 'Considered incorrect'</Value>
+		</WhereClause>
+		<OrderColumns>
+			<Value></Value>
+		</OrderColumns>
+		<MacroName>
+			<Value></Value>
+		</MacroName>
+		<MacroParms>
+			<Value></Value>
+		</MacroParms>
+	</AllSppPoint>
+	<DesignatedSpp>
+		<OutputName>
+			<Value>Species_Designated_%partner%</Value>
+		</OutputName>
 		<Columns>
 			<Value>TaxonName, CommonName, TaxonClass, TaxonGroup, TaxonOrder, SurveyName</Value>
 		</Columns>
-		<Clauses>
-			<Value>RecYear &gt;= 1985 AND (NegativeRec &lt;&gt; 'Y' OR NegativeRec IS NULL) AND GRPrecision &lt;= 100 AND GridRef IS NOT NULL AND VagueDateStart IS NOT NULL AND Recorder IS NOT NULL AND TaxonName &lt;&gt; 'Homo sapiens' AND Verification &lt;&gt; 'Considered incorrect' AND CommonName = 'Whitethroat'</Value>
-		</Clauses>
-	</TVERC_AllSpp_NS>
+		<WhereClause>
+			<Value>(NEG_RECORD &lt;&gt; 'Y' OR NEG_RECORD IS NULL) AND GRPRECISION &lt;= 100 AND (STATUS_PLANNING IS NOT NULL OR STATUS_OTHER IS NOT NULL) AND GRIDREF IS NOT NULL AND DATE_START IS NOT NULL AND RECORDER IS NOT NULL AND LATIN_NAME &lt;&gt; 'Homo sapiens' AND VERIFICATION &lt;&gt; 'Considered incorrect'</Value>
+		</WhereClause>
+		<OrderColumns>
+			<Value>TAXONOMIC_GROUP, SPP_NAME</Value>
+		</OrderColumns>
+		<MacroName>
+			<Value></Value>
+		</MacroName>
+		<MacroParms>
+			<Value></Value>
+		</MacroParms>
+	</DesignatedSpp>
   </SQLTables>
-
 
   <!-- The names and local names of the map tables and the required columns for the map tables -->
   <MapLayers>
-	<AWL>
+	<Polys_-_SACs>
 		<LayerName>
-			<Value>AncientWoodland</Value>
+			<value>Special Area of Conservation</value>
 		</LayerName>
-	  	<Columns>
-			<Value>NAME,THEME,THEMNAME,STATUS</Value>
+		<OutputName>
+			<value>%shortref%_SACs</value>
+		</OutputName>
+		<Columns>
+			<value>SAC_NAME, SAC_CODE</value> <!-- Use commas to separate. NOTE case sensitive! -->
 		</Columns>
-		<Clause>
-			<Value>"STATUS" = 'PAWS'</Value>
-		</Clause>
-	</AWL>
+		<OrderColumns> <!-- Overrides GroupColumns -->
+			<value></value>
+		</OrderColumns>
+		<WhereClause>
+			<value></value><!-- example: Name = 'myName' OR area_ha > 5 -->
+		</WhereClause>
+		<LoadWarning>
+			<value>Yes</value>
+		</LoadWarning>
+		<MacroName>
+			<Value></Value>
+		</MacroName>
+		<MacroParms>
+			<Value></Value>
+		</MacroParms>
+	</Polys_-_SACs>
+	<Polys_-_SPAs>
+		<LayerName>
+			<value>Special Protection Area</value>
+		</LayerName>
+		<OutputName>
+			<value>SPAs</value>
+		</OutputName>
+		<Columns>
+			<value>SPA_NAME</value> <!-- Use commas to separate. NOTE case sensitive! -->
+		</Columns>
+		<OrderColumns> <!-- Overrides GroupColumns -->
+			<value></value>
+		</OrderColumns>
+		<WhereClause>
+			<value></value><!-- example: Name = 'myName' OR area_ha > 5 -->
+		</WhereClause>
+		<LoadWarning>
+			<value>Yes</value>
+		</LoadWarning>
+		<MacroName>
+			<Value></Value>
+		</MacroName>
+		<MacroParms>
+			<Value></Value>
+		</MacroParms>
+	</Polys_-_SPAs>
+	<Polys_-_Ramsars>
+		<LayerName>
+			<value>Ramsar</value>
+		</LayerName>
+		<OutputName>
+			<value>Ramsars</value>
+		</OutputName>
+		<Columns>
+			<value>NAME</value> <!-- Use commas to separate. NOTE case sensitive! -->
+		</Columns>
+		<OrderColumns> <!-- Overrides GroupColumns -->
+			<value></value>
+		</OrderColumns>
+		<WhereClause>
+			<value></value><!-- example: Name = 'myName' OR area_ha > 5 -->
+		</WhereClause>
+		<LoadWarning>
+			<value>Yes</value>
+		</LoadWarning>
+		<MacroName>
+			<Value></Value>
+		</MacroName>
+		<MacroParms>
+			<Value></Value>
+		</MacroParms>
+	</Polys_-_Ramsars>
   </MapLayers>
 
 </DataExtractor>

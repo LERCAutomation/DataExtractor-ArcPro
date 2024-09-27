@@ -35,7 +35,45 @@ namespace DataExtractor.UI
             InitializeComponent();
         }
 
-        private void ListViewLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ListViewPartners_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            List<Partner> added = e.AddedItems.OfType<Partner>().ToList();
+            List<Partner> removed = e.RemovedItems.OfType<Partner>().ToList();
+
+            var listView = sender as ListView;
+            var itemsSelected = listView.Items.OfType<Partner>().ToList().Where(s => s.IsSelected == true).ToList();
+            var itemsUnselected = listView.Items.OfType<Partner>().Where(p => p.IsSelected == false).ToList();
+            var selectedItems = listView.SelectedItems.OfType<Partner>().ToList();
+
+            // Ensure any removed items are actually unselected.
+            if (removed.Count > 1)
+            {
+                e.RemovedItems.OfType<Partner>().ToList().ForEach(p => p.IsSelected = false);
+
+                if (selectedItems.Count == 1)
+                    listView.Items.OfType<Partner>().ToList().Where(s => selectedItems.All(s2 => s2.PartnerName != s.PartnerName)).ToList().ForEach(p => p.IsSelected = false);
+            }
+        }
+        private void ListViewSQLTables_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            List<SQLTable> added = e.AddedItems.OfType<SQLTable>().ToList();
+            List<SQLTable> removed = e.RemovedItems.OfType<SQLTable>().ToList();
+
+            var listView = sender as ListView;
+            var itemsSelected = listView.Items.OfType<SQLTable>().ToList().Where(s => s.IsSelected == true).ToList();
+            var itemsUnselected = listView.Items.OfType<SQLTable>().Where(p => p.IsSelected == false).ToList();
+            var selectedItems = listView.SelectedItems.OfType<SQLTable>().ToList();
+
+            // Ensure any removed items are actually unselected.
+            if (removed.Count > 1)
+            {
+                e.RemovedItems.OfType<SQLTable>().ToList().ForEach(p => p.IsSelected = false);
+
+                if (selectedItems.Count == 1)
+                    listView.Items.OfType<SQLTable>().ToList().Where(s => selectedItems.All(s2 => s2.NodeName != s.NodeName)).ToList().ForEach(p => p.IsSelected = false);
+            }
+        }
+        private void ListViewMapLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             List<MapLayer> added = e.AddedItems.OfType<MapLayer>().ToList();
             List<MapLayer> removed = e.RemovedItems.OfType<MapLayer>().ToList();

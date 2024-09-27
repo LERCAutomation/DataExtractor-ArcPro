@@ -77,7 +77,7 @@ namespace DataExtractor.UI
             PrimaryMenuList.Clear();
 
             PrimaryMenuList.Add(new TabControl() { Text = "Profile", Tooltip = "Select XML profile" });
-            PrimaryMenuList.Add(new TabControl() { Text = "Search", Tooltip = "Run data search" });
+            PrimaryMenuList.Add(new TabControl() { Text = "Extract", Tooltip = "Run data extract" });
 
             // Load the default XML profile (or let the user choose a profile.
             _paneH1VM = new PaneHeader1ViewModel(_dockPane);
@@ -92,8 +92,8 @@ namespace DataExtractor.UI
             // If the default (and only) profile was loaded.
             if (_paneH1VM.XMLLoaded)
             {
-                // Initialise the search pane.
-                if (!await InitialiseSearchPaneAsync())
+                // Initialise the extract pane.
+                if (!await InitialiseExtractPaneAsync())
                     return;
 
                 // Select the profile tab.
@@ -101,7 +101,7 @@ namespace DataExtractor.UI
             }
             else
             {
-                // Select the search tab.
+                // Select the extract tab.
                 SelectedPanelHeaderIndex = 0;
             }
 
@@ -190,7 +190,7 @@ namespace DataExtractor.UI
         {
             get
             {
-                return !_searchCancelled
+                return !_extractCancelled
                     && _processStatus != null;
             }
         }
@@ -320,39 +320,39 @@ namespace DataExtractor.UI
             }
         }
 
-        private bool _layersListLoading;
+        private bool _formListsLoading;
 
         /// <summary>
-        /// Is the layers list loading?
+        /// Are the form lists loading?
         /// </summary>
-        public bool LayersListLoading
+        public bool FormListsLoading
         {
-            get { return _layersListLoading; }
-            set { _layersListLoading = value; }
+            get { return _formListsLoading; }
+            set { _formListsLoading = value; }
         }
 
-        private bool _searchRunning;
+        private bool _extractRunning;
 
         /// <summary>
-        /// Is the search running?
+        /// Is the extract running?
         /// </summary>
-        public bool SearchRunning
+        public bool ExtractRunning
         {
-            get { return _searchRunning; }
-            set { _searchRunning = value; }
+            get { return _extractRunning; }
+            set { _extractRunning = value; }
         }
 
-        private bool _searchCancelled = false;
+        private bool _extractCancelled = false;
 
         /// <summary>
-        /// Has the search been cancelled?
+        /// Has the extract been cancelled?
         /// </summary>
-        public bool SearchCancelled
+        public bool ExtractCancelled
         {
-            get { return _searchCancelled; }
+            get { return _extractCancelled; }
             set
             {
-                _searchCancelled = value;
+                _extractCancelled = value;
             }
         }
 
@@ -389,15 +389,15 @@ namespace DataExtractor.UI
             {
                 DockpaneVisibility = Visibility.Hidden;
 
-                // Clear the form layers.
-                _paneH2VM?.ClearLayers();
+                // Clear the form lists.
+                _paneH2VM?.ClearFormLists();
             }
             else
             {
                 DockpaneVisibility = Visibility.Visible;
 
-                // Reload the form layers (don't wait for the response).
-                _paneH2VM?.LoadLayersAsync(false, false);
+                // Reload the list of partners and open GIS map layers (don't wait for the response).
+                _paneH2VM?.LoadMapListsAsync(true, false);
             }
         }
 
@@ -407,8 +407,8 @@ namespace DataExtractor.UI
             {
                 DockpaneVisibility = Visibility.Hidden;
 
-                // Clear the form layers.
-                _paneH2VM?.ClearLayers();
+                // Clear the form lists.
+                _paneH2VM?.ClearFormLists();
             }
 
             _projectClosedEventsSubscribed = false;
@@ -429,10 +429,10 @@ namespace DataExtractor.UI
         }
 
         /// <summary>
-        /// Initialise the search pane.
+        /// Initialise the extract pane.
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> InitialiseSearchPaneAsync()
+        public async Task<bool> InitialiseExtractPaneAsync()
         {
             _paneH2VM = new PaneHeader2ViewModel(_dockPane, _paneH1VM.ToolConfig);
 
@@ -443,9 +443,9 @@ namespace DataExtractor.UI
         }
 
         /// <summary>
-        /// Reset the search pane.
+        /// Reset the extract pane.
         /// </summary>
-        public void ClearSearchPane()
+        public void ClearExtractPane()
         {
             _paneH2VM = null;
         }
@@ -663,7 +663,7 @@ namespace DataExtractor.UI
         /// <remarks></remarks>
         private async void RunCommandClick(object param)
         {
-            _paneH2VM.RunSearch();
+            _paneH2VM.RunExtract();
         }
 
         #endregion Run Command
@@ -692,14 +692,14 @@ namespace DataExtractor.UI
         }
 
         /// <summary>
-        /// Handles event when Cancel button is .
+        /// Handles event when Cancel button is pressed.
         /// </summary>
         /// <param name="param"></param>
         /// <remarks></remarks>
         private void CancelCommandClick(object param)
         {
-            // Cancel the search.
-            _searchCancelled = true;
+            // Cancel the extract.
+            _extractCancelled = true;
 
             OnPropertyChanged(nameof(CancelButtonEnabled));
         }

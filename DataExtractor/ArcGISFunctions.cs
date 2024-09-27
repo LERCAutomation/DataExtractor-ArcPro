@@ -30,6 +30,7 @@ using ArcGIS.Desktop.Editing;
 using ArcGIS.Desktop.Editing.Attributes;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
 using ArcGIS.Desktop.Mapping;
+using DataExtractor.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -662,7 +663,7 @@ namespace DataTools
         }
 
         /// <summary>
-        /// Get tge list of fields for a feature class.
+        /// Get the list of fields for a feature class.
         /// </summary>
         /// <param name="layerPath"></param>
         /// <returns>IReadOnlyList<ArcGIS.Core.Data.Field></returns>
@@ -842,6 +843,24 @@ namespace DataTools
                 // Handle Exception.
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Check if a list of fields exists in a feature class.
+        /// </summary>
+        /// <param name="layerName"></param>
+        /// <param name="fieldNames"></param>
+        /// <returns>List<string></returns>
+        public async Task<List<string>> GetExstingFieldsAsync(string layerName, List<string> fieldNames)
+        {
+            List<string> fieldsThatExist = [];
+            foreach (string fieldName in fieldNames)
+            {
+                if (await FieldExistsAsync(layerName, fieldName))
+                    fieldsThatExist.Add(fieldName);
+            }
+
+            return fieldsThatExist;
         }
 
         /// <summary>
@@ -1052,6 +1071,123 @@ namespace DataTools
                 // Handle Exception.
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Get a list of the active partners from the input layer using the
+        /// specified where clause and column names.
+        /// </summary>
+        /// <param name="inputLayer"></param>
+        /// <param name="partnerClause"></param>
+        /// <param name="partnerColumn"></param>
+        /// <param name="shortColumn"></param>
+        /// <param name="notesColumn"></param>
+        /// <param name="formatColumn"></param>
+        /// <param name="exportColumn"></param>
+        /// <param name="sqlTableColumn"></param>
+        /// <param name="sqlFilesColumn"></param>
+        /// <param name="mapFilesColumn"></param>
+        /// <param name="tagsColumn"></param>
+        /// <param name="activeColumn"></param>
+        /// <returns></returns>
+        public async Task<List<Partner>> GetActiveParnersAsync(string inputLayer, string partnerClause, string partnerColumn, string shortColumn, string notesColumn,
+            string formatColumn, string exportColumn, string sqlTableColumn, string sqlFilesColumn, string mapFilesColumn, string tagsColumn, string activeColumn)
+        {
+            // Check there is an input layer name.
+            if (String.IsNullOrEmpty(inputLayer))
+                return null;
+
+            FeatureLayer inputFeaturelayer;
+            List<Partner> partnerList = [];
+
+            try
+            {
+                // Get the input feature layer.
+                inputFeaturelayer = FindLayer(inputLayer);
+                if (inputFeaturelayer == null)
+                    return null;
+
+                await QueuedTask.Run(() =>
+                {
+                    /// Get the feature class for the input feature layer.
+                    FeatureClass featureClass = inputFeaturelayer.GetFeatureClass();
+
+                    // Get the feature class defintion.
+                    using FeatureClassDefinition featureClassDefinition = featureClass.GetDefinition();
+
+                    // Create a new list of sort descriptions.
+                    List<ArcGIS.Core.Data.SortDescription> sortDescriptions = [];
+
+                    // Get the partner name field from the feature class definition.
+                    ArcGIS.Core.Data.Field partnerField = featureClassDefinition.GetFields()
+                        .First(x => x.Name.Equals(partnerColumn, StringComparison.OrdinalIgnoreCase));
+
+                    //QueryFilter queryFilter = new QueryFilter
+                    //{
+                    //    WhereClause = partnerClause,
+                    //    PostfixClause = "ORDER BY " + partnerColumn
+                    //};
+
+                    //// Create a cursor of the sorted features.
+                    //using RowCursor rowCursor = featureClass.Search(queryFilter, false);
+
+                    // Create a SortDescription for the key field.
+                    ArcGIS.Core.Data.SortDescription sortDescription = new(partnerField)
+                    {
+                        CaseSensitivity = CaseSensitivity.Insensitive,
+                        SortOrder = ArcGIS.Core.Data.SortOrder.Ascending
+                    };
+
+                    // Create a TableSortDescription.
+                    TableSortDescription tableSortDescription = new([sortDescription]);
+
+                    // Create a cursor of the sorted features.
+                    using RowCursor rowCursor = featureClass.Sort(tableSortDescription);
+
+                    // Loop through the feature class/table using the cursor.
+                    while (rowCursor.MoveNext())
+                    {
+                        // Get the current row.
+                        using Row record = rowCursor.Current;
+
+                        if (Convert.ToString(record[activeColumn]).ToLower(System.Globalization.CultureInfo.CurrentCulture) is "y")
+                        {
+                            // Create a new partner for this row.
+                            Partner partner = new()
+                            {
+                                PartnerName = Convert.ToString(record[partnerColumn]),
+                                ShortName = Convert.ToString(record[shortColumn]),
+                                Notes = Convert.ToString(record[notesColumn]),
+                                GISFormat = Convert.ToString(record[formatColumn]),
+                                ExportFormat = Convert.ToString(record[exportColumn]),
+                                SQLTable = Convert.ToString(record[sqlTableColumn]),
+                                SQLFiles = Convert.ToString(record[sqlFilesColumn]),
+                                MapFiles = Convert.ToString(record[mapFilesColumn]),
+                                Tags = Convert.ToString(record[tagsColumn]),
+                                IsActive = true
+                            };
+
+                            // Add the partner to the list of active partners.
+                            partnerList.Add(partner);
+                        }
+                    }
+
+                    // Dispose of the objects.
+                    featureClass.Dispose();
+                    featureClassDefinition.Dispose();
+                    rowCursor.Dispose();
+                });
+            }
+            catch
+            {
+                // Handle Exception.
+                return null;
+            }
+            finally
+            {
+            }
+
+            return partnerList;
         }
 
         #endregion Layers

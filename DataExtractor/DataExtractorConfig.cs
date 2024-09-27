@@ -19,18 +19,11 @@
 // You should have received a copy of the GNU General Public License
 // along with with program.  If not, see <http://www.gnu.org/licenses/>.
 
-using ActiproSoftware.Windows.Controls.Editors;
-using ActiproSoftware.Windows.Shapes;
-using ArcGIS.Core.Internal.CIM;
-using ArcGIS.Desktop.Framework.Contracts;
-using ArcGIS.Desktop.Internal.Mapping;
 using DataExtractor.UI;
-using DataTools;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Xml;
-using static System.Net.Mime.MediaTypeNames;
 using MessageBox = ArcGIS.Desktop.Framework.Dialogs.MessageBox;
 
 //This configuration file reader loads all of the variables to
@@ -171,6 +164,16 @@ namespace DataExtractor
                 throw new("Could not locate item 'SDEFile' in the XML profile.");
             }
 
+            // The schema used in the SQL Server database.
+            try
+            {
+                _databaseSchema = _xmlDataExtractor["DatabaseSchema"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'DatabaseSchema' in the XML profile.");
+            }
+
             // The stored procedure to execute spatial selection in SQL Server.
             try
             {
@@ -184,7 +187,7 @@ namespace DataExtractor
             // The stored procedure to execute non-spatial subset selection in SQL Server.
             try
             {
-                _spatialStoredProcedure = _xmlDataExtractor["SubsetStoredProcedure"].InnerText;
+                _subsetStoredProcedure = _xmlDataExtractor["SubsetStoredProcedure"].InnerText;
             }
             catch
             {
@@ -280,16 +283,6 @@ namespace DataExtractor
                 throw new("Could not locate item 'PartnerColumn' in the XML profile.");
             }
 
-            // The schema used in the SQL Server database.
-            try
-            {
-                _databaseSchema = _xmlDataExtractor["DatabaseSchema"].InnerText;
-            }
-            catch
-            {
-                throw new("Could not locate item 'DatabaseSchema' in the XML profile.");
-            }
-
             // The name of the column in the partner GIS layer containing the
             // abbreviated name passed to SQL Server by the tool to use as the
             // sub-folder name for the destination of extracted.
@@ -349,6 +342,17 @@ namespace DataExtractor
             }
 
             // The name of the column in the partner GIS layer indicating
+            // which SQL table should be used for each partner.
+            try
+            {
+                _sqlTableColumn = _xmlDataExtractor["SQLTableColumn"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'SQLTableColumn' in the XML profile.");
+            }
+
+            // The name of the column in the partner GIS layer indicating
             // which SQL files should be created for each partner.
             try
             {
@@ -391,6 +395,16 @@ namespace DataExtractor
                 throw new("Could not locate item 'SpatialColumn' in the XML profile.");
             }
 
+            // The where clause to determine which partners to display.
+            try
+            {
+                _partnerClause = _xmlDataExtractor["PartnerClause"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'PartnerClause' in the XML profile.");
+            }
+
             // The options for the selection types. It is not recommended that these are changed.
             try
             {
@@ -428,28 +442,56 @@ namespace DataExtractor
                 _defaultSelectType = -1;
             }
 
-            // The SQL criteria for excluding any confidential species records.
+            // The SQL criteria for excluding any unwanted records.
             try
             {
-                _confidentialClause = _xmlDataExtractor["ConfidentialClause"].InnerText;
+                _exclusionClause = _xmlDataExtractor["ExclusionClause"].InnerText;
             }
             catch
             {
-                throw new("Could not locate item 'ConfidentialClause' in the XML profile.");
+                throw new("Could not locate item 'ExclusionClause' in the XML profile.");
             }
 
-            // By default, should the confidential survey clause be applied?
+            // By default, should the exclusion clause be applied?
             try
             {
-                _defaultConfidential = false;
-                rawText = _xmlDataExtractor["DefaultConfidential"].InnerText;
+                _defaultApplyExclusionClause = false;
+                rawText = _xmlDataExtractor["DefaultApplyExclusionClause"].InnerText;
                 if (rawText.ToLower(System.Globalization.CultureInfo.CurrentCulture) is "yes" or "y")
-                    _defaultConfidential = true;
+                    _defaultApplyExclusionClause = true;
             }
             catch
             {
                 // This is an optional node
-                _defaultConfidential = false;
+                _defaultApplyExclusionClause = false;
+            }
+
+            // By default, should polygons be selected by centroids.
+            try
+            {
+                _defaultUseCentroids = false;
+                rawText = _xmlDataExtractor["DefaultUseCentroids"].InnerText;
+                if (rawText.ToLower(System.Globalization.CultureInfo.CurrentCulture) is "yes" or "y")
+                    _defaultUseCentroids = true;
+            }
+            catch
+            {
+                // This is an optional node
+                _defaultUseCentroids = false;
+            }
+
+            // By default, should the partner table be upload to the server.
+            try
+            {
+                _defaultUploadToServer = false;
+                rawText = _xmlDataExtractor["DefaultUploadToServer"].InnerText;
+                if (rawText.ToLower(System.Globalization.CultureInfo.CurrentCulture) is "yes" or "y")
+                    _defaultUploadToServer = true;
+            }
+            catch
+            {
+                // This is an optional node
+                _defaultUploadToServer = false;
             }
 
             // By default, should an existing log file be cleared?
@@ -480,20 +522,6 @@ namespace DataExtractor
                 _defaultOpenLogFile = false;
             }
 
-            // By default, should polygons be selected by centroids.
-            try
-            {
-                _defaultUseCentroids = false;
-                rawText = _xmlDataExtractor["DefaultUseCentroids"].InnerText;
-                if (rawText.ToLower(System.Globalization.CultureInfo.CurrentCulture) is "yes" or "y")
-                    _defaultUseCentroids = true;
-            }
-            catch
-            {
-                // This is an optional node
-                _defaultUseCentroids = false;
-            }
-
             // All mandatory variables were loaded successfully.
             return true;
         }
@@ -507,23 +535,23 @@ namespace DataExtractor
         /// </summary>
         public bool GetSQLVariables()
         {
-            string rawText;
-
-            // The the SQL layer collection.
-            XmlElement SQLLayerCollection;
+            // The the SQL tables collection.
+            XmlElement SQLTablesCollection;
             try
             {
-                SQLLayerCollection = _xmlDataExtractor["SQLLayers"];
+                SQLTablesCollection = _xmlDataExtractor["SQLTables"];
             }
             catch
             {
-                throw new("Could not locate the item 'SQLLayers' in the XML profile");
+                throw new("Could not locate the item 'SQLTables' in the XML profile");
             }
 
+            bool nodeGroupFound = false;
+
             // Now cycle through all of the maps.
-            if (SQLLayerCollection != null)
+            if (SQLTablesCollection != null)
             {
-                foreach (XmlNode node in SQLLayerCollection)
+                foreach (XmlNode node in SQLTablesCollection)
                 {
                     // Only process if not a comment
                     if (node.NodeType != XmlNodeType.Comment)
@@ -532,20 +560,20 @@ namespace DataExtractor
                         nodeName = nodeName.Replace("_", " "); // Replace any underscores with spaces for better display.
 
                         // Create a new layer for this node.
-                        SQLLayer layer = new(nodeName);
+                        SQLTable layer = new(nodeName);
 
                         try
                         {
                             string nodeGroup = nodeName.Substring(0, nodeName.IndexOf('-')).Trim();
-                            string nodeLayer = nodeName.Substring(nodeName.IndexOf('-') + 1).Trim();
+                            string nodeTable = nodeName.Substring(nodeName.IndexOf('-') + 1).Trim();
                             layer.NodeGroup = nodeGroup;
-                            layer.NodeLayer = nodeLayer;
+                            layer.NodeTable = nodeTable;
+                            nodeGroupFound = true;
                         }
                         catch
                         {
-                            // This is an optional node
                             layer.NodeGroup = null;
-                            layer.NodeLayer = null;
+                            layer.NodeTable = nodeName;
                         }
 
                         try
@@ -555,15 +583,6 @@ namespace DataExtractor
                         catch
                         {
                             throw new("Could not locate the item 'OutputName' for map layer " + nodeName + " in the XML file");
-                        }
-
-                        try
-                        {
-                            layer.OutputType = node["OutputType"].InnerText;
-                        }
-                        catch
-                        {
-                            throw new("Could not locate the item 'OutputType' for map layer " + nodeName + " in the XML file");
                         }
 
                         try
@@ -596,21 +615,6 @@ namespace DataExtractor
 
                         try
                         {
-                            bool loadWarning = false;
-                            rawText = node["LoadWarning"].InnerText;
-                            if (rawText.ToLower(System.Globalization.CultureInfo.CurrentCulture) is "yes" or "y")
-                                loadWarning = true;
-
-                            layer.LoadWarning = loadWarning;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.LoadWarning = false;
-                        }
-
-                        try
-                        {
                             layer.MacroName = node["MacroName"].InnerText;
                         }
                         catch
@@ -629,11 +633,16 @@ namespace DataExtractor
                             layer.MacroParms = null;
                         }
 
-                        // Add the layer to the list of SQL layers.
-                        SQLLayers.Add(layer);
+                        // Add the layer to the list of SQL tables.
+                        SQLTables.Add(layer);
                     }
                 }
             }
+
+            if (nodeGroupFound)
+                _sqlNodeGroupWidth = "Auto";
+            else
+                _sqlNodeGroupWidth = "0";
 
             // All mandatory variables were loaded successfully.
             return true;
@@ -651,20 +660,22 @@ namespace DataExtractor
             string rawText;
 
             // The the map layer collection.
-            XmlElement MapLayerCollection;
+            XmlElement MapLayersCollection;
             try
             {
-                MapLayerCollection = _xmlDataExtractor["MapLayers"];
+                MapLayersCollection = _xmlDataExtractor["MapLayers"];
             }
             catch
             {
                 throw new("Could not locate the item 'MapLayers' in the XML profile");
             }
 
+            bool nodeGroupFound = false;
+
             // Now cycle through all of the maps.
-            if (MapLayerCollection != null)
+            if (MapLayersCollection != null)
             {
-                foreach (XmlNode node in MapLayerCollection)
+                foreach (XmlNode node in MapLayersCollection)
                 {
                     // Only process if not a comment
                     if (node.NodeType != XmlNodeType.Comment)
@@ -681,12 +692,13 @@ namespace DataExtractor
                             string nodeLayer = nodeName.Substring(nodeName.IndexOf('-') + 1).Trim();
                             layer.NodeGroup = nodeGroup;
                             layer.NodeLayer = nodeLayer;
+                            nodeGroupFound = true;
                         }
                         catch
                         {
                             // This is an optional node
                             layer.NodeGroup = null;
-                            layer.NodeLayer = null;
+                            layer.NodeLayer = nodeName;
                         }
 
                         try
@@ -705,15 +717,6 @@ namespace DataExtractor
                         catch
                         {
                             throw new("Could not locate the item 'OutputName' for map layer " + nodeName + " in the XML file");
-                        }
-
-                        try
-                        {
-                            layer.OutputType = node["OutputType"].InnerText;
-                        }
-                        catch
-                        {
-                            throw new("Could not locate the item 'OutputType' for map layer " + nodeName + " in the XML file");
                         }
 
                         try
@@ -785,6 +788,11 @@ namespace DataExtractor
                 }
             }
 
+            if (nodeGroupFound)
+                _mapNodeGroupWidth = "Auto";
+            else
+                _sqlNodeGroupWidth = "0";
+
             // All mandatory variables were loaded successfully.
             return true;
         }
@@ -816,6 +824,26 @@ namespace DataExtractor
             get
             {
                 return _xmlLoaded;
+            }
+        }
+
+        private string _sqlNodeGroupWidth;
+
+        public string SQLNodeGroupWidth
+        {
+            get
+            {
+                return _sqlNodeGroupWidth;
+            }
+        }
+
+        private string _mapNodeGroupWidth;
+
+        public string MapNodeGroupWidth
+        {
+            get
+            {
+                return _mapNodeGroupWidth;
             }
         }
 
@@ -893,6 +921,26 @@ namespace DataExtractor
             get { return _pauseMap; }
         }
 
+        public List<string> AllPartnerColumns
+        {
+            get
+            {
+                List<string> allPartnerColumns = [];
+                allPartnerColumns.Add(PartnerColumn);
+                allPartnerColumns.Add(ShortColumn);
+                allPartnerColumns.Add(NotesColumn);
+                allPartnerColumns.Add(ActiveColumn);
+                allPartnerColumns.Add(FormatColumn);
+                allPartnerColumns.Add(ExportColumn);
+                allPartnerColumns.Add(SQLTableColumn);
+                allPartnerColumns.Add(SQLFilesColumn);
+                allPartnerColumns.Add(MapFilesColumn);
+                allPartnerColumns.Add(TagsColumn);
+
+                return allPartnerColumns;
+            }
+        }
+
         private string _partnerTable;
 
         public string PartnerTable
@@ -942,6 +990,13 @@ namespace DataExtractor
             get { return _exportColumn; }
         }
 
+        private string _sqlTableColumn;
+
+        public string SQLTableColumn
+        {
+            get { return _sqlTableColumn; }
+        }
+
         private string _sqlFilesColumn;
 
         public string SQLFilesColumn
@@ -970,6 +1025,13 @@ namespace DataExtractor
             get { return _spatialColumn; }
         }
 
+        private string _partnerClause;
+
+        public string PartnerClause
+        {
+            get { return _partnerClause; }
+        }
+
         private List<string> _selectTypeOptions = [];
 
         public List<string> SelectTypeOptions
@@ -983,18 +1045,32 @@ namespace DataExtractor
         {
             get { return _defaultSelectType; }
         }
-        private string _confidentialClause;
+        private string _exclusionClause;
 
-        public string ConfidentialClause
+        public string ExclusionClause
         {
-            get { return _confidentialClause; }
+            get { return _exclusionClause; }
         }
 
-        private bool _defaultConfidential;
+        private bool _defaultApplyExclusionClause;
 
-        public bool DefaulDefaultConfidentialtClearLogFile
+        public bool DefaultApplyExclusionClause
         {
-            get { return _defaultConfidential; }
+            get { return _defaultApplyExclusionClause; }
+        }
+
+        private bool _defaultUseCentroids;
+
+        public bool DefaultUseCentroids
+        {
+            get { return _defaultUseCentroids; }
+        }
+
+        private bool _defaultUploadToServer;
+
+        public bool DefaultUploadToServer
+        {
+            get { return _defaultUploadToServer; }
         }
 
         private bool _defaultClearLogFile;
@@ -1011,22 +1087,15 @@ namespace DataExtractor
             get { return _defaultOpenLogFile; }
         }
 
-        private bool _defaultUseCentroids;
-
-        public bool DefaultUseCentroids
-        {
-            get { return _defaultUseCentroids; }
-        }
-
         #endregion Variables
 
         #region SQL Variables
 
-        private readonly List<SQLLayer> _sqlLayers = [];
+        private readonly List<SQLTable> _sqlTables = [];
 
-        public List<SQLLayer> SQLLayers
+        public List<SQLTable> SQLTables
         {
-            get { return _sqlLayers; }
+            get { return _sqlTables; }
         }
 
         #endregion SQL Variables
