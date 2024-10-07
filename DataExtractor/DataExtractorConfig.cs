@@ -214,6 +214,46 @@ namespace DataExtractor
                 throw new("Could not locate item 'DefaultPath' in the XML profile.");
             }
 
+            // The name of the sub-folder which wil be created for all partner outputs.
+            try
+            {
+                _partnerFolder = _xmlDataExtractor["PartnerFolder"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'PartnerFolder' in the XML profile.");
+            }
+
+            // The name of the sub-folder which wil be created for all partner ArcGIS outputs.
+            try
+            {
+                _arcGISFolder = _xmlDataExtractor["ArcGISFolder"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'ArcGISFolder' in the XML profile.");
+            }
+
+            // The name of the sub-folder which wil be created for all partner CSV outputs.
+            try
+            {
+                _csvFolder = _xmlDataExtractor["CSVFolder"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'CSVFolder' in the XML profile.");
+            }
+
+            // The name of the sub-folder which wil be created for all partner TXT outputs.
+            try
+            {
+                _txtFolder = _xmlDataExtractor["TXTFolder"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'TXTFolder' in the XML profile.");
+            }
+
             // The schema used in the SQL Server database.
             try
             {
@@ -535,7 +575,7 @@ namespace DataExtractor
         /// </summary>
         public bool GetSQLVariables()
         {
-            // The the SQL tables collection.
+            // The SQL tables collection.
             XmlElement SQLTablesCollection;
             try
             {
@@ -560,7 +600,7 @@ namespace DataExtractor
                         nodeName = nodeName.Replace("_", " "); // Replace any underscores with spaces for better display.
 
                         // Create a new layer for this node.
-                        SQLTable layer = new(nodeName);
+                        SQLLayer layer = new(nodeName);
 
                         try
                         {
@@ -582,7 +622,7 @@ namespace DataExtractor
                         }
                         catch
                         {
-                            throw new("Could not locate the item 'OutputName' for map layer " + nodeName + " in the XML file");
+                            throw new("Could not locate the item 'OutputName' for sql table " + nodeName + " in the XML file");
                         }
 
                         try
@@ -591,7 +631,17 @@ namespace DataExtractor
                         }
                         catch
                         {
-                            throw new("Could not locate the item 'Columns' for map layer " + nodeName + " in the XML file");
+                            throw new("Could not locate the item 'Columns' for sql table " + nodeName + " in the XML file");
+                        }
+
+                        try
+                        {
+                            layer.OutputType = node["OutputType"].InnerText;
+                        }
+                        catch
+                        {
+                            // This is an optional node
+                            layer.OutputType = null;
                         }
 
                         try
@@ -600,7 +650,8 @@ namespace DataExtractor
                         }
                         catch
                         {
-                            throw new("Could not locate the item 'WhereClause' for map layer " + nodeName + " in the XML file");
+                            // This is an optional node
+                            layer.WhereClause = null;
                         }
 
                         try
@@ -634,7 +685,7 @@ namespace DataExtractor
                         }
 
                         // Add the layer to the list of SQL tables.
-                        SQLTables.Add(layer);
+                        SQLLayers.Add(layer);
                     }
                 }
             }
@@ -659,7 +710,7 @@ namespace DataExtractor
         {
             string rawText;
 
-            // The the map layer collection.
+            // The map layer collection.
             XmlElement MapLayersCollection;
             try
             {
@@ -730,11 +781,22 @@ namespace DataExtractor
 
                         try
                         {
+                            layer.OutputType = node["OutputType"].InnerText;
+                        }
+                        catch
+                        {
+                            // This is an optional node
+                            layer.OutputType = null;
+                        }
+
+                        try
+                        {
                             layer.WhereClause = node["WhereClause"].InnerText;
                         }
                         catch
                         {
-                            throw new("Could not locate the item 'WhereClause' for map layer " + nodeName + " in the XML file");
+                            // This is an optional node
+                            layer.WhereClause = null;
                         }
 
                         try
@@ -891,6 +953,34 @@ namespace DataExtractor
         public string DefaultPath
         {
             get { return _defaultPath; }
+        }
+
+        private string _partnerFolder;
+
+        public string PartnerFolder
+        {
+            get { return _partnerFolder; }
+        }
+
+        private string _arcGISFolder;
+
+        public string ArcGISFolder
+        {
+            get { return _arcGISFolder; }
+        }
+
+        private string _csvFolder;
+
+        public string CSVFolder
+        {
+            get { return _csvFolder; }
+        }
+
+        private string _txtFolder;
+
+        public string TXTFolder
+        {
+            get { return _txtFolder; }
         }
 
         private string _databaseSchema;
@@ -1091,11 +1181,11 @@ namespace DataExtractor
 
         #region SQL Variables
 
-        private readonly List<SQLTable> _sqlTables = [];
+        private readonly List<SQLLayer> _sqlLayers = [];
 
-        public List<SQLTable> SQLTables
+        public List<SQLLayer> SQLLayers
         {
-            get { return _sqlTables; }
+            get { return _sqlLayers; }
         }
 
         #endregion SQL Variables

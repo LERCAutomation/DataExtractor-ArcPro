@@ -27,7 +27,7 @@
             <Grid Name="GridPartners" Grid.Row="0" Margin="0,0,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="180" />
+                    <RowDefinition Height="{Binding PartnersListHeight}" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="8" />
@@ -99,19 +99,42 @@
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
+
+                <Button Name="ButtonPartnersListExpand"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="0,0,0,0"
+                        Padding="0"
+                        MinWidth="0"
+                        MinHeight="0"
+                        Width="18"
+                        Height="18"
+                        VerticalAlignment="Bottom"
+                        HorizontalAlignment="Right"
+                        BorderBrush="LightBlue"
+                        Command="{Binding Path=PartnersListExpandCommand}"
+                        IsCancel="False"
+                        IsDefault="False"
+                        Focusable="False"
+                        IsEnabled="true"
+                        Visibility="{Binding Path=PartnersListExpandButtonVisibility}"
+                        IsTabStop="False"
+                        Style="{DynamicResource Esri_SimpleButton}"
+                        Content="{Binding Path=PartnersListExpandButtonContent}"
+                        ToolTip="Expand/Collapse the partners list" />
             </Grid>
 
-            <Grid Name="GridSQLTables" Grid.Row="1" Margin="0,4,0,4">
+            <Grid Name="GridSQLLayers" Grid.Row="1" Margin="0,4,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="180" />
+                    <RowDefinition Height="{Binding SQLLayersListHeight}" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="8" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Name="AsterixSQLTables"
+                <Label Name="AsterixSQLLayers"
                        Content="*"
                        Grid.Row="0"
                        Grid.Column="0"
@@ -119,21 +142,21 @@
                        Padding="0"
                        Foreground="Red"
                        VerticalAlignment="Top" />
-                <Label Name="LabelSQLTables"
-                       Content="SQL Tables:"
+                <Label Name="LabelSQLLayers"
+                       Content="SQL Layers:"
                        Grid.Row="0"
                        Grid.Column="1"
                        Margin="0,0,0,2"
                        Padding="0"
                        VerticalAlignment="Center" />
-                <ListView Name="ListViewSQLTables"
+                <ListView Name="ListViewSQLLayers"
                           Grid.Row="1"
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
-                          ItemsSource="{Binding SQLTablesList}"
+                          ItemsSource="{Binding SQLLayersList}"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          SelectionChanged="ListViewSQLTables_SelectionChanged"
-                          SelectedIndex="{Binding SQLTablesList_SelectedIndex}"
+                          SelectionChanged="ListViewSQLLayers_SelectionChanged"
+                          SelectedIndex="{Binding SQLLayersList_SelectedIndex}"
                           SelectionMode="Extended">
                     <ListView.View>
                         <GridView AllowsColumnReorder="False">
@@ -176,12 +199,35 @@
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
+
+                <Button Name="ButtonSQLLayersListExpand"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="0,0,0,0"
+                        Padding="0"
+                        MinWidth="0"
+                        MinHeight="0"
+                        Width="18"
+                        Height="18"
+                        VerticalAlignment="Bottom"
+                        HorizontalAlignment="Right"
+                        BorderBrush="LightBlue"
+                        Command="{Binding Path=SQLLayersListExpandCommand}"
+                        IsCancel="False"
+                        IsDefault="False"
+                        Focusable="False"
+                        IsEnabled="True"
+                        Visibility="{Binding Path=SQLLayersListExpandButtonVisibility}"
+                        IsTabStop="False"
+                        Style="{DynamicResource Esri_SimpleButton}"
+                        Content="{Binding Path=SQLLayersListExpandButtonContent}"
+                        ToolTip="Expand/Collapse the SQL layers list" />
             </Grid>
 
             <Grid Name="GridMapLayers" Grid.Row="2" Margin="0,4,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="180" />
+                    <RowDefinition Height="{Binding SQLLayersListHeight}" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="8" />
@@ -253,6 +299,29 @@
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
+
+                <Button Name="ButtonMapLayersListExpand"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="0,0,0,0"
+                        Padding="0"
+                        MinWidth="0"
+                        MinHeight="0"
+                        Width="18"
+                        Height="18"
+                        VerticalAlignment="Bottom"
+                        HorizontalAlignment="Right"
+                        BorderBrush="LightBlue"
+                        Command="{Binding Path=MapLayersListExpandCommand}"
+                        IsCancel="False"
+                        IsDefault="False"
+                        Focusable="False"
+                        IsEnabled="True"
+                        Visibility="{Binding Path=MapLayersListExpandButtonVisibility}"
+                        IsTabStop="False"
+                        Style="{DynamicResource Esri_SimpleButton}"
+                        Content="{Binding Path=MapLayersListExpandButtonContent}"
+                        ToolTip="Expand/Collapse the Map layers list" />
             </Grid>
 
             <Grid Name="GridSelectionType" Grid.Row="3" Margin="0,4,0,4" HorizontalAlignment="Stretch">

@@ -288,6 +288,27 @@ namespace DataTools
             }
         }
 
+        public static bool RenameFile(string oldPath, string newPath)
+        {
+            // Check input first.
+            if (string.IsNullOrEmpty(oldPath))
+                return false;
+
+            // Check if input exists.
+            if (!FileExists(oldPath))
+                return true;
+
+            try
+            {
+                File.Move(oldPath, newPath);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         #endregion Files
 
         #region Logfile

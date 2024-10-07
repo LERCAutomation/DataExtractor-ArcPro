@@ -396,8 +396,8 @@ namespace DataExtractor.UI
             {
                 DockpaneVisibility = Visibility.Visible;
 
-                // Reload the list of partners and open GIS map layers (don't wait for the response).
-                _paneH2VM?.LoadMapListsAsync(true, false);
+                // Reload the list of partners, SQL tables, and open GIS map layers (don't wait for the response).
+                _paneH2VM?.LoadListsAsync(true, false);
             }
         }
 
@@ -437,7 +437,7 @@ namespace DataExtractor.UI
             _paneH2VM = new PaneHeader2ViewModel(_dockPane, _paneH1VM.ToolConfig);
 
             // Load the form (don't wait for the response).
-            Task.Run(() => _paneH2VM.ResetForm(false));
+            Task.Run(() => _paneH2VM.ResetFormAsync(false));
 
             return true;
         }
@@ -663,7 +663,7 @@ namespace DataExtractor.UI
         /// <remarks></remarks>
         private async void RunCommandClick(object param)
         {
-            _paneH2VM.RunExtract();
+            _paneH2VM.RunExtractAsync();
         }
 
         #endregion Run Command

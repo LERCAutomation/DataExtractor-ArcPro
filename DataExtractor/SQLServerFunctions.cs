@@ -22,10 +22,12 @@
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Data.Exceptions;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
+using ArcGIS.Desktop.Internal.Mapping;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace DataTools
 {
@@ -361,6 +363,7 @@ namespace DataTools
                 catch (Exception)
                 {
                     // ExecuteStatement throws an exception.
+                    //MessageBox.Show(ex.Message);
                     throw;
                 }
             });

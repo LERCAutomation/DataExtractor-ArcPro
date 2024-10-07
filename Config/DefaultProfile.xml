@@ -40,7 +40,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 
   <!-- The stored procedure to execute non-spatial subset selection in SQL Server. -->
   <SubsetStoredProcedure>
-	<value>AFSelectSppSubset</value>
+	<value>AFSelectSppSubset2</value>
   </SubsetStoredProcedure>
 
   <!-- The stored procedure to clear selection in SQL Server. -->
@@ -97,7 +97,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 
   <!-- The name of the partner GIS layer in SQL Server used to select the records. -->
   <PartnerTable>
-	<value>Partner_Extract_Boundaries</value>
+	<value>CombinedExtractPolygons</value>
   </PartnerTable>
 
   <!-- The name of the column in the partner GIS layer containing the partner name passed to SQL

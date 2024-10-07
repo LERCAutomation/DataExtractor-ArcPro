@@ -19,10 +19,14 @@
 // You should have received a copy of the GNU General Public License
 // along with with program.  If not, see <http://www.gnu.org/licenses/>.
 
+using ArcGIS.Core.Data.UtilityNetwork.Trace;
 using ArcGIS.Desktop.Framework;
 using ArcGIS.Desktop.Internal.Framework.Controls;
+using ArcGIS.Desktop.Internal.Mapping.CommonControls;
+using ArcGIS.Desktop.Layouts;
 using ArcGIS.Desktop.Mapping;
 using DataTools;
+using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -31,10 +35,12 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using MessageBox = ArcGIS.Desktop.Framework.Dialogs.MessageBox;
@@ -45,16 +51,15 @@ namespace DataExtractor.UI
     {
         #region Enums
 
-        ///// <summary>
-        ///// An enumeration of the different options for whether to
-        ///// add output layers to the map.
-        ///// </summary>
-        //public enum AddSelectedLayersOptions
-        //{
-        //    No,
-        //    WithoutLabels,
-        //    WithLabels
-        //};
+        /// <summary>
+        /// An enumeration of the different options for the selection.
+        /// </summary>
+        public enum SelectionTypeOptions
+        {
+            SpatialOnly,
+            TagsOnly,
+            SpatialAndTags
+        };
 
         #endregion Enums
 
@@ -68,7 +73,13 @@ namespace DataExtractor.UI
 
         private string _logFilePath;
         private string _logFile;
+
         private string _defaultPath;
+        private string _partnerFolder;
+        private string _arcGISFolder;
+        private string _csvFolder;
+        private string _txtFolder;
+
         private string _defaultSchema;
 
         // SQL table fields.
@@ -95,7 +106,7 @@ namespace DataExtractor.UI
         private List<string> _selectTypeOptions = [];
 
         private List<Partner> _partners;
-        private List<SQLTable> _sqlTables;
+        private List<SQLLayer> _sqlLayers;
         private List<MapLayer> _mapLayers;
 
         private List<string> _sqlTableNames;
@@ -107,6 +118,22 @@ namespace DataExtractor.UI
         private bool? _defaultUploadToServer;
         private bool _defaultClearLogFile;
         private bool _defaultOpenLogFile;
+
+        private string _userID;
+
+        private string _dateDD;
+        private string _dateMM;
+        private string _dateMMM;
+        private string _dateMMMM;
+        private string _dateYY;
+        private double _dateQtr;
+        private string _dateQQ;
+        private string _dateYYYY;
+        private string _dateFFFF;
+
+        private long _pointCount = 0;
+        private long _polyCount = 0;
+        private long _tableCount = 0;
 
         private const string _displayName = "DataExtractor";
 
@@ -167,6 +194,11 @@ namespace DataExtractor.UI
             _clearStoredProcedure = _toolConfig.ClearStoredProcedure;
 
             _defaultPath = _toolConfig.DefaultPath;
+            _partnerFolder = _toolConfig.PartnerFolder;
+            _arcGISFolder = _toolConfig.ArcGISFolder;
+            _csvFolder = _toolConfig.CSVFolder;
+            _txtFolder = _toolConfig.TXTFolder;
+
             _defaultSchema = _toolConfig.DatabaseSchema;
 
             _includeWildcard = _toolConfig.IncludeWildcard;
@@ -198,7 +230,7 @@ namespace DataExtractor.UI
             _defaultOpenLogFile = _toolConfig.DefaultOpenLogFile;
 
             // Get all of the SQL table details.
-            _sqlTables = _toolConfig.SQLTables;
+            _sqlLayers = _toolConfig.SQLLayers;
 
             // Get all of the map layer details.
             _mapLayers = _toolConfig.MapLayers;
@@ -221,29 +253,28 @@ namespace DataExtractor.UI
         }
 
         /// <summary>
-        /// Is the list of SQL tables enabled?
+        /// Is the list of SQL layers enabled?
         /// </summary>
-        public bool SQLTablesListEnabled
+        public bool SQLLayersListEnabled
         {
             get
             {
                 return ((_dockPane.ProcessStatus == null)
-                    && (_sqlTablesList != null));
+                    && (_sqlLayersList != null));
             }
         }
 
         /// <summary>
-        /// Is the list of GIS Map layers enabled?
+        /// Is the list of Map layers enabled?
         /// </summary>
         public bool MapLayersListEnabled
         {
             get
             {
                 return ((_dockPane.ProcessStatus == null)
-                    && (_mapLayersList != null));
+                    && (_sqlLayersList != null));
             }
         }
-
 
         /// <summary>
         /// Is the list of selection type options enabled?
@@ -267,8 +298,8 @@ namespace DataExtractor.UI
                 return ((_dockPane.ProcessStatus == null)
                     && (_partnersList != null)
                     && (_partnersList.Where(p => p.IsSelected).Any())
-                    && (((_sqlTablesList != null)
-                    && (_sqlTablesList.Where(p => p.IsSelected).Any()))
+                    && (((_sqlLayersList != null)
+                    && (_sqlLayersList.Where(p => p.IsSelected).Any()))
                     || ((_mapLayersList != null)
                     && (_mapLayersList.Where(p => p.IsSelected).Any())))
                     && (_defaultSelectType <= 0 || _selectionType != null));
@@ -278,6 +309,48 @@ namespace DataExtractor.UI
         #endregion Controls Enabled
 
         #region Controls Visibility
+
+        /// <summary>
+        /// Is the PartnersList expand button visible.
+        /// </summary>
+        public Visibility PartnersListExpandButtonVisibility
+        {
+            get
+            {
+                if ((_partnersList == null) || (_partnersList.Count < 9))
+                    return Visibility.Hidden;
+                else
+                    return Visibility.Visible;
+            }
+        }
+
+        /// <summary>
+        /// Is the SQLLayersList expand button visible.
+        /// </summary>
+        public Visibility SQLLayersListExpandButtonVisibility
+        {
+            get
+            {
+                if ((_sqlLayersList == null) || (_sqlLayersList.Count < 9))
+                    return Visibility.Hidden;
+                else
+                    return Visibility.Visible;
+            }
+        }
+
+        /// <summary>
+        /// Is the MapLayersList expand button visible.
+        /// </summary>
+        public Visibility MapLayersListExpandButtonVisibility
+        {
+            get
+            {
+                if ((_mapLayersList == null) || (_mapLayersList.Count < 9))
+                    return Visibility.Hidden;
+                else
+                    return Visibility.Visible;
+            }
+        }
 
         /// <summary>
         /// Is the extract apply exclusion clause check box visible.
@@ -401,9 +474,9 @@ namespace DataExtractor.UI
         #region Run Command
 
         /// <summary>
-        /// Validates and executes the extract.
+        /// Run the extract.
         /// </summary>
-        public async void RunExtract()
+        public async void RunExtractAsync()
         {
             // Reset the cancel flag.
             _dockPane.ExtractCancelled = false;
@@ -416,65 +489,72 @@ namespace DataExtractor.UI
             ClearMessage();
 
             // Replace any illegal characters in the user name string.
-            string userID = StringFunctions.StripIllegals(Environment.UserName, "_", false);
+            _userID = StringFunctions.StripIllegals(Environment.UserName, "_", false);
 
             // User ID should be something at least.
-            if (string.IsNullOrEmpty(userID))
-            {
-                userID = "Temp";
-            }
+            if (string.IsNullOrEmpty(_userID))
+                _userID = "Temp";
 
             // Set the destination log file path.
-            _logFile = _logFilePath + @"\DataSelector_" + userID + ".log";
+            _logFile = _logFilePath + @"\DataExtractor_" + _userID + ".log";
 
-            // Clear the log file if required.
+            // Archive the log file (if it exists).
             if (ClearLogFile)
             {
-                bool blDeleted = FileFunctions.DeleteFile(_logFile);
-                if (!blDeleted)
+                if (FileFunctions.FileExists(_logFile))
                 {
-                    MessageBox.Show("Cannot delete log file. Please make sure it is not open in another window.", "Data Selector", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
+                    // Get the last modified date/time for the current log file.
+                    DateTime dateLogFile = File.GetLastWriteTime(_logFile);
+                    string dateLastMod = dateLogFile.ToString("yyyy") + dateLogFile.ToString("MM") + dateLogFile.ToString("dd") + "_" +
+                        dateLogFile.ToString("HH") + dateLogFile.ToString("mm") + dateLogFile.ToString("ss");
+
+                    // Rename the current log file
+                    string logFileArchive = _logFilePath + @"\DataExtractor_" + _userID + "_" + dateLastMod + ".log";
+                    if (!FileFunctions.RenameFile(_logFile, logFileArchive))
+                    {
+                        MessageBox.Show("Cannot rename log file. Please make sure it is not open in another window", _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
                 }
             }
 
             // If userid is temp.
-            if (userID == "Temp")
-            {
+            if (_userID == "Temp")
                 FileFunctions.WriteLine(_logFile, "User ID not found. User ID used will be 'Temp'");
-            }
 
             // Update the fields and buttons in the form.
             UpdateFormControls();
             _dockPane.RefreshPanel1Buttons();
 
-            // Run the extract.
-            bool success = await RunExtractAsync();
+            // Process the extracts.
+            bool success = await ProcessExtractsAsync();
 
             // Indicate that the extract process has completed (successfully or not).
             string message;
             string image;
+            //TODO - set message
             if (success)
             {
-                message = "Extract '{0}' complete!";
+                message = "Extracts complete!";
                 image = "Success";
             }
             else if (_extractErrors)
             {
-                message = "Extract '{0}' ended with errors!";
+                message = "Extracts ended with errors!";
                 image = "Error";
             }
             else if (_dockPane.ExtractCancelled)
             {
-                message = "Extract '{0}' cancelled!";
+                message = "Extracts cancelled!";
                 image = "Warning";
             }
             else
             {
-                message = "Extract '{0}' ended unexpectedly!";
+                message = "Extracts ended unexpectedly!";
                 image = "Error";
             }
 
+            // Finish up now the extract has stopped (successfully or not).
             StopExtract(message, image);
 
             // Reset the cancel flag.
@@ -499,7 +579,7 @@ namespace DataExtractor.UI
             }
 
             // At least one GIS Map layer or SQL table must be selected,
-            if (!MapLayersList.Where(p => p.IsSelected).Any() && !SQLTablesList.Where(s => s.IsSelected).Any())
+            if (!MapLayersList.Where(p => p.IsSelected).Any() && !SQLLayersList.Where(s => s.IsSelected).Any())
             {
                 ShowMessage("Please select at least one map or SQL table to extract.", MessageType.Warning);
                 return false;
@@ -544,6 +624,32 @@ namespace DataExtractor.UI
             {
                 return _partnersList;
             }
+            set
+            {
+                _partnersList = value;
+                OnPropertyChanged(nameof(PartnersListExpandButtonVisibility));
+            }
+        }
+
+        private int? _partnersListHeight = 179;
+
+        public int? PartnersListHeight
+        {
+            get
+            {
+                return _partnersListHeight;
+            }
+        }
+
+        public string PartnersListExpandButtonContent
+        {
+            get
+            {
+                if (_partnersListHeight == null)
+                    return "-";
+                else
+                    return "+";
+            }
         }
 
         /// <summary>
@@ -578,23 +684,49 @@ namespace DataExtractor.UI
         /// <summary>
         /// The list of SQL tables.
         /// </summary>
-        private ObservableCollection<SQLTable> _sqlTablesList;
+        private ObservableCollection<SQLLayer> _sqlLayersList;
 
         /// <summary>
         /// Get the list of SQL tables.
         /// </summary>
-        public ObservableCollection<SQLTable> SQLTablesList
+        public ObservableCollection<SQLLayer> SQLLayersList
         {
             get
             {
-                return _sqlTablesList;
+                return _sqlLayersList;
+            }
+            set
+            {
+                _sqlLayersList = value;
+                OnPropertyChanged(nameof(SQLLayersListExpandButtonVisibility));
+            }
+        }
+
+        private int? _sqlLayersListHeight = 162;
+
+        public int? SQLLayersListHeight
+        {
+            get
+            {
+                return _sqlLayersListHeight;
+            }
+        }
+
+        public string SQLLayersListExpandButtonContent
+        {
+            get
+            {
+                if (_sqlLayersListHeight == null)
+                    return "-";
+                else
+                    return "+";
             }
         }
 
         /// <summary>
         /// Triggered when the selection in the list of SQL tables changes.
         /// </summary>
-        public int SQLTablesList_SelectedIndex
+        public int SQLLayersList_SelectedIndex
         {
             set
             {
@@ -603,20 +735,20 @@ namespace DataExtractor.UI
             }
         }
 
-        private List<SQLTable> _selectedSQLTables;
+        private List<SQLLayer> _selectedSQLLayers;
 
         /// <summary>
         /// Get/Set the selected SQL tables.
         /// </summary>
-        public List<SQLTable> SelectedSQLTables
+        public List<SQLLayer> SelectedSQLLayers
         {
             get
             {
-                return _selectedSQLTables;
+                return _selectedSQLLayers;
             }
             set
             {
-                _selectedSQLTables = value;
+                _selectedSQLLayers = value;
             }
         }
 
@@ -633,6 +765,32 @@ namespace DataExtractor.UI
             get
             {
                 return _mapLayersList;
+            }
+            set
+            {
+                _mapLayersList = value;
+                OnPropertyChanged(nameof(MapLayersListExpandButtonVisibility));
+            }
+        }
+
+        private int? _mapLayersListHeight = 162;
+
+        public int? MapLayersListHeight
+        {
+            get
+            {
+                return _mapLayersListHeight;
+            }
+        }
+
+        public string MapLayersListExpandButtonContent
+        {
+            get
+            {
+                if (_mapLayersListHeight == null)
+                    return "-";
+                else
+                    return "+";
             }
         }
 
@@ -844,8 +1002,8 @@ namespace DataExtractor.UI
         {
             OnPropertyChanged(nameof(PartnersList));
             OnPropertyChanged(nameof(PartnersListEnabled));
-            OnPropertyChanged(nameof(SQLTablesListEnabled));
-            OnPropertyChanged(nameof(SQLTablesList));
+            OnPropertyChanged(nameof(SQLLayersList));
+            OnPropertyChanged(nameof(SQLLayersListEnabled));
             OnPropertyChanged(nameof(MapLayersList));
             OnPropertyChanged(nameof(MapLayersListEnabled));
             OnPropertyChanged(nameof(SelectionTypeList));
@@ -863,7 +1021,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Set all of the form fields to their default values.
         /// </summary>
-        public async Task ResetForm(bool reset)
+        public async Task ResetFormAsync(bool reset)
         {
             // Clear the partner selections first (to avoid selections being retained).
             if (_partnersList != null)
@@ -875,9 +1033,9 @@ namespace DataExtractor.UI
             }
 
             // Clear the SQL table selections first (to avoid selections being retained).
-            if (_sqlTablesList != null)
+            if (_sqlLayersList != null)
             {
-                foreach (SQLTable layer in _sqlTablesList)
+                foreach (SQLLayer layer in _sqlLayersList)
                 {
                     layer.IsSelected = false;
                 }
@@ -905,7 +1063,7 @@ namespace DataExtractor.UI
             PauseMap = _toolConfig.PauseMap;
 
             // Reload the list of partners, SQL tables, and open GIS map layers.
-            await LoadAllListsAsync(reset, true);
+            await LoadListsAsync(reset, true);
         }
 
         /// <summary>
@@ -914,7 +1072,7 @@ namespace DataExtractor.UI
         /// <param name="reset"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        public async Task LoadAllListsAsync(bool reset, bool message)
+        public async Task LoadListsAsync(bool reset, bool message)
         {
             // If not already processing.
             if (_dockPane.ProcessStatus == null)
@@ -931,17 +1089,17 @@ namespace DataExtractor.UI
                 // Update the fields and buttons in the form.
                 UpdateFormControls();
 
-                // Load the list of partners (don't wait)
-                Task partnersTask = LoadPartnersAsync(message);
-
                 // Get the list of SQL table names from SQL Server (don't wait).
                 Task sqlTableNamesTask = GetSQLTableNamesAsync(false);
+
+                // Load the list of partners (don't wait)
+                Task partnersTask = LoadPartnersAsync(message);
 
                 // Reload the list of GIS map layers (don't wait).
                 Task mapLayersTask = LoadMapLayersAsync(message);
 
-                // Reload the list of SQL tables from the XML profile.
-                LoadSQLTables();
+                // Reload the list of SQL layers from the XML profile.
+                LoadSQLLayers();
 
                 // Wait for all of the lists to load.
                 await Task.WhenAll(partnersTask, sqlTableNamesTask, mapLayersTask);
@@ -949,55 +1107,12 @@ namespace DataExtractor.UI
                 // Hide progress update.
                 _dockPane.ProgressUpdate(null, -1, -1);
 
+                // Indicate the refresh has finished.
                 _dockPane.FormListsLoading = false;
 
                 // Update the fields and buttons in the form.
                 UpdateFormControls();
-            }
-        }
-
-        /// <summary>
-        /// Load the list of partners and open GIS map layers.
-        /// </summary>
-        /// <param name="reset"></param>
-        /// <param name="message"></param>
-        /// <returns></returns>
-        public async Task LoadMapListsAsync(bool reset, bool message)
-        {
-            // If not already processing.
-            if (_dockPane.ProcessStatus == null)
-            {
-                _dockPane.FormListsLoading = true;
-                if (reset)
-                    _dockPane.ProgressUpdate("Refreshing map lists...");
-                else
-                    _dockPane.ProgressUpdate("Loading map lists...");
-
-                // Clear any messages.
-                ClearMessage();
-
-                // Update the fields and buttons in the form.
-                UpdateFormControls();
-
-                // Load the list of partners (don't wait)
-                Task partnersTask = LoadPartnersAsync(message);
-
-                // Reload the list of GIS map layers (don't wait).
-                Task mapLayersTask = LoadMapLayersAsync(message);
-
-                // Reload the list of SQL tables from the XML profile.
-                LoadSQLTables();
-
-                // Wait for all of the lists to load.
-                await Task.WhenAll(partnersTask, mapLayersTask);
-
-                // Hide progress update.
-                _dockPane.ProgressUpdate(null, -1, -1);
-
-                _dockPane.FormListsLoading = false;
-
-                // Update the fields and buttons in the form.
-                UpdateFormControls();
+                _dockPane.RefreshPanel1Buttons();
             }
         }
 
@@ -1026,7 +1141,7 @@ namespace DataExtractor.UI
                 {
                     //TODO
                     if (message)
-                        MessageBox.Show("Partner table '" + _partnerTable + "' not found.", "Data Extractor", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("Partner table '" + _partnerTable + "' not found.", _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
 
                     return;
                 }
@@ -1041,23 +1156,23 @@ namespace DataExtractor.UI
                 var missingPartnerColumns = allPartnerColumns.Except(existingPartnerColumns).ToList();
                 if (missingPartnerColumns.Count != 0)
                 {
-                    string errMessage = "The column(s) ";
+                    string errMessage = "";
                     foreach (string columnName in missingPartnerColumns)
                     {
-                        errMessage = errMessage + columnName + ", ";
+                        errMessage = errMessage + "'" + columnName + "', ";
                     }
                     errMessage = string.Format("The column(s) {0} could not be found in table {1}.", errMessage.Substring(0, errMessage.Length - 2), _partnerTable);
 
                     //TODO
                     if (message)
-                        MessageBox.Show(errMessage, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(errMessage, _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
 
                     return;
                 }
 
                 // Set the default partner where clause
                 _partnerClause = _toolConfig.PartnerClause;
-                if (_partnerClause == "")
+                if (String.IsNullOrEmpty(_partnerClause))
                     _partnerClause = _toolConfig.ActiveColumn + " = 'Y'";
 
                 // Get the list of active partners from the partner layer.
@@ -1068,7 +1183,7 @@ namespace DataExtractor.UI
                 {
                     //TODO
                     if (message)
-                        MessageBox.Show(string.Format("No active partners found in table {0}", _partnerTable), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(string.Format("No active partners found in table {0}", _partnerTable), _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
 
                     return;
                 }
@@ -1083,28 +1198,28 @@ namespace DataExtractor.UI
             }
 
             // Reset the list of active partners.
-            _partnersList = partnerList;
+            PartnersList = partnerList;
         }
 
         /// <summary>
-        /// Load the list of SQL tables.
+        /// Load the list of SQL layers.
         /// </summary>
         /// <returns></returns>
-        public void LoadSQLTables()
+        public void LoadSQLLayers()
         {
             // Reset the list of SQL tables.
-            ObservableCollection<SQLTable> tableList = [];
+            ObservableCollection<SQLLayer> sqlLayers = [];
 
             // Loop through all of the layers to check if they are open
             // in the active map.
-            foreach (SQLTable table in _sqlTables)
+            foreach (SQLLayer table in _sqlLayers)
             {
                 // Add the open layers to the list.
-                tableList.Add(table);
+                sqlLayers.Add(table);
             }
 
             // Reset the list of SQL tables.
-            _sqlTablesList = tableList;
+            SQLLayersList = sqlLayers;
         }
 
         /// <summary>
@@ -1153,7 +1268,7 @@ namespace DataExtractor.UI
                 }
 
                 // Set the list of open layers.
-                _mapLayersList = openLayersList;
+                MapLayersList = openLayersList;
             });
 
             // Show a message if there are no open layers.
@@ -1180,7 +1295,7 @@ namespace DataExtractor.UI
                 ShowMessage(closedLayerWarning, MessageType.Warning);
 
                 if (message)
-                    MessageBox.Show(closedLayerWarning, "Data Extractor", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(closedLayerWarning, _displayName, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -1194,13 +1309,13 @@ namespace DataExtractor.UI
             if (_dockPane.ProcessStatus == null)
             {
                 // Clear the list of partners.
-                _partnersList = [];
+                PartnersList = [];
 
                 // Clear the list of SQL tables.
-                _sqlTablesList = [];
+                SQLLayersList = [];
 
                 // Clear the list of open GIS map layers.
-                _mapLayersList = [];
+                MapLayersList = [];
 
                 // Update the fields and buttons in the form.
                 UpdateFormControls();
@@ -1210,311 +1325,183 @@ namespace DataExtractor.UI
         /// <summary>
         /// Validate and run the extract.
         /// </summary>
-        private async Task<bool> RunExtractAsync()
+        private async Task<bool> ProcessExtractsAsync()
         {
-            //if (_mapFunctions == null || _mapFunctions.MapName == null)
-            //{
-            //    // Create a new map functions object.
-            //    _mapFunctions = new();
-            //}
+            if (_mapFunctions == null || _mapFunctions.MapName == null)
+            {
+                // Create a new map functions object.
+                _mapFunctions = new();
+            }
 
-            //// Reset extract errors flag.
-            //_extractErrors = false;
+            // Reset extract errors flag.
+            _extractErrors = false;
 
-            //// Selected layers.
-            //_selectedLayers = OpenLayersList.Where(p => p.IsSelected).ToList();
+            // Selected list items.
+            _selectedPartners = PartnersList.Where(p => p.IsSelected).ToList();
+            _selectedSQLLayers = SQLLayersList.Where(s => s.IsSelected).ToList();
+            _selectedMapLayers = MapLayersList.Where(m => m.IsSelected).ToList();
 
-            //// What is the selected buffer unit?
-            //string bufferUnitText = _bufferUnitOptionsDisplay[bufferUnitIndex]; // Unit to be used in reporting.
-            //string bufferUnitProcess = _bufferUnitOptionsProcess[bufferUnitIndex]; // Unit to be used in process (because of American spelling).
-            //string bufferUnitShort = _bufferUnitOptionsShort[bufferUnitIndex]; // Unit to be used in file naming (abbreviation).
+            // What is the selection type?
+            SelectionTypeOptions selectionTypeOption = SelectionTypeOptions.SpatialOnly;
+            int selectionTypeNum = 0;
+            if (_defaultSelectType > 0)
+            {
+                if (SelectionType.Equals("spatial only", StringComparison.OrdinalIgnoreCase))
+                {
+                    selectionTypeOption = SelectionTypeOptions.SpatialOnly;
+                    selectionTypeNum = 1;
+                }
+                else if (SelectionType.Equals("survey tags only", StringComparison.OrdinalIgnoreCase))
+                {
+                    selectionTypeOption = SelectionTypeOptions.TagsOnly;
+                    selectionTypeNum = 2;
+                }
+                else if (SelectionType.Equals("spatial and survey tags", StringComparison.OrdinalIgnoreCase))
+                {
+                    selectionTypeOption = SelectionTypeOptions.SpatialAndTags;
+                    selectionTypeNum = 3;
+                }
+            }
 
-            //// What is the area measurement unit?
-            //string areaMeasureUnit = _toolConfig.AreaMeasurementUnit;
+            // Will the exclusion clause be applied?
+            bool applyExclusionClause = ApplyExclusionClause;
 
-            //// Will the selected layers be kept?
-            //bool keepSelectedLayers = KeepSelectedLayers;
+            // Will centroids be user for the selection?
+            bool useCentroids = UseCentroids;
 
-            //// Will the selected layers be added to the map with labels?
-            //AddSelectedLayersOptions addSelectedLayersOption = AddSelectedLayersOptions.No;
-            //if (_defaultAddSelectedLayers > 0)
-            //{
-            //    if (SelectedAddToMap.Equals("no", StringComparison.OrdinalIgnoreCase))
-            //        addSelectedLayersOption = AddSelectedLayersOptions.No;
-            //    else if (SelectedAddToMap.Contains("with labels", StringComparison.OrdinalIgnoreCase))
-            //        addSelectedLayersOption = AddSelectedLayersOptions.WithLabels;
-            //    else if (SelectedAddToMap.Contains("without labels", StringComparison.OrdinalIgnoreCase))
-            //        addSelectedLayersOption = AddSelectedLayersOptions.WithoutLabels;
-            //}
+            // Will the partner table be uploaded to SQL server first?
+            bool uploadToServer = UploadToServer;
 
-            //// Will the labels on map layers be overwritten?
-            //OverwriteLabelOptions overwriteLabelOption = OverwriteLabelOptions.No;
-            //if (_defaultOverwriteLabels > 0)
-            //{
-            //    if (SelectedOverwriteLabels.Equals("no", StringComparison.OrdinalIgnoreCase))
-            //        overwriteLabelOption = OverwriteLabelOptions.No;
-            //    else if (SelectedOverwriteLabels.Contains("reset each layer", StringComparison.OrdinalIgnoreCase))
-            //        overwriteLabelOption = OverwriteLabelOptions.ResetByLayer;
-            //    else if (SelectedOverwriteLabels.Contains("reset each group", StringComparison.OrdinalIgnoreCase))
-            //        overwriteLabelOption = OverwriteLabelOptions.ResetByGroup;
-            //    else if (SelectedOverwriteLabels.Contains("do not reset", StringComparison.OrdinalIgnoreCase))
-            //        overwriteLabelOption = OverwriteLabelOptions.DoNotReset;
-            //}
+            // Set the date variables.
+            DateTime dateNow = DateTime.Now;
+            _dateDD = dateNow.ToString("dd");
+            _dateMM = dateNow.ToString("MM");
+            _dateMMM = dateNow.ToString("MMM");
+            _dateMMMM = dateNow.ToString("MMMM");
+            _dateYY = dateNow.ToString("yy");
+            _dateQtr = (Math.Ceiling(dateNow.Month / 3.0 + 2) % 4) + 1;
+            _dateQQ = _dateQtr.ToString("00");
+            _dateYYYY = dateNow.ToString("yyyy");
+            _dateFFFF = StringFunctions.FinancialYear(dateNow);
 
-            //// Will the combined sites table be created and overwritten?
-            //CombinedSitesTableOptions combinedSitesTableOption = CombinedSitesTableOptions.None;
-            //if (_defaultCombinedSitesTable > 0)
-            //{
-            //    if (SelectedCombinedSites.Equals("none", StringComparison.OrdinalIgnoreCase))
-            //        combinedSitesTableOption = CombinedSitesTableOptions.None;
-            //    else if (SelectedCombinedSites.Contains("append", StringComparison.OrdinalIgnoreCase))
-            //        combinedSitesTableOption = CombinedSitesTableOptions.Append;
-            //    else if (SelectedCombinedSites.Contains("overwrite", StringComparison.OrdinalIgnoreCase))
-            //        combinedSitesTableOption = CombinedSitesTableOptions.Overwrite;
-            //}
+            // Replace any date variables in the log file path.
+            string logFilePath = _logFilePath.Replace("%dd%", _dateDD).Replace("%mm%", _dateMM).Replace("%mmm%", _dateMMM).Replace("%mmmm%", _dateMMMM);
+            logFilePath = logFilePath.Replace("%yy%", _dateYY).Replace("%qq%", _dateQQ).Replace("%yyyy%", _dateYYYY).Replace("%ffff%", _dateFFFF);
 
-            //// Fix any illegal characters in the site name string.
-            //siteName = StringFunctions.StripIllegals(siteName, _repChar);
+            // Replace any date variables in the default path.
+            string defaultPath = _defaultPath.Replace("%dd%", _dateDD).Replace("%mm%", _dateMM).Replace("%mmm%", _dateMMM).Replace("%mmmm%", _dateMMMM);
+            defaultPath = defaultPath.Replace("%yy%", _dateYY).Replace("%qq%", _dateQQ).Replace("%yyyy%", _dateYYYY).Replace("%ffff%", _dateFFFF);
 
-            //// Create the ref string from the search reference.
-            //string reference = searchRef.Replace("/", _repChar);
-
-            //// Create the shortref from the search reference by
-            //// getting rid of any characters.
-            //string shortRef = StringFunctions.KeepNumbersAndSpaces(reference, _repChar);
-
-            //// Find the subref part of this reference.
-            //string subref = StringFunctions.GetSubref(shortRef, _repChar);
-
-            //// Create the radius from the buffer size and units
-            //string radius = bufferSize + bufferUnitShort;
-
-            //// Replace any standard strings in the variables.
-            //_saveFolder = StringFunctions.ReplaceSearchStrings(_toolConfig.SaveFolder, reference, siteName, shortRef, subref, radius);
-            //_gisFolder = StringFunctions.ReplaceSearchStrings(_toolConfig.GISFolder, reference, siteName, shortRef, subref, radius);
-            //_logFileName = StringFunctions.ReplaceSearchStrings(_toolConfig.LogFileName, reference, siteName, shortRef, subref, radius);
-            //_combinedSitesTableName = StringFunctions.ReplaceSearchStrings(_toolConfig.CombinedSitesTableName, reference, siteName, shortRef, subref, radius);
-            //_bufferPrefix = StringFunctions.ReplaceSearchStrings(_toolConfig.BufferPrefix, reference, siteName, shortRef, subref, radius);
-            //_searchLayerName = StringFunctions.ReplaceSearchStrings(_toolConfig.SearchOutputName, reference, siteName, shortRef, subref, radius);
-            //_groupLayerName = StringFunctions.ReplaceSearchStrings(_toolConfig.GroupLayerName, reference, siteName, shortRef, subref, radius);
-
-            //// Remove any illegal characters from the names.
-            //_saveFolder = StringFunctions.StripIllegals(_saveFolder, _repChar);
-            //_gisFolder = StringFunctions.StripIllegals(_gisFolder, _repChar);
-            //_logFileName = StringFunctions.StripIllegals(_logFileName, _repChar, true);
-            //_combinedSitesTableName = StringFunctions.StripIllegals(_combinedSitesTableName, _repChar);
-            //_bufferPrefix = StringFunctions.StripIllegals(_bufferPrefix, _repChar);
-            //_searchLayerName = StringFunctions.StripIllegals(_searchLayerName, _repChar);
-            //_groupLayerName = StringFunctions.StripIllegals(_groupLayerName, _repChar);
+            // Replace any date variables in the partner folder.
+            string partnerFolder = _partnerFolder.Replace("%dd%", _dateDD).Replace("%mm%", _dateMM).Replace("%mmm%", _dateMMM).Replace("%mmmm%", _dateMMMM);
+            partnerFolder = partnerFolder.Replace("%yy%", _dateYY).Replace("%qq%", _dateQQ).Replace("%yyyy%", _dateYYYY).Replace("%ffff%", _dateFFFF);
 
             //// Trim any trailing spaces (directory functions don't deal with them well).
-            //_saveFolder = _saveFolder.Trim();
+            partnerFolder = partnerFolder.Trim();
+            string arcGISFolder = _arcGISFolder.Trim();
+            string csvFolder = _csvFolder.Trim();
+            string txtFolder = _txtFolder.Trim();
 
+            //TODO - move to loop
             //// Create output folders if required.
-            //_outputFolder = CreateOutputFolders(_saveRootDir, _saveFolder, _gisFolder);
+            //_outputFolder = CreateOutputFolder(defaultPath, partnerFolder);
             //if (_outputFolder == null)
             //{
             //    MessageBox.Show("Cannot create output folder");
             //    return false;
             //}
 
-            //// Create log file (if necessary).
-            //_logFile = _outputFolder + @"\" + _logFileName;
-            //if (FileFunctions.FileExists(_logFile) && ClearLogFile)
-            //{
-            //    try
-            //    {
-            //        File.Delete(_logFile);
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        MessageBox.Show("Cannot clear log file " + _logFile + ". Please make sure this file is not open in another window. " +
-            //            "System error: " + ex.Message);
-            //        return false;
-            //    }
-            //}
-
-            //// Replace any illegal characters in the user name string.
-            //_userID = StringFunctions.StripIllegals(Environment.UserName, "_", false);
-
-            //// User ID should be something at least.
-            //if (string.IsNullOrEmpty(_userID))
-            //{
-            //    _userID = "Temp";
-            //    FileFunctions.WriteLine(_logFile, "User ID not found. User ID used will be 'Temp'");
-            //}
-
-            //// Count the number of layers to process and add 2
-            //// to account for the start and finish steps.
-            //int stepsMax = SelectedLayers.Count + 2;
+            // Count the number of partners to process.
+            int stepsMax = SelectedPartners.Count;
             int stepNum = 0;
 
-            //// Stop if the user cancelled the process.
-            //if (_dockPane.ExtractCancelled)
-            //    return false;
+            //TODO = needed?
+            // Count the total number of steps to process.
+            //_extractTot = SelectedPartners.Count * (SelectedSQLLayers.Count + SelectedMapLayers.Count);
 
-            //// Indicate the search has started.
-            //_dockPane.ExtractCancelled = false;
-            //_dockPane.ExtractRunning = true;
+            // Stop if the user cancelled the process.
+            if (_dockPane.ExtractCancelled)
+                return false;
 
-            //// Write the first line to the log file.
-            //FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
-            //FileFunctions.WriteLine(_logFile, "Processing search '" + searchRef + "'");
-            //FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
+            // Indicate the extract has started.
+            _dockPane.ExtractCancelled = false;
+            _dockPane.ExtractRunning = true;
 
-            //FileFunctions.WriteLine(_logFile, "Parameters are as follows:");
-            //FileFunctions.WriteLine(_logFile, "Buffer distance: " + radius);
-            //FileFunctions.WriteLine(_logFile, "Output location: " + _saveRootDir + @"\" + _saveFolder);
-            //FileFunctions.WriteLine(_logFile, "Layers to process: " + SelectedLayers.Count.ToString());
-            //FileFunctions.WriteLine(_logFile, "Area measurement unit: " + areaMeasureUnit);
+            // Write the first line to the log file.
+            FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
+            FileFunctions.WriteLine(_logFile, "Process started!");
+            FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
 
-            //// Create the search query.
-            //string searchClause = _searchColumn + " = '" + searchRef + "'";
+            // Clear the partner features selection.
+            await _mapFunctions.ClearLayerSelectionAsync(_partnerTable);
 
-            //_dockPane.ProgressUpdate("Selecting feature(s)...", stepNum, stepsMax);
-            //stepNum += 1;
+            // If at least one SQL table is selected).
+            if (_selectedSQLLayers.Count > 0)
+            {
+                if (useCentroids)
+                    FileFunctions.WriteLine(_logFile, "Selecting features using centroids ...");
+                else
+                    FileFunctions.WriteLine(_logFile, "Selecting features using boundaries ...");
 
-            //// Count the features matching the search reference.
-            //if (await CountSearchFeaturesAsync(searchClause) == 0)
-            //{
-            //    _extractErrors = true;
-            //    return false;
-            //}
+                FileFunctions.WriteLine(_logFile, "Performing selection type '" + selectionTypeOption.ToString() + "' ...");
 
-            //// Prepare the temporary geodatabase
-            //if (!await PrepareTemporaryGDBAsync())
-            //{
-            //    _extractErrors = true;
-            //    return false;
-            //}
+                // Upload the partner table if required.
+                if (uploadToServer)
+                {
+                    _dockPane.ProgressUpdate("Uploading table to server", -1, -1);
 
-            //// Pause the map redrawing.
-            //if (PauseMap)
-            //    _mapFunctions.PauseDrawing(true);
+                    //FileFunctions.WriteLine(_logFile, "");
+                    FileFunctions.WriteLine(_logFile, "Uploading partner table to server ...");
 
-            //// Select the feature matching the search reference in the map.
-            //if (!await _mapFunctions.SelectLayerByAttributesAsync(_inputLayerName, searchClause, SelectionCombinationMethod.New))
-            //{
-            //    _extractErrors = true;
-            //    return false;
-            //}
+                    if (!await ArcGISFunctions.CopyFeaturesAsync(_partnerTable, _sdeFileName + @"\" + _defaultSchema + "." + _partnerTable, false))
+                    {
+                        //MessageBox.Show("Error uploading partner table - process terminated.");
+                        FileFunctions.WriteLine(_logFile, "Error uploading partner table - process terminated");
+                        _extractErrors = true;
+                        return false;
+                    }
 
-            //// Update the table if required.
-            //if (_updateTable && (!string.IsNullOrEmpty(_siteColumn) || !string.IsNullOrEmpty(_orgColumn) || !string.IsNullOrEmpty(_radiusColumn)))
-            //{
-            //    FileFunctions.WriteLine(_logFile, "Updating attributes in search layer ...");
+                    FileFunctions.WriteLine(_logFile, "Upload to server complete");
+                }
+            }
 
-            //    if (!await _mapFunctions.UpdateFeaturesAsync(_inputLayerName, _siteColumn, siteName, _orgColumn, organisation, _radiusColumn, radius))
-            //    {
-            //        _extractErrors = true;
-            //        return false;
-            //    }
-            //}
+            // Pause the map redrawing.
+            if (PauseMap)
+                _mapFunctions.PauseDrawing(true);
 
-            //// The output file for the search features is a shapefile in the root save directory.
-            //_searchOutputFile = _outputFolder + "\\" + _searchLayerName + ".shp";
+            bool success;
 
-            //// Remove the search feature layer from the map
-            //// in case there is one already there from a different folder.
-            //await _mapFunctions.RemoveLayerAsync(_searchLayerName);
+            //TODO - needed?
+            int layerNum = 0;
+            int layerCount = SelectedPartners.Count;
 
-            //// Save the selected feature(s).
-            //if (!await SaveSearchFeaturesAsync())
-            //{
-            //    _extractErrors = true;
-            //    return false;
-            //}
+            foreach (Partner selectedPartner in SelectedPartners)
+            {
+                // Stop if the user cancelled the process.
+                if (_dockPane.ExtractCancelled)
+                    break;
 
-            //// Stop if the user cancelled the process.
-            //if (_dockPane.ExtractCancelled)
-            //    return false;
+                // Get the partner name and abbreviation.
+                string partnerName = selectedPartner.PartnerName;
+                string partnerAbbr = selectedPartner.ShortName;
 
-            //_dockPane.ProgressUpdate("Buffering feature(s)...", stepNum, stepsMax);
-            //stepNum += 1;
+                _dockPane.ProgressUpdate("Processing '" + partnerName + "'...", stepNum, stepsMax);
+                stepNum += 1;
 
-            //// Set the buffer layer name by appending the radius.
-            //_bufferLayerName = _bufferPrefix + "_" + radius;
-            //if (_bufferLayerName.Contains('.'))
-            //    _bufferLayerName = _bufferLayerName.Replace('.', '_');
+                //TODO - needed?
+                layerNum += 1;
 
-            //// The output file for the buffer is a shapefile in the root save directory.
-            //_bufferOutputFile = _outputFolder + "\\" + _bufferLayerName + ".shp";
+                FileFunctions.WriteLine(_logFile, "");
+                FileFunctions.WriteLine(_logFile, "----------------------------------------------------------------------");
+                FileFunctions.WriteLine(_logFile, "Processing partner '" + partnerName + "' (" + partnerAbbr + ") ...");
 
-            //// Remove the buffer layer from the map
-            //// in case there is one already there from a different folder.
-            //await _mapFunctions.RemoveLayerAsync(_bufferLayerName);
+                // Loop through the partners, processing each one.
+                success = await ProcessPartnerAsync(selectedPartner, selectionTypeNum, applyExclusionClause, useCentroids, partnerFolder, arcGISFolder, csvFolder, txtFolder);
 
-            //// Buffer search feature(s).
-            //if (!await BufferSearchFeaturesAsync(bufferSize, bufferUnitProcess, bufferUnitShort))
-            //{
-            //    _extractErrors = true;
-            //    return false;
-            //}
-
-            //// Zoom to the buffer layer extent or a fixed scale if no buffer.
-            //if (!_pauseMap)
-            //{
-            //    if (bufferSize == "0")
-            //        await _mapFunctions.ZoomToLayerAsync(_searchLayerName, 1, 10000);
-            //    else
-            //        await _mapFunctions.ZoomToLayerAsync(_bufferLayerName, 1.05);
-            //}
-
-            //// Get the full layer path (in case it's nested in one or more groups).
-            //_bufferLayerPath = _mapFunctions.GetLayerPath(_bufferLayerName);
-
-            //// Start the combined sites table before we do any analysis.
-            //_combinedSitesOutputFile = _outputFolder + @"\" + _combinedSitesTableName + "." + _combinedSitesTableFormat;
-            //if (!CreateCombinedSitesTable(_combinedSitesOutputFile, combinedSitesTableOption))
-            //{
-            //    _extractErrors = true;
-            //    return false;
-            //}
-
-            //// Get any groups and initialise required layers.
-            //if (overwriteLabelOption == OverwriteLabelOptions.ResetByLayer ||
-            //    overwriteLabelOption == OverwriteLabelOptions.ResetByGroup)
-            //{
-            //    _mapGroupNames = _selectedLayers.Select(l => l.NodeGroup).Distinct().ToList();
-            //    _mapGroupLabels = [];
-            //    foreach (string groupName in _mapGroupNames)
-            //    {
-            //        // Each group has its own label counter.
-            //        _mapGroupLabels.Add(1);
-            //    }
-            //}
-
-            //// Keep track of the label numbers.
-            //_maxLabel = 1;
-
-            //bool success;
-
-            //int layerNum = 0;
-            //int layerCount = SelectedLayers.Count;
-            //foreach (MapLayer selectedLayer in SelectedLayers)
-            //{
-            //    // Stop if the user cancelled the process.
-            //    if (_dockPane.ExtractCancelled)
-            //        break;
-
-            //    // Get the layer name.
-            //    string mapNodeGroup = selectedLayer.NodeGroup;
-            //    string mapNodeLayer = selectedLayer.NodeLayer;
-
-            //    _dockPane.ProgressUpdate("Processing '" + mapNodeGroup + " - " + mapNodeLayer + "'...", stepNum, 0);
-            //    stepNum += 1;
-
-            //    layerNum += 1;
-            //    FileFunctions.WriteLine(_logFile, "");
-            //    FileFunctions.WriteLine(_logFile, "Starting analysis for '" + selectedLayer.NodeName + "' (" + layerNum + " of " + layerCount + ")");
-
-            //    // Loop through the map layers, processing each one.
-            //    success = await ProcessMapLayerAsync(selectedLayer, reference, siteName, shortRef, subref, radius, areaMeasureUnit, keepSelectedLayers, addSelectedLayersOption, overwriteLabelOption, combinedSitesTableOption);
-
-            //    // Keep track of any errors.
-            //    if (!success)
-            //        _extractErrors = true;
-            //}
+                // Keep track of any errors.
+                if (!success)
+                    _extractErrors = true;
+            }
 
             // Increment the progress value to the last step.
             _dockPane.ProgressUpdate("Cleaning up...", stepNum, 0);
@@ -1557,7 +1544,7 @@ namespace DataExtractor.UI
             // Notify user of completion.
             Notification notification = new()
             {
-                Title = "Data Extractor",
+                Title = _displayName,
                 Severity = Notification.SeverityLevel.High,
                 Message = message,
                 ImageSource = new BitmapImage(new Uri(imageSource)) as ImageSource
@@ -1577,34 +1564,8 @@ namespace DataExtractor.UI
         {
             FileFunctions.WriteLine(_logFile, "");
 
-            //// Remove all temporary feature classes and tables.
-            //await _mapFunctions.RemoveLayerAsync(_tempMasterLayerName);
-            //await _mapFunctions.RemoveLayerAsync(_tempFCLayerName);
-            //await _mapFunctions.RemoveLayerAsync(_tempFCPointsLayerName);
-            //await _mapFunctions.RemoveLayerAsync(_tempSearchPointsLayerName);
-            //await _mapFunctions.RemoveTableAsync(_tempTableLayerName);
-
-            //// Delete the temporary feature classes and tables.
-            //if (await ArcGISFunctions.FeatureClassExistsAsync(_tempMasterOutputFile))
-            //    await ArcGISFunctions.DeleteGeodatabaseFCAsync(_tempGDBName, _tempMasterLayerName);
-
-            //if (await ArcGISFunctions.FeatureClassExistsAsync(_tempFCOutputFile))
-            //    await ArcGISFunctions.DeleteGeodatabaseFCAsync(_tempGDBName, _tempFCLayerName);
-
-            //if (await ArcGISFunctions.FeatureClassExistsAsync(_tempFCPointsOutputFile))
-            //    await ArcGISFunctions.DeleteGeodatabaseFCAsync(_tempGDBName, _tempFCPointsLayerName);
-
-            //if (await ArcGISFunctions.FeatureClassExistsAsync(_tempSearchPointsOutputFile))
-            //    await ArcGISFunctions.DeleteGeodatabaseFCAsync(_tempGDBName, _tempSearchPointsLayerName);
-
-            //if (await ArcGISFunctions.TableExistsAsync(_tempTableOutputFile))
-            //    await ArcGISFunctions.DeleteGeodatabaseTableAsync(_tempGDBName, _tempTableLayerName);
-
-            //// Clear the search features selection.
-            //await _mapFunctions.ClearLayerSelectionAsync(_inputLayerName);
-
-            //// Remove the group layer from the map if it is empty.
-            //await _mapFunctions.RemoveGroupLayerAsync(_groupLayerName);
+            // Clear the partner features selection.
+            await _mapFunctions.ClearLayerSelectionAsync(_partnerTable);
         }
 
         /// <summary>
@@ -1670,194 +1631,891 @@ namespace DataExtractor.UI
             return gisFolder;
         }
 
-        /// <summary>
-        /// Count the search reference features in the search layers.
-        /// </summary>
-        /// <param name="reference"></param>
-        /// <returns>Name of the target layer.</returns>
-        private async Task<long> CountSearchFeaturesAsync(string searchClause)
+        private async Task<bool> ProcessPartnerAsync(Partner partner, int selectionTypeNum, bool applyExclusionClause, bool useCentroids,
+            string partnerFolder, string arcGISFolder, string csvFolder, string txtFolder)
         {
-            // Find the search feature.
-            int featureLayerCount = 0;
-            long totalFeatureCount = 0;
+            // Get the partner details.
+            string partnerName = partner.PartnerName;
+            string partnerAbbr = partner.ShortName;
+            string sqlTable = partner.SQLTable;
 
-            //// Loop through all base layer and extension combinations.
-            //foreach (string searchLayerExtension in _searchLayerExtensions)
-            //{
-            //    string searchLayer = _searchLayerBase + searchLayerExtension;
+            // Select the correct partner polygon.
+            string filterClause = _partnerColumn + " = '" + partnerName + "' AND " + _partnerClause;
+            if (!await _mapFunctions.SelectLayerByAttributesAsync(_partnerTable, filterClause, SelectionCombinationMethod.New))
+            {
+                //TODO - set error message?
+                FileFunctions.WriteLine(_logFile, "Error selecting partner boundary");
+                return false;
+            }
 
-            //    // Find the feature layer by name if it exists. Only search existing layers.
-            //    FeatureLayer featureLayer = _mapFunctions.FindLayer(searchLayer);
+            // Get the partner table feature layer.
+            FeatureLayer partnerLayer = _mapFunctions.FindLayer(_partnerTable);
+            if (partnerLayer == null)
+                return false;
 
-            //    if (featureLayer != null)
-            //    {
-            //        // Count the required features in the layer.
-            //        long featureCount = await ArcGISFunctions.CountFeaturesAsync(featureLayer, searchClause);
+            // Count the selected features.
+            if (partnerLayer.SelectionCount == 0)
+            {
+                FileFunctions.WriteLine(_logFile, "Partner not found in partner table");
+                return false;
+            }
+            else if (partnerLayer.SelectionCount > 1)
+            {
+                //TODO - message box needed?
+                MessageBox.Show("There are duplicate entries for partner " + partnerName + " in the partner table.");
+                FileFunctions.WriteLine(_logFile, "There are duplicate entries for partner " + partnerName + " in the partner table");
+            }
 
-            //        if (featureCount == 0)
-            //            FileFunctions.WriteLine(_logFile, "No features found in " + searchLayer);
+            // Replace the partner shortname in the output name
+            partnerFolder = Regex.Replace(partnerFolder, "%partner%", partnerAbbr, RegexOptions.IgnoreCase);
 
-            //        if (featureCount > 0)
-            //        {
-            //            FileFunctions.WriteLine(_logFile, featureCount.ToString() + " feature(s) found in " + searchLayer);
-            //            if (featureLayerCount == 0)
-            //            {
-            //                // Save the layer name and extension where the feature(s) were found.
-            //                _inputLayerName = searchLayer;
-            //                _searchLayerExtension = searchLayerExtension;
-            //            }
-            //            totalFeatureCount += featureCount;
-            //            featureLayerCount++;
-            //        }
-            //    }
-            //}
+            // Set up the output folder.
+            string outFolder = _defaultPath + @"\" + partnerFolder;
+            if (!FileFunctions.DirExists(outFolder))
+            {
+                //FileFunctions.WriteLine(_logFile, "Creating output path '" + outFolder + "'.");
+                try
+                {
+                    Directory.CreateDirectory(outFolder);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Cannot create directory " + outFolder + ". System error: " + ex.Message);
+                    FileFunctions.WriteLine(_logFile, "Cannot create directory " + outFolder + ". System error: " + ex.Message);
 
-            //// If no features found in any layer.
-            //if (featureLayerCount == 0)
-            //{
-            //    //MessageBox.Show("No features found in any of the search layers; Process aborted.");
-            //    FileFunctions.WriteLine(_logFile, "No features found in any of the search layers");
+                    return false;
+                }
+            }
 
-            //    return 0;
-            //}
+            //------------------------------------------------------------------
+            // Let's start the SQL layers.
+            //------------------------------------------------------------------
 
-            //// If features found in more than one layer.
-            //if (featureLayerCount > 1)
-            //{
-            //    //MessageBox.Show(totalFeatureCount.ToString() + " features found in different search layers; Process aborted.");
-            //    FileFunctions.WriteLine(_logFile, totalFeatureCount.ToString() + " features found in different search layers");
+            Task<bool> spatialSelectionTask = null;
 
-            //    return 0;
-            //}
+            // If at least one SQL table is selected).
+            if (_selectedSQLLayers.Count > 0)
+            {
+                // Check the partner SQL table is found on the server.
+                if (string.IsNullOrEmpty(sqlTable))
+                {
+                    FileFunctions.WriteLine(_logFile, "Skipping SQL outputs - table name is blank");
+                    return true;
+                }
 
-            //// If multiple features found.
-            //if (totalFeatureCount > 1)
-            //{
-            //    // Ask the user if they want to continue
-            //    MessageBoxResult response = MessageBox.Show(totalFeatureCount.ToString() + " features found in " + _inputLayerName + " matching those criteria. Do you wish to continue?", "Data Searches", MessageBoxButton.YesNo);
-            //    if (response == MessageBoxResult.No)
-            //    {
-            //        FileFunctions.WriteLine(_logFile, totalFeatureCount.ToString() + " features found in the search layers");
+                if (!_sqlTableNames.Contains(sqlTable))
+                {
+                    FileFunctions.WriteLine(_logFile, "Skipping SQL outputs - table '" + sqlTable + "' - not found");
+                    return true;
+                }
 
-            //        return 0;
-            //    }
-            //}
+                // Set the SQL output table name.
+                string sqlOutputTable = sqlTable + "_" + _userID;
 
-            return totalFeatureCount;
+                // Trigger the spatial selection (but don't wait for it to finish).
+                spatialSelectionTask = PerformSpatialSelectionAsync(partner, _defaultSchema, selectionTypeNum, sqlOutputTable, useCentroids);
+            }
+
+            //------------------------------------------------------------------
+            // Let's do the GIS layers (while the spatial selection runs).
+            //------------------------------------------------------------------
+
+            // If at least one map layer is selected).
+            if (_selectedMapLayers.Count > 0)
+            {
+                foreach (MapLayer mapLayer in _selectedMapLayers)
+                {
+
+                    // Process the required outputs from the GIS layers.
+                    if (!await ProcessMapLayerAsync(partner, mapLayer, outFolder, partnerFolder, arcGISFolder, csvFolder, txtFolder))
+                    {
+                        //TODO - just continue but flag the error?
+                        _extractErrors = true;
+                    }
+                }
+            }
+
+            //------------------------------------------------------------------
+            // Let's finish the SQL layers.
+            //------------------------------------------------------------------
+
+            // If at least one SQL table is selected).
+            if (_selectedSQLLayers.Count > 0)
+            {
+                // Wait for the spatial selection to complete.
+                if (!await spatialSelectionTask)
+                {
+                    //TODO - error performing spatial selection.
+                    return false;
+                }
+
+                foreach (SQLLayer sqlLayer in _selectedSQLLayers)
+                {
+                    // Process the required outputs from the spatial selection.
+                    if (!await ProcessSQLLayerAsync(partner, sqlLayer, applyExclusionClause, outFolder, partnerFolder, arcGISFolder, csvFolder, txtFolder))
+                    {
+                        //TODO - just continue but flag the error?
+                        _extractErrors = true;
+                    }
+                }
+            }
+
+
+
+
+            return true;
         }
 
-        ///// <summary>
-        ///// Prepare a new temporary GDB to use and check it's empty (in case it
-        ///// already existed).
-        ///// </summary>
-        ///// <returns></returns>
-        //private async Task<bool> PrepareTemporaryGDBAsync()
-        //{
-        //    // Set a temporary folder path.
-        //    string tempFolder = Path.GetTempPath();
+        private async Task<bool> ProcessSQLLayerAsync(Partner partner, SQLLayer sqlLayer, bool applyExclusionClause, string outFolder, string partnerFolder,
+            string arcGISFolder, string csvFolder, string txtFolder)
+        {
+            //TODO - needed?
+            //_extractCnt = extractCnt + 1;
+            //FileFunctions.WriteLine(_logFile, "Starting process " + intExtractCnt + " of " + intExtractTot + " ...");
 
-        //    // Create the temporary file geodatabase if it doesn't exist.
-        //    _tempGDBName = tempFolder + @"Temp.gdb";
-        //    _tempGDB = null;
-        //    bool tempGDBFound = true;
-        //    if (!FileFunctions.DirExists(_tempGDBName))
-        //    {
-        //        _tempGDB = ArcGISFunctions.CreateFileGeodatabase(_tempGDBName);
-        //        if (_tempGDB == null)
-        //        {
-        //            //MessageBox.Show("Error creating temporary geodatabase" + _tempGDBName);
-        //            FileFunctions.WriteLine(_logFile, "Error creating temporary geodatabase " + _tempGDBName);
-        //            _extractErrors = true;
+            // Get the partner details.
+            string partnerAbbr = partner.ShortName;
+            string gisFormat = partner.GISFormat;
+            string exportFormat = partner.ExportFormat;
+            string sqlTable = partner.SQLTable;
+            string sqlFiles = partner.SQLFiles;
 
-        //            return false;
-        //        }
+            // Get the SQL layer details.
+            string nodeName = sqlLayer.NodeName;
+            string outputTable = sqlLayer.OutputName;
+            string outputType = sqlLayer.OutputType?.ToUpper().Trim();
+            string outputColumns = sqlLayer.Columns;
+            string whereClause = sqlLayer.WhereClause;
+            string orderClause = sqlLayer.OrderColumns;
+            string macroName = sqlLayer.MacroName;
+            string macroParm = sqlLayer.MacroParms;
 
-        //        tempGDBFound = false;
-        //        FileFunctions.WriteLine(_logFile, "Temporary geodatabase created");
-        //    }
+            // Check the partner requires something.
+            if (((string.IsNullOrEmpty(gisFormat)) && (string.IsNullOrEmpty(exportFormat)) && (string.IsNullOrEmpty(outputType))) || (string.IsNullOrEmpty(sqlFiles)))
+            {
+                FileFunctions.WriteLine(_logFile, "Skipping output = '" + nodeName + "' - not required");
+                return true;
+            }
 
-        //    // Set the temporary layer and file names.
-        //    _tempMasterLayerName = "TempMaster_" + _userID;
-        //    _tempMasterOutputFile = _tempGDBName + @"\" + _tempMasterLayerName;
-        //    _tempFCLayerName = "TempOutput_" + _userID;
-        //    _tempFCOutputFile = _tempGDBName + @"\" + _tempFCLayerName;
-        //    _tempFCPointsLayerName = "TempOutputPoints_" + _userID;
-        //    _tempFCPointsOutputFile = _tempGDBName + @"\" + _tempFCPointsLayerName;
-        //    _tempSearchPointsLayerName = "TempSearchPoints_" + _userID;
-        //    _tempSearchPointsOutputFile = _tempGDBName + @"\" + _tempSearchPointsLayerName;
-        //    _tempTableLayerName = "TempTable_" + _userID;
-        //    _tempTableOutputFile = _tempGDBName + @"\" + _tempTableLayerName;
+            // Does the partner want this layer?
+            if (!sqlFiles.Contains(nodeName, StringComparison.CurrentCultureIgnoreCase) && !sqlFiles.Equals("all", StringComparison.CurrentCultureIgnoreCase))
+            {
+                FileFunctions.WriteLine(_logFile, "Skipping output = '" + nodeName + "' - not required");
+                return true;
+            }
 
-        //    // If the GDB already existed clean it up.
-        //    if (tempGDBFound)
-        //    {
-        //        // Delete the temporary master feature class if it still exists.
-        //        await _mapFunctions.RemoveLayerAsync(_tempMasterLayerName);
-        //        if (await ArcGISFunctions.FeatureClassExistsAsync(_tempMasterOutputFile))
-        //        {
-        //            await ArcGISFunctions.DeleteGeodatabaseFCAsync(_tempGDBName, _tempMasterLayerName);
-        //            //FileFunctions.WriteLine(_logFile, "Temporary master feature class deleted");
-        //        }
+            //TODO - needed?
+            //_dockPane.ProgressUpdate("Processing SQL table " + nodeName + " ...", -1, 0);
 
-        //        // Delete the temporary output feature class if it still exists.
-        //        await _mapFunctions.RemoveLayerAsync(_tempFCLayerName);
-        //        if (await ArcGISFunctions.FeatureClassExistsAsync(_tempFCOutputFile))
-        //        {
-        //            await ArcGISFunctions.DeleteGeodatabaseFCAsync(_tempGDBName, _tempFCLayerName);
-        //            //FileFunctions.WriteLine(_logFile, "Temporary output feature class deleted");
-        //        }
+            // Replace any date variables in the output name.
+            outputTable = outputTable.Replace("%dd%", _dateDD).Replace("%mm%", _dateMM).Replace("%mmm%", _dateMMM).Replace("%mmmm%", _dateMMMM);
+            outputTable = outputTable.Replace("%yy%", _dateYY).Replace("%qq%", _dateQQ).Replace("%yyyy%", _dateYYYY).Replace("%ffff%", _dateFFFF);
 
-        //        // Delete the temporary output points feature class if it still exists.
-        //        await _mapFunctions.RemoveLayerAsync(_tempFCPointsLayerName);
-        //        if (await ArcGISFunctions.FeatureClassExistsAsync(_tempFCPointsOutputFile))
-        //        {
-        //            await ArcGISFunctions.DeleteGeodatabaseFCAsync(_tempGDBName, _tempFCPointsLayerName);
-        //            //FileFunctions.WriteLine(_logFile, "Temporary output feature class deleted");
-        //        }
+            // Replace the partner shortname in the output name.
+            outputTable = Regex.Replace(outputTable, "%partner%", partnerAbbr, RegexOptions.IgnoreCase);
 
-        //        // Delete the temporary search points feature class if it still exists.
-        //        await _mapFunctions.RemoveLayerAsync(_tempSearchPointsLayerName);
-        //        if (await ArcGISFunctions.FeatureClassExistsAsync(_tempSearchPointsOutputFile))
-        //        {
-        //            await ArcGISFunctions.DeleteGeodatabaseFCAsync(_tempGDBName, _tempSearchPointsLayerName);
-        //            //FileFunctions.WriteLine(_logFile, "Temporary output feature class deleted");
-        //        }
+            // Set the output file names.
+            string pointFeatureClass = _defaultSchema + "." + sqlTable + "_" + _userID + "_point";
+            string polyFeatureClass = _defaultSchema + "." + sqlTable + "_" + _userID + "_poly";
+            string flatTable = _defaultSchema + "." + sqlTable + "_" + _userID + "_flat";
 
-        //        // Delete the temporary output table if it still exists.
-        //        await _mapFunctions.RemoveTableAsync(_tempTableLayerName);
-        //        if (await ArcGISFunctions.TableExistsAsync(_tempTableOutputFile))
-        //        {
-        //            await ArcGISFunctions.DeleteGeodatabaseTableAsync(_tempGDBName, _tempTableLayerName);
-        //            //FileFunctions.WriteLine(_logFile, "Temporary output table deleted");
-        //        }
-        //    }
+            string inPoints = _sdeFileName + @"\" + pointFeatureClass;
+            string inPolys = _sdeFileName + @"\" + polyFeatureClass;
+            string inFlatTable = _sdeFileName + @"\" + flatTable;
 
-        //    return true;
-        //}
+            // Build a list of all of the columns required.
+            //TODO - loop needed?
+            List<string> mapFields = [];
+            List<string> rawFields = [.. outputColumns.Split(',')];
+            foreach (string mapField in rawFields)
+            {
+                mapFields.Add(mapField.Trim());
+            }
 
-        ///// <summary>
-        ///// Save the selected search feature(s) to a new layer.
-        ///// </summary>
-        ///// <returns></returns>
-        //private async Task<bool> SaveSearchFeaturesAsync()
-        //{
-        //    // Get the full layer path (in case it's nested in one or more groups).
-        //    string inputLayerPath = _mapFunctions.GetLayerPath(_inputLayerName);
+            FileFunctions.WriteLine(_logFile, "");
+            FileFunctions.WriteLine(_logFile, "Processing output '" + nodeName + "' ...");
 
-        //    FileFunctions.WriteLine(_logFile, "Saving search feature(s)");
+            // Is the output spatial and do we need to split for polys/points?
+            bool isSpatial = false;
+            bool isSplit = false;
 
-        //    // Copy the selected feature(s) to an output file.
-        //    if (!await ArcGISFunctions.CopyFeaturesAsync(inputLayerPath, _searchOutputFile, true))
-        //    {
-        //        //MessageBox.Show("Error saving search feature(s)");
-        //        FileFunctions.WriteLine(_logFile, "Error saving search feature(s)");
-        //        _extractErrors = true;
+            // Check if there is a geometry field in the input
+            // table that will be returned.
+            string inputTable = _defaultSchema + "." + sqlTable + "_" + _userID;
+            string spatialColumn = await IsTableSpatialAsync(inputTable, outputColumns);
 
-        //        return false;
-        //    }
+            // Set if the output will be spatial and split.
+            if (spatialColumn != null)
+            {
+                isSpatial = true;
+                isSplit = true;
+            }
 
-        //    return true;
-        //}
+            // Add the exclusion clause if required.
+            if (applyExclusionClause && !String.IsNullOrEmpty(_exclusionClause))
+            {
+                if (String.IsNullOrEmpty(whereClause))
+                    whereClause = _exclusionClause;
+                else
+                    whereClause = "(" + whereClause + ") AND (" + _exclusionClause + ")";
+            }
+
+            // Set the map output format.
+            string mapOutputFormat = gisFormat.ToUpper();
+            if ((outputType == "GDB") || (outputType == "SHP") || (outputType == "DBF"))
+            {
+                FileFunctions.WriteLine(_logFile, "Overriding the output type with '" + outputType + "' ...");
+                mapOutputFormat = outputType;
+            }
+
+            // Run the stored procedure to perform the sub-selection.
+            // This splits the output into points and polygons as required.
+            if (!await PerformSubsetSelectionAsync(isSpatial, isSplit, _defaultSchema, sqlTable,
+                outputColumns, whereClause, null, orderClause, _userID, mapOutputFormat))
+            {
+                _extractErrors = true;
+                return false;
+            }
+
+            // Override the output format if a non-spatial shapefile.
+            if ((!isSpatial) && (mapOutputFormat == "SHP"))
+                mapOutputFormat = "DBF";
+
+            // Set the output path.
+            string outPath = outFolder;
+            if (!string.IsNullOrEmpty(arcGISFolder))
+                outPath = outFolder + @"\" + arcGISFolder;
+
+            // Create the output path.
+            if (!FileFunctions.DirExists(outPath))
+            {
+                //FileFunctions.WriteLine(_logFile, "Creating output path '" + outPath + "'.");
+                try
+                {
+                    Directory.CreateDirectory(outPath);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Cannot create directory " + outPath + ". System error: " + ex.Message);
+                    FileFunctions.WriteLine(_logFile, "Cannot create directory " + outPath + ". System error: " + ex.Message);
+
+                    return false;
+                }
+            }
+
+            // Set the output file name prefixes.
+            string outPoints = outputTable;
+            string outPolys = outputTable;
+            string outFlat = outputTable;
+
+            // Set the map output names depending on the output format.
+            switch (mapOutputFormat)
+            {
+                case "GDB":
+                    if (isSpatial)
+                        mapOutputFormat = "Geodatabase FC";
+                    else
+                        mapOutputFormat = "Geodatabase Table";
+
+                    outPath = outPath + "\\" + partnerFolder + ".gdb";
+                    outPoints = outPath + @"\" + outputTable + "_Point";
+                    outPolys = outPath + @"\" + outputTable + "_Poly";
+                    break;
+
+                case "SHP":
+                    mapOutputFormat = "Shapefile";
+
+                    outPoints = outPath + @"\" + outputTable + "_Point.shp";
+                    outPolys = outPath + @"\" + outputTable + "_Poly.shp";
+                    break;
+
+                case "DBF":
+                    outPoints = outPath + @"\" + outputTable + "_Point.dbf";
+                    outPolys = outPath + @"\" + outputTable + "_Poly.dbf";
+                    outFlat = outPath + @"\" + outputTable + ".dbf";
+                    break;
+
+                default:
+                    mapOutputFormat = "";
+                    break;
+            }
+
+            // Output the map results if required.
+            if (!string.IsNullOrEmpty(mapOutputFormat))
+            {
+                //TODO - needed?
+                //_dockPane.ProgressUpdate("Writing output for " + nodeName + " to GIS format ...", -1, 0);
+
+                FileFunctions.WriteLine(_logFile, "Extracting '" + outputTable + "' ...");
+
+                // Check the output geodatabase exists.
+                if ((mapOutputFormat == "Geodatabase FC") && (!FileFunctions.DirExists(outPath)))
+                {
+                    FileFunctions.WriteLine(_logFile, "Creating output geodatabase ...");
+
+                    ArcGISFunctions.CreateFileGeodatabase(outPath);
+
+                    FileFunctions.WriteLine(_logFile, "Output geodatabase created");
+                }
+
+                // Output the spatial results.
+                if (isSpatial)
+                {
+                    if (mapOutputFormat != "DBF")
+                    {
+                        // Export the points.
+                        if (_pointCount > 0)
+                        {
+                            if (!await ArcGISFunctions.CopyFeaturesAsync(inPoints, outPoints, false))
+                            {
+                                FileFunctions.WriteLine(_logFile, "Error outputing " + inPoints + " to " + outPoints);
+                                return false;
+                            }
+
+                            // If metadata .xml file exists delete it.
+                            string xmlOutFile = outPoints + ".xml";
+                            if (FileFunctions.FileExists(xmlOutFile))
+                                FileFunctions.DeleteFile(xmlOutFile); // Not checking for success at the moment.
+                        }
+
+                        // Export the polygons.
+                        if (_polyCount > 0)
+                        {
+                            if (!await ArcGISFunctions.CopyFeaturesAsync(inPolys, outPolys, false))
+                            {
+                                FileFunctions.WriteLine(_logFile, "Error outputing " + inPolys + " to " + outPolys);
+                                return false;
+                            }
+
+                            // If metadata .xml file exists delete it.
+                            string xmlOutFile = outPolys + ".xml";
+                            if (FileFunctions.FileExists(xmlOutFile))
+                                FileFunctions.DeleteFile(xmlOutFile); // Not checking for success at the moment.
+                        }
+                    }
+                    else
+                    {
+                        // Export the points.
+                        if (_pointCount > 0)
+                        {
+                            if (!await ArcGISFunctions.CopyTableAsync(inPoints, outPoints, false))
+                            {
+                                FileFunctions.WriteLine(_logFile, "Error outputing " + inPoints + " to " + outPoints);
+                                return false;
+                            }
+
+                            // If metadata .xml file exists delete it.
+                            string xmlOutFile = outPoints + ".xml";
+                            if (FileFunctions.FileExists(xmlOutFile))
+                                FileFunctions.DeleteFile(xmlOutFile); // Not checking for success at the moment.
+                        }
+
+                        // Export the polygons.
+                        if (_polyCount > 0)
+                        {
+                            if (!await ArcGISFunctions.CopyTableAsync(inPolys, outPolys, false))
+                            {
+                                FileFunctions.WriteLine(_logFile, "Error outputing " + inPolys + " to " + outPolys);
+                                return false;
+                            }
+
+                            // If metadata .xml file exists delete it.
+                            string xmlOutFile = outPolys + ".xml";
+                            if (FileFunctions.FileExists(xmlOutFile))
+                                FileFunctions.DeleteFile(xmlOutFile); // Not checking for success at the moment.
+                        }
+                    }
+                }
+                else // Output the non-spatial results.
+                {
+                    if (!await ArcGISFunctions.CopyTableAsync(inFlatTable, outFlat, false))
+                    {
+                        FileFunctions.WriteLine(_logFile, "Error outputing " + inFlatTable + " to " + outFlat);
+                        return false;
+                    }
+
+                    // If metadata .xml file exists delete it.
+                    string xmlOutFile = outFlat + ".xml";
+                    if (FileFunctions.FileExists(xmlOutFile))
+                        FileFunctions.DeleteFile(xmlOutFile); // Not checking for success at the moment.
+                }
+
+                FileFunctions.WriteLine(_logFile, "Extract complete");
+            }
+
+            // Set the export output format.
+            string exportOutputFormat = exportFormat.ToUpper();
+            if ((outputType == "CSV") || (outputType == "TXT"))
+            {
+                FileFunctions.WriteLine(_logFile, "Overriding the export type with '" + outputType + "' ...");
+                exportOutputFormat = outputType;
+            }
+
+            // Reset the output path.
+            outPath = outFolder;
+
+            string expFile = outputTable;
+
+            // Set the export output name depending on the output format.
+            switch (exportOutputFormat)
+            {
+                case "CSV":
+                    if (!string.IsNullOrEmpty(csvFolder))
+                        outPath = outFolder + @"\" + csvFolder;
+                    expFile = outPath + @"\" + outputTable + ".csv";
+                    break;
+
+                case "TXT":
+                    if (!string.IsNullOrEmpty(csvFolder))
+                        outPath = outFolder + @"\" + csvFolder;
+                    expFile = outPath + @"\" + outputTable + ".txt";
+                    break;
+
+                default:
+                    expFile = outPath + @"\" + outputTable;
+                    exportOutputFormat = "";
+                    break;
+            }
+
+            // Create the output path.
+            if (!FileFunctions.DirExists(outPath))
+            {
+                //FileFunctions.WriteLine(_logFile, "Creating output path '" + outPath + "'.");
+                try
+                {
+                    Directory.CreateDirectory(outPath);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Cannot create directory " + outPath + ". System error: " + ex.Message);
+                    FileFunctions.WriteLine(_logFile, "Cannot create directory " + outPath + ". System error: " + ex.Message);
+
+                    return false;
+                }
+            }
+
+            // Output the text results if required.
+            if (!string.IsNullOrEmpty(exportOutputFormat))
+            {
+                //TODO - needed?
+                //_dockPane.ProgressUpdate(string.Format("Writing output for " + nodeName + " to {0} format ...", exportFormat), -1, 0);
+
+                FileFunctions.WriteLine(_logFile, "Exporting '" + outputTable + "' ...");
+
+                // Check the output geodatabase exists.
+                if ((mapOutputFormat == "Geodatabase Table") && (!FileFunctions.DirExists(outPath)))
+                {
+                    FileFunctions.WriteLine(_logFile, "Creating output geodatabase '" + outPath + "' ...");
+
+                    ArcGISFunctions.CreateFileGeodatabase(outPath);
+
+                    FileFunctions.WriteLine(_logFile, "Output geodatabase created");
+                }
+
+                // Output the spatial results.
+                if (isSpatial)
+                {
+                    // If schema.ini file exists delete it.
+                    string strIniFile = FileFunctions.GetDirectoryName(expFile) + "\\schema.ini";
+                    if (FileFunctions.FileExists(strIniFile))
+                        FileFunctions.DeleteFile(strIniFile); // Not checking for success at the moment.
+
+                    bool blAppend = false;
+                    // Export the points.
+                    if (_pointCount > 0)
+                    {
+                        bool result;
+                        if (exportOutputFormat == "TXT")
+                            result = await _sqlFunctions.CopyToTabAsync(inPoints, expFile, true, false);
+                        else
+                            result = await _sqlFunctions.CopyToCSVAsync(inPoints, expFile, true, false);
+
+                        if (!result)
+                        {
+                            FileFunctions.WriteLine(_logFile, "Error exporting " + inPoints + " to " + outPoints);
+                            return false;
+                        }
+
+                        blAppend = true;
+                    }
+
+                    // Also export the polygons - append if necessary
+                    if (_polyCount > 0)
+                    {
+                        bool result;
+                        if (exportOutputFormat == "TXT")
+                            result = await _sqlFunctions.CopyToTabAsync(inPolys, expFile, true, blAppend);
+                        else
+                            result = await _sqlFunctions.CopyToCSVAsync(inPolys, expFile, true, blAppend);
+
+                        if (!result)
+                        {
+                            FileFunctions.WriteLine(_logFile, "Error exporting " + inPolys + " to " + outPolys);
+                            return false;
+                        }
+                    }
+
+                    // If metadata .xml file exists delete it.
+                    string strXmlFile = expFile + ".xml";
+                    if (FileFunctions.FileExists(strXmlFile))
+                        FileFunctions.DeleteFile(strXmlFile); // Not checking for success at the moment.
+                }
+                else // Output the non-spatial results.
+                {
+                    bool result;
+                    if (exportOutputFormat == "TXT")
+                        result = await _sqlFunctions.CopyToTabAsync(inFlatTable, expFile, false, false);
+                    else
+                        result = await _sqlFunctions.CopyToCSVAsync(inFlatTable, expFile, false, false);
+
+                    if (!result)
+                    {
+                        FileFunctions.WriteLine(_logFile, "Error exporting " + inPolys + " to " + outPolys);
+                        return false;
+                    }
+
+                    // If metadata .xml file exists delete it.
+                    string strXmlFile = expFile + ".xml";
+                    if (FileFunctions.FileExists(strXmlFile))
+                        FileFunctions.DeleteFile(strXmlFile); // Not checking for success at the moment.
+                }
+
+                FileFunctions.WriteLine(_logFile, "Export complete");
+            }
+
+            // Trigger the macro if one exists
+            if (!string.IsNullOrEmpty(macroName))
+            {
+                FileFunctions.WriteLine(_logFile, "Processing the export file ...");
+
+                if (!StartProcess(macroName, expFile, exportOutputFormat))
+                {
+                    //MessageBox.Show("Error executing vbscript macro " + mapMacroName + ".");
+                    FileFunctions.WriteLine(_logFile, "Error executing vbscript macro " + macroName);
+                    _extractErrors = true;
+
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private async Task<bool> ProcessMapLayerAsync(Partner partner, MapLayer mapLayer, string outFolder, string partnerFolder,
+            string arcGISFolder, string csvFolder, string txtFolder)
+        {
+
+
+
+            return true;
+        }
+
+        /// <summary>
+        /// Perform the spatial selection via a stored procedure.
+        /// </summary>
+        /// <param name="partner"></param>
+        /// <param name="schema"></param>
+        /// <param name="selectionTypeNum"></param>
+        /// <param name="outputTable"></param>
+        /// <param name="useCentroids"></param>
+        /// <returns></returns>
+        internal async Task<bool> PerformSpatialSelectionAsync(Partner partner, string schema, int selectionTypeNum, string outputTable, bool useCentroids)
+        {
+            // Get the partner details.
+            string partnerAbbr = partner.ShortName;
+            string sqlTable = partner.SQLTable;
+
+            // Get the name of the stored procedure to execute selection in SQL Server.
+            string storedProcedureName = _spatialStoredProcedure;
+
+            // Set up the SQL command.
+            StringBuilder sqlCmd = new();
+
+            // Build the SQL command to execute the stored procedure.
+            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", storedProcedureName));
+            sqlCmd.Append(string.Format(" '{0}'", schema));
+            sqlCmd.Append(string.Format(", '{0}'", _partnerTable));
+            sqlCmd.Append(string.Format(", '{0}'", _shortColumn));
+            sqlCmd.Append(string.Format(", '{0}'", partnerAbbr));
+            sqlCmd.Append(string.Format(", '{0}'", _tagsColumn));
+            sqlCmd.Append(string.Format(", '{0}'", _spatialColumn));
+            sqlCmd.Append(string.Format(", {0}", selectionTypeNum));
+            sqlCmd.Append(string.Format(", '{0}'", sqlTable));
+            sqlCmd.Append(string.Format(", '{0}'", _userID));
+            sqlCmd.Append(string.Format(", {0}", useCentroids ? "1" : "0"));
+
+            // Reset the output counter.
+            long tableCount = 0;
+
+            try
+            {
+                FileFunctions.WriteLine(_logFile, "Executing spatial selection from '" + sqlTable + "' ...");
+
+                // Execute the stored procedure.
+                await _sqlFunctions.ExecuteSQLOnGeodatabase(sqlCmd.ToString());
+
+                FileFunctions.WriteLine(_logFile, "Spatial selection complete");
+
+                // Check if the output feature class exists.
+                if (!await _sqlFunctions.FeatureClassExistsAsync(outputTable))
+                {
+                    //TODO - log error message?
+                    return false;
+                }
+
+                // Count the number of rows in the output feature count.
+                tableCount = await _sqlFunctions.FeatureClassCountRowsAsync(outputTable);
+
+                if (tableCount > 0)
+                    FileFunctions.WriteLine(_logFile, string.Format("{0:n0}", tableCount) + " records selected");
+                else
+                    FileFunctions.WriteLine(_logFile, "Procedure returned no records");
+            }
+            catch (Exception ex)
+            {
+                FileFunctions.WriteLine(_logFile, "Error executing the stored procedure: " + ex.Message);
+                //MessageBox.Show("Error executing the stored procedure: " +
+                //    ex.Message, _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Perform the subset selection by running the query via a
+        /// stored procedure.
+        /// </summary>
+        /// <param name="isSpatial"></param>
+        /// <param name="isSplit"></param>
+        /// <param name="schema"></param>
+        /// <param name="tableName"></param>
+        /// <param name="columnNames"></param>
+        /// <param name="whereClause"></param>
+        /// <param name="groupClause"></param>
+        /// <param name="orderClause"></param>
+        /// <param name="userID"></param>
+        /// <returns></returns>
+        internal async Task<bool> PerformSubsetSelectionAsync(bool isSpatial, bool isSplit, string schema, string tableName,
+                                  string columnNames, string whereClause, string groupClause, string orderClause, string userID,
+                                  string mapOutputFormat)
+        {
+            bool success;
+
+            // Get the name of the stored procedure to execute selection in SQL Server.
+            string storedProcedureName = _subsetStoredProcedure;
+
+            // Write the parameters to the log file.
+            FileFunctions.WriteLine(_logFile, string.Format("Source table is '{0}'", tableName));
+            FileFunctions.WriteLine(_logFile, string.Format("Column names are '{0}'", columnNames));
+            if (whereClause != null && whereClause.Length > 0)
+                FileFunctions.WriteLine(_logFile, string.Format("Where clause is '{0}'", whereClause));
+            else
+                FileFunctions.WriteLine(_logFile, "No where clause was used");
+            if (groupClause != null && groupClause.Length > 0)
+                FileFunctions.WriteLine(_logFile, string.Format("Group by clause is '{0}'", groupClause));
+            else
+                FileFunctions.WriteLine(_logFile, "No group by clause was used");
+            if (orderClause != null && orderClause.Length > 0)
+                FileFunctions.WriteLine(_logFile, string.Format("Order by clause is '{0}'", orderClause));
+            else
+                FileFunctions.WriteLine(_logFile, "No order by clause was used");
+            if (isSplit)
+                FileFunctions.WriteLine(_logFile, "Data will be split into points and polygons");
+
+            // Set up the SQL command.
+            StringBuilder sqlCmd = new();
+
+            // Double-up single quotes so they parse in SQL command correctly.
+            if (whereClause != null && whereClause.Contains('\''))
+                whereClause = whereClause.Replace("'", "''");
+
+            // Build the SQL command to execute the stored procedure.
+            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", storedProcedureName));
+            sqlCmd.Append(string.Format(" '{0}'", schema));
+            sqlCmd.Append(string.Format(", '{0}'", tableName + "_" + userID));
+            sqlCmd.Append(string.Format(", '{0}'", columnNames));
+            sqlCmd.Append(string.Format(", '{0}'", whereClause));
+            sqlCmd.Append(string.Format(", '{0}'", groupClause));
+            sqlCmd.Append(string.Format(", '{0}'", orderClause));
+            sqlCmd.Append(string.Format(", {0}", isSplit ? "1" : "0"));
+
+            // Reset the counters.
+            _pointCount = 0;
+            _polyCount = 0;
+            _tableCount = 0;
+
+            long maxCount = 0;
+            long rowLength = 0;
+
+            // Set the SQL output file names.
+            string pointFeatureClass = schema + "." + tableName + "_" + userID + "_point";
+            string polyFeatureClass = schema + "." + tableName + "_" + userID + "_poly";
+            string flatTable = schema + "." + tableName + "_" + userID + "_flat";
+
+            try
+            {
+                FileFunctions.WriteLine(_logFile, "Performing selection ...");
+
+                // Execute the stored procedure.
+                await _sqlFunctions.ExecuteSQLOnGeodatabase(sqlCmd.ToString());
+
+                // If the result is isSpatial it should be split into points and polys.
+                if (isSpatial)
+                {
+                    // Check if the point or polygon feature class exists.
+                    success = await _sqlFunctions.FeatureClassExistsAsync(pointFeatureClass);
+                    if (!success)
+                        success = await _sqlFunctions.FeatureClassExistsAsync(polyFeatureClass);
+                }
+                else
+                {
+                    // Check if the table exists.
+                    success = await _sqlFunctions.TableExistsAsync(flatTable);
+                }
+
+                // If the result table(s) exist.
+                if (success)
+                {
+                    if (isSpatial)
+                    {
+                        // Count the number of rows in the point feature count.
+                        _pointCount = await _sqlFunctions.FeatureClassCountRowsAsync(pointFeatureClass);
+
+                        // Count the number of rows in the poly feature count.
+                        _polyCount = await _sqlFunctions.FeatureClassCountRowsAsync(polyFeatureClass);
+
+                        // Save the maximum row count.
+                        maxCount = _pointCount;
+                        if (_pointCount > maxCount)
+                            maxCount = _pointCount;
+
+                        if (maxCount == 0)
+                        {
+                            FileFunctions.WriteLine(_logFile, "No records returned");
+                            return false;
+                        }
+
+                        FileFunctions.WriteLine(_logFile, string.Format("{0:n0}", _pointCount) + " points to extract");
+                        FileFunctions.WriteLine(_logFile, string.Format("{0:n0}", _polyCount) + " polygons to extract");
+
+                        //TODO
+                        //// Calculate the total row length for the table.
+                        //if (polyCount > 0)
+                        //    rowLength = myArcMapFuncs.GetRowLength(strSDEName, strDatabaseSchema + "." + strPolyFC);
+                        //else if (pointCount > 0)
+                        //    rowLength = intRowLength + myArcMapFuncs.GetRowLength(strSDEName, strDatabaseSchema + "." + strPointFC);
+                    }
+                    else
+                    {
+                        // Count the number of rows in the table.
+                        _tableCount = await _sqlFunctions.TableCountRowsAsync(flatTable);
+
+                        // Save the maximum row count.
+                        maxCount = _tableCount;
+                        if (maxCount == 0)
+                        {
+                            FileFunctions.WriteLine(_logFile, "No records returned");
+                            return false;
+                        }
+
+                        FileFunctions.WriteLine(_logFile, string.Format("{0:n0}", _tableCount) + " records to extract");
+                        FileFunctions.WriteLine(_logFile, "Data is not spatial");
+
+                        //TODO
+                        //// Calculate the total row length for the table.
+                        //if (tableCount > 0)
+                        //    rowLength = myArcMapFuncs.GetRowLength(strSDEName, strDatabaseSchema + "." + strTempTable);
+                    }
+                }
+                else
+                {
+                    FileFunctions.WriteLine(_logFile, "No records to extract");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                FileFunctions.WriteLine(_logFile, "Error executing the stored procedure: " + ex.Message);
+                //MessageBox.Show("Error executing the stored procedure: " +
+                //    ex.Message, "Data Selector", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            // Check if the maximum record length will be exceeded
+            if (rowLength > 4000)
+            {
+                FileFunctions.WriteLine(_logFile, "Record length exceeds maximum of 4,000 bytes - selection cancelled");
+                return false;
+            }
+
+            // Display the maximum data size.
+            long maxDataSize;
+            maxDataSize = ((rowLength * maxCount) / 1024) + 1;
+            string strDataSizeKb = string.Format("{0:n0}", maxDataSize);
+            string strDataSizeMb = string.Format("{0:n2}", (double)maxDataSize / 1024);
+            string strDataSizeGb = string.Format("{0:n2}", (double)maxDataSize / (1024 * 1024));
+
+            if (maxDataSize > (1024 * 1024))
+            {
+                FileFunctions.WriteLine(_logFile, string.Format("Maximum data size = {0} Kb ({1} Gb)", strDataSizeKb, strDataSizeGb));
+            }
+            else
+            {
+                if (maxDataSize > 1024)
+                    FileFunctions.WriteLine(_logFile, string.Format("Maximum data size = {0} Kb ({1} Mb)", strDataSizeKb, strDataSizeMb));
+                else
+                    FileFunctions.WriteLine(_logFile, string.Format("Maximum data size = {0} Kb", strDataSizeKb));
+            }
+
+            // Check if the maximum data size will be exceeded.
+            if ((maxDataSize > (2 * 1024 * 1024)) && (mapOutputFormat == "SHP") || (mapOutputFormat == "DBF"))
+            {
+                FileFunctions.WriteLine(_logFile, "Maximum data size exceeds 2 Gb - selection cancelled");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Clear the SQL output tables by running a stored procedure.
+        /// </summary>
+        /// <param name="schema"></param>
+        /// <param name="tableName"></param>
+        /// <param name="userID"></param>
+        /// <returns></returns>
+        internal async Task<bool> ClearSelectionAsync(string schema, string tableName, string userID)
+        {
+            // Set up the SQL command.
+            StringBuilder sqlCmd = new();
+
+            // Get the name of the stored procedure to clear selection in SQL Server.
+            string storedProcedureName = _clearStoredProcedure;
+
+            // Build the SQL command to execute the stored procedure.
+            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", storedProcedureName));
+            sqlCmd.Append(string.Format(" '{0}'", schema));
+            sqlCmd.Append(string.Format(", '{0}'", tableName));
+            sqlCmd.Append(string.Format(", '{0}'", userID));
+
+            try
+            {
+                FileFunctions.WriteLine(_logFile, "Deleting temporary tables");
+
+                // Execute the stored procedure.
+                await _sqlFunctions.ExecuteSQLOnGeodatabase(sqlCmd.ToString());
+            }
+            catch (Exception ex)
+            {
+                FileFunctions.WriteLine(_logFile, "Error deleting the temporary tables: " + ex.Message);
+                //MessageBox.Show("Error deleting the temporary tables: " +
+                //    ex.Message, "Data Selector", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Process each of the selected map layers.
@@ -2554,105 +3212,6 @@ namespace DataExtractor.UI
         }
 
         /// <summary>
-        /// Save the selected features from the current layer to a new layer
-        /// and add it to the map if required.
-        /// </summary>
-        /// <param name="layerName"></param>
-        /// <param name="outputFile"></param>
-        /// <param name="addSelectedLayersOption"></param>
-        /// <param name="layerFileName"></param>
-        /// <param name="displayLabels"></param>
-        /// <param name="labelClause"></param>
-        /// <param name="labelColumn"></param>
-        /// <returns></returns>
-        private async Task<bool> KeepLayerAsync(string layerName, string outputFile, string layerFileName, bool displayLabels, string labelClause, string labelColumn)
-        {
-            //bool addToMap = addSelectedLayersOption != AddSelectedLayersOptions.No;
-
-            //// Copy to a permanent file (note this is not the summarised layer).
-            //FileFunctions.WriteLine(_logFile, "Copying selected GIS features to " + layerName + ".shp ...");
-            //await ArcGISFunctions.CopyFeaturesAsync(_tempMasterLayerName, outputFile, addToMap);
-
-            //// If the layer is to be added to the map
-            //if (addToMap)
-            //{
-            //    FileFunctions.WriteLine(_logFile, "Output " + layerName + " added to display");
-
-            //    string symbologyFile = null;
-
-            //    // If there is a layer file to apply.
-            //    if (!string.IsNullOrEmpty(layerFileName))
-            //    {
-            //        // Set the layer symbology to use.
-            //        symbologyFile = _layerFolder + "\\" + layerFileName;
-            //    }
-
-            //    // Apply layer symbology and move to group layer.
-            //    if (!await SetLayerInMapAsync(layerName, symbologyFile, -1))
-            //    {
-            //        _extractErrors = true;
-
-            //        return false;
-            //    }
-
-            //    // If labels are to be displayed.
-            //    if (addSelectedLayersOption == AddSelectedLayersOptions.WithLabels && displayLabels)
-            //    {
-            //        // Translate the label string.
-            //        if (!string.IsNullOrEmpty(labelClause) && string.IsNullOrEmpty(layerFileName)) // Only if we don't have a layer file.
-            //        {
-            //            try
-            //            {
-            //                List<string> labelOptions = [.. labelClause.Split('$')];
-            //                string labelFont = labelOptions[0].Split(':')[1];
-            //                double labelSize = double.Parse(labelOptions[1].Split(':')[1]);
-            //                int labelRed = int.Parse(labelOptions[2].Split(':')[1]);
-            //                int labelGreen = int.Parse(labelOptions[3].Split(':')[1]);
-            //                int labelBlue = int.Parse(labelOptions[4].Split(':')[1]);
-            //                string labelOverlap = labelOptions[5].Split(':')[1];
-            //                bool allowOverlap = labelOverlap.ToLower() switch
-            //                {
-            //                    "allow" => true,
-            //                    _ => false,
-            //                };
-
-            //                if (await _mapFunctions.LabelLayerAsync(layerName, labelColumn, labelFont, labelSize, "Normal",
-            //                    labelRed, labelGreen, labelBlue, allowOverlap))
-            //                    FileFunctions.WriteLine(_logFile, "Labels added to output " + layerName);
-            //            }
-            //            catch
-            //            {
-            //                //MessageBox.Show("Error adding labels to '" + layerName + "'");
-            //                FileFunctions.WriteLine(_logFile, "Error adding labels to '" + layerName + "'");
-            //                _extractErrors = true;
-
-            //                return false;
-            //            }
-            //        }
-            //        else if (!string.IsNullOrEmpty(labelColumn) && string.IsNullOrEmpty(layerFileName))
-            //        {
-            //            // Set simple labels.
-            //            if (await _mapFunctions.LabelLayerAsync(layerName, labelColumn))
-            //                FileFunctions.WriteLine(_logFile, "Labels added to output " + layerName);
-            //        }
-            //    }
-            //    else
-            //    {
-            //        // Turn labels off.
-            //        await _mapFunctions.SwitchLabelsAsync(layerName, displayLabels);
-            //    }
-            //}
-            //else
-            //{
-            //    // User doesn't want to add the layer to the display.
-            //    // In case it's still there from a previous run.
-            //    await _mapFunctions.RemoveLayerAsync(layerName);
-            //}
-
-            return true;
-        }
-
-        /// <summary>
         /// Trigger the required VB macro to post-process the outputs for the
         /// current layer.
         /// </summary>
@@ -2699,6 +3258,129 @@ namespace DataExtractor.UI
 
         #endregion Methods
 
+        #region PartnersListExpand Command
+
+        private ICommand _partnersListExpandCommand;
+
+        /// <summary>
+        /// Create PartnersList Expand button command.
+        /// </summary>
+        /// <value></value>
+        /// <returns></returns>
+        /// <remarks></remarks>
+        public ICommand PartnersListExpandCommand
+        {
+            get
+            {
+                if (_partnersListExpandCommand == null)
+                {
+                    Action<object> clearAction = new(PartnersListExpandCommandClick);
+                    _partnersListExpandCommand = new RelayCommand(clearAction, param => true);
+                }
+                return _partnersListExpandCommand;
+            }
+        }
+
+        /// <summary>
+        /// Handles event when Cancel button is pressed.
+        /// </summary>
+        /// <param name="param"></param>
+        /// <remarks></remarks>
+        private void PartnersListExpandCommandClick(object param)
+        {
+            if (_partnersListHeight == null)
+                _partnersListHeight = 179;
+            else
+                _partnersListHeight = null;
+
+            OnPropertyChanged(nameof(PartnersListHeight));
+            OnPropertyChanged(nameof(PartnersListExpandButtonContent));
+        }
+
+        #endregion PartnersListExpand Command
+
+        #region SQLLayersListExpand Command
+
+        private ICommand _sqlLayersListExpandCommand;
+
+        /// <summary>
+        /// Create PartnersList Expand button command.
+        /// </summary>
+        /// <value></value>
+        /// <returns></returns>
+        /// <remarks></remarks>
+        public ICommand SQLLayersListExpandCommand
+        {
+            get
+            {
+                if (_sqlLayersListExpandCommand == null)
+                {
+                    Action<object> clearAction = new(SQLLayersListExpandCommandClick);
+                    _sqlLayersListExpandCommand = new RelayCommand(clearAction, param => true);
+                }
+                return _sqlLayersListExpandCommand;
+            }
+        }
+
+        /// <summary>
+        /// Handles event when Cancel button is pressed.
+        /// </summary>
+        /// <param name="param"></param>
+        /// <remarks></remarks>
+        private void SQLLayersListExpandCommandClick(object param)
+        {
+            if (_sqlLayersListHeight == null)
+                _sqlLayersListHeight = 162;
+            else
+                _sqlLayersListHeight = null;
+
+            OnPropertyChanged(nameof(SQLLayersListHeight));
+            OnPropertyChanged(nameof(SQLLayersListExpandButtonContent));
+        }
+
+        #endregion SQLLayersListExpand Command
+
+        #region MapLayersListExpand Command
+
+        private ICommand _mapLayersListExpandCommand;
+
+        /// <summary>
+        /// Create PartnersList Expand button command.
+        /// </summary>
+        /// <value></value>
+        /// <returns></returns>
+        /// <remarks></remarks>
+        public ICommand MapLayersListExpandCommand
+        {
+            get
+            {
+                if (_mapLayersListExpandCommand == null)
+                {
+                    Action<object> clearAction = new(MapLayersListExpandCommandClick);
+                    _mapLayersListExpandCommand = new RelayCommand(clearAction, param => true);
+                }
+                return _mapLayersListExpandCommand;
+            }
+        }
+
+        /// <summary>
+        /// Handles event when Cancel button is pressed.
+        /// </summary>
+        /// <param name="param"></param>
+        /// <remarks></remarks>
+        private void MapLayersListExpandCommandClick(object param)
+        {
+            if (_mapLayersListHeight == null)
+                _mapLayersListHeight = 162;
+            else
+                _mapLayersListHeight = null;
+
+            OnPropertyChanged(nameof(MapLayersListHeight));
+            OnPropertyChanged(nameof(MapLayersListExpandButtonContent));
+        }
+
+        #endregion PartnersListExpand Command
+
         #region SQL
 
         /// <summary>
@@ -2719,16 +3401,7 @@ namespace DataExtractor.UI
             {
                 // Clear the tables list.
                 _sqlTableNames = [];
-
-                // Indicate the refresh has finished.
-                _dockPane.FormListsLoading = false;
-                _dockPane.ProgressUpdate(null, -1, -1);
-
-                // Update the fields and buttons in the form.
-                OnPropertyChanged(nameof(SQLTablesList));
-                OnPropertyChanged(nameof(SQLTablesListEnabled));
-                UpdateFormControls();
-                _dockPane.RefreshPanel1Buttons();
+                return;
             }
 
             // Get the include and exclude wildcard settings.
@@ -2782,6 +3455,43 @@ namespace DataExtractor.UI
             }
 
             return theStringList;
+        }
+
+        /// <summary>
+        /// Check if the table contains a spatial column in the columns text.
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnsText"></param>
+        /// <returns></returns>
+        internal async Task<string> IsTableSpatialAsync(string tableName, string columnsText)
+        {
+            string[] geometryFields = ["SP_GEOMETRY", "Shape"]; // Expand as required.
+
+            // Get the list of field names in the selected table.
+            List<string> fieldsList = await _sqlFunctions.GetFieldNamesListAsync(tableName);
+
+            // Loop through the geometry fields looking for a match.
+            foreach (string geomField in geometryFields)
+            {
+                // If the columns text contains the geometry field.
+                if (columnsText.Contains(geomField, StringComparison.OrdinalIgnoreCase))
+                {
+                    return geomField;
+                }
+                // If "*" is used check for the existence of the geometry field in the table.
+                else if (columnsText.Equals("*", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (string fieldName in fieldsList)
+                    {
+                        // If the column text contains the geometry field.
+                        if (fieldName.Equals(geomField, StringComparison.OrdinalIgnoreCase))
+                            return geomField;
+                    }
+                }
+            }
+
+            // No geometry column found.
+            return null;
         }
 
         #endregion SQL
@@ -2932,12 +3642,12 @@ namespace DataExtractor.UI
 
     #endregion Partner Class
 
-    #region SQLTable Class
+    #region SQLLayer Class
 
     /// <summary>
     /// Map layers to extract.
     /// </summary>
-    public class SQLTable : INotifyPropertyChanged
+    public class SQLLayer : INotifyPropertyChanged
     {
         #region Fields
 
@@ -2948,6 +3658,8 @@ namespace DataExtractor.UI
         public string NodeTable { get; set; }
 
         public string OutputName { get; set; }
+
+        public string OutputType { get; set; }
 
         public string Columns { get; set; }
 
@@ -2976,12 +3688,12 @@ namespace DataExtractor.UI
 
         #region Creator
 
-        public SQLTable()
+        public SQLLayer()
         {
             // constructor takes no arguments.
         }
 
-        public SQLTable(string nodeName)
+        public SQLLayer(string nodeName)
         {
             NodeName = nodeName;
         }
@@ -3014,7 +3726,7 @@ namespace DataExtractor.UI
         #endregion INotifyPropertyChanged Members
     }
 
-    #endregion SQLTable Class
+    #endregion SQLLayer Class
 
     #region MapLayer Class
 
@@ -3034,6 +3746,8 @@ namespace DataExtractor.UI
         public string LayerName { get; set; }
 
         public string OutputName { get; set; }
+
+        public string OutputType { get; set; }
 
         public string Columns { get; set; }
 

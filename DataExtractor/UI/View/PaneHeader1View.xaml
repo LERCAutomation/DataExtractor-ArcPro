@@ -63,7 +63,7 @@
                 </Button>
             </Grid>
 
-            <Grid Name="GridHLULayers" Grid.Row="1" Margin="0,4,0,0">
+            <Grid Name="GridXMLProfile" Grid.Row="1" Margin="0,4,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="76" />
                     <ColumnDefinition Width="*" />

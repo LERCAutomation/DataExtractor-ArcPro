@@ -25,10 +25,12 @@ using ArcGIS.Core.Data.DDL;
 using ArcGIS.Core.Data.Exceptions;
 using ArcGIS.Desktop.Catalog;
 using ArcGIS.Desktop.Core;
+using ArcGIS.Desktop.Core.Events;
 using ArcGIS.Desktop.Core.Geoprocessing;
 using ArcGIS.Desktop.Editing;
 using ArcGIS.Desktop.Editing.Attributes;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
+using ArcGIS.Desktop.Internal.Core.Geoprocessing;
 using ArcGIS.Desktop.Mapping;
 using DataExtractor.UI;
 using System;
@@ -1122,6 +1124,7 @@ namespace DataTools
                     ArcGIS.Core.Data.Field partnerField = featureClassDefinition.GetFields()
                         .First(x => x.Name.Equals(partnerColumn, StringComparison.OrdinalIgnoreCase));
 
+                    //TODO - find way to use partner clause AND order by
                     //QueryFilter queryFilter = new QueryFilter
                     //{
                     //    WhereClause = partnerClause,
@@ -1150,6 +1153,7 @@ namespace DataTools
                         // Get the current row.
                         using Row record = rowCursor.Current;
 
+                        //TODO - find way to use partner clause instead
                         if (Convert.ToString(record[activeColumn]).ToLower(System.Globalization.CultureInfo.CurrentCulture) is "y")
                         {
                             // Create a new partner for this row.
@@ -3633,12 +3637,12 @@ namespace DataTools
             if (addToMap)
                 executeFlags |= GPExecuteToolFlags.AddOutputsToMap;
 
-            //Geoprocessing.OpenToolDialog("management.Copy", parameters);  // Useful for debugging.
+            //Geoprocessing.OpenToolDialog("management.CopyRows", parameters);  // Useful for debugging.
 
             // Execute the tool.
             try
             {
-                IGPResult gp_result = await Geoprocessing.ExecuteToolAsync("management.Copy", parameters, environments, null, null, executeFlags);
+                IGPResult gp_result = await Geoprocessing.ExecuteToolAsync("management.CopyRows", parameters, environments, null, null, executeFlags);
 
                 if (gp_result.IsFailed)
                 {

@@ -54,23 +54,23 @@ namespace DataExtractor.UI
                     listView.Items.OfType<Partner>().ToList().Where(s => selectedItems.All(s2 => s2.PartnerName != s.PartnerName)).ToList().ForEach(p => p.IsSelected = false);
             }
         }
-        private void ListViewSQLTables_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ListViewSQLLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            List<SQLTable> added = e.AddedItems.OfType<SQLTable>().ToList();
-            List<SQLTable> removed = e.RemovedItems.OfType<SQLTable>().ToList();
+            List<SQLLayer> added = e.AddedItems.OfType<SQLLayer>().ToList();
+            List<SQLLayer> removed = e.RemovedItems.OfType<SQLLayer>().ToList();
 
             var listView = sender as ListView;
-            var itemsSelected = listView.Items.OfType<SQLTable>().ToList().Where(s => s.IsSelected == true).ToList();
-            var itemsUnselected = listView.Items.OfType<SQLTable>().Where(p => p.IsSelected == false).ToList();
-            var selectedItems = listView.SelectedItems.OfType<SQLTable>().ToList();
+            var itemsSelected = listView.Items.OfType<SQLLayer>().ToList().Where(s => s.IsSelected == true).ToList();
+            var itemsUnselected = listView.Items.OfType<SQLLayer>().Where(p => p.IsSelected == false).ToList();
+            var selectedItems = listView.SelectedItems.OfType<SQLLayer>().ToList();
 
             // Ensure any removed items are actually unselected.
             if (removed.Count > 1)
             {
-                e.RemovedItems.OfType<SQLTable>().ToList().ForEach(p => p.IsSelected = false);
+                e.RemovedItems.OfType<SQLLayer>().ToList().ForEach(p => p.IsSelected = false);
 
                 if (selectedItems.Count == 1)
-                    listView.Items.OfType<SQLTable>().ToList().Where(s => selectedItems.All(s2 => s2.NodeName != s.NodeName)).ToList().ForEach(p => p.IsSelected = false);
+                    listView.Items.OfType<SQLLayer>().ToList().Where(s => selectedItems.All(s2 => s2.NodeName != s.NodeName)).ToList().ForEach(p => p.IsSelected = false);
             }
         }
         private void ListViewMapLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)

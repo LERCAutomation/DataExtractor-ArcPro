@@ -188,6 +188,23 @@ namespace DataTools
             }
             return strOutputString;
         }
+        public static string FinancialYear(DateTime curDate)
+        {
+            string CurrYr = curDate.ToString("yy");
+            string PrevYr = curDate.AddYears(-1).ToString("yy");
+            string NextYr = curDate.AddYears(1).ToString("yy");
+            string FinYear = string.Empty;
+
+            if (curDate.Month > 3)
+            {
+                FinYear = CurrYr + NextYr;
+            }
+            else
+            {
+                FinYear = PrevYr + CurrYr;
+            }
+            return FinYear;
+        }
 
         #endregion Characters
 
