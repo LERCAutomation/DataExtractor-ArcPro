@@ -25,7 +25,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 
   <!-- The existing file location where log files will be saved with output messages. -->
   <LogFilePath>
-	<value>H:\Data\Thames\ExtractorExtracts</value>
+	<value>H:\Data\Thames\ExtractorExtracts\Logfiles</value>
   </LogFilePath>
 
   <!-- The location of the SDE file that specifies which SQL Server database to connect to. -->
@@ -44,10 +44,14 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   </SubsetStoredProcedure>
 
   <!-- The stored procedure to clear selection in SQL Server. -->
-  <ClearStoredProcedure>
-	<value>AFClearSppSubset</value>
-  </ClearStoredProcedure>
+  <ClearSpatialStoredProcedure>
+	<value>HLClearSpatialSubset</value>
+  </ClearSpatialStoredProcedure>
 
+  <!-- The stored procedure to clear selection in SQL Server. -->
+  <ClearSubsetStoredProcedure>
+	<value>HLClearSppSubset</value>
+  </ClearSubsetStoredProcedure>
   <!-- The existing file location under which all partner sub-folders will be created -->
   <DefaultPath>
 	<value>H:\Data\Thames\ExtractorExtracts</value>

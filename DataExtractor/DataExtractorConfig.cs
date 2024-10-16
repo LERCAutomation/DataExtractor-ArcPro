@@ -194,14 +194,24 @@ namespace DataExtractor
                 throw new("Could not locate item 'SubsetStoredProcedure' in the XML profile.");
             }
 
-            // The stored procedure to clear selection in SQL Server.
+            // The stored procedure to clear the spatial selection in SQL Server.
             try
             {
-                _clearStoredProcedure = _xmlDataExtractor["ClearStoredProcedure"].InnerText;
+                _clearSpatialStoredProcedure = _xmlDataExtractor["ClearSpatialStoredProcedure"].InnerText;
             }
             catch
             {
-                throw new("Could not locate item 'ClearStoredProcedure' in the XML profile.");
+                throw new("Could not locate item 'ClearSpatialStoredProcedure' in the XML profile.");
+            }
+
+            // The stored procedure to clear the subset selection in SQL Server.
+            try
+            {
+                _clearSubsetStoredProcedure = _xmlDataExtractor["ClearSubsetStoredProcedure"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'ClearSubsetStoredProcedure' in the XML profile.");
             }
 
             // The existing file location under which all partner sub-folders will be created.
@@ -497,6 +507,8 @@ namespace DataExtractor
             {
                 _defaultApplyExclusionClause = false;
                 rawText = _xmlDataExtractor["DefaultApplyExclusionClause"].InnerText;
+                if (string.IsNullOrEmpty(rawText))
+                    _defaultApplyExclusionClause = null;
                 if (rawText.ToLower(System.Globalization.CultureInfo.CurrentCulture) is "yes" or "y")
                     _defaultApplyExclusionClause = true;
             }
@@ -511,6 +523,8 @@ namespace DataExtractor
             {
                 _defaultUseCentroids = false;
                 rawText = _xmlDataExtractor["DefaultUseCentroids"].InnerText;
+                if (string.IsNullOrEmpty(rawText))
+                    _defaultUseCentroids = null;
                 if (rawText.ToLower(System.Globalization.CultureInfo.CurrentCulture) is "yes" or "y")
                     _defaultUseCentroids = true;
             }
@@ -525,6 +539,8 @@ namespace DataExtractor
             {
                 _defaultUploadToServer = false;
                 rawText = _xmlDataExtractor["DefaultUploadToServer"].InnerText;
+                if (string.IsNullOrEmpty(rawText))
+                    _defaultUploadToServer = null;
                 if (rawText.ToLower(System.Globalization.CultureInfo.CurrentCulture) is "yes" or "y")
                     _defaultUploadToServer = true;
             }
@@ -710,23 +726,23 @@ namespace DataExtractor
         {
             string rawText;
 
-            // The map layer collection.
-            XmlElement MapLayersCollection;
+            // The map tables collection.
+            XmlElement MapTablesCollection;
             try
             {
-                MapLayersCollection = _xmlDataExtractor["MapLayers"];
+                MapTablesCollection = _xmlDataExtractor["MapTables"];
             }
             catch
             {
-                throw new("Could not locate the item 'MapLayers' in the XML profile");
+                throw new("Could not locate the item 'MapTables' in the XML profile");
             }
 
             bool nodeGroupFound = false;
 
             // Now cycle through all of the maps.
-            if (MapLayersCollection != null)
+            if (MapTablesCollection != null)
             {
-                foreach (XmlNode node in MapLayersCollection)
+                foreach (XmlNode node in MapTablesCollection)
                 {
                     // Only process if not a comment
                     if (node.NodeType != XmlNodeType.Comment)
@@ -853,7 +869,7 @@ namespace DataExtractor
             if (nodeGroupFound)
                 _mapNodeGroupWidth = "Auto";
             else
-                _sqlNodeGroupWidth = "0";
+                _mapNodeGroupWidth = "0";
 
             // All mandatory variables were loaded successfully.
             return true;
@@ -941,11 +957,18 @@ namespace DataExtractor
             get { return _subsetStoredProcedure; }
         }
 
-        private string _clearStoredProcedure;
+        private string _clearSpatialStoredProcedure;
 
-        public string ClearStoredProcedure
+        public string ClearSpatialStoredProcedure
         {
-            get { return _clearStoredProcedure; }
+            get { return _clearSpatialStoredProcedure; }
+        }
+
+        private string _clearSubsetStoredProcedure;
+
+        public string ClearSubsetStoredProcedure
+        {
+            get { return _clearSubsetStoredProcedure; }
         }
 
         private string _defaultPath;
@@ -1142,23 +1165,23 @@ namespace DataExtractor
             get { return _exclusionClause; }
         }
 
-        private bool _defaultApplyExclusionClause;
+        private bool? _defaultApplyExclusionClause;
 
-        public bool DefaultApplyExclusionClause
+        public bool? DefaultApplyExclusionClause
         {
             get { return _defaultApplyExclusionClause; }
         }
 
-        private bool _defaultUseCentroids;
+        private bool? _defaultUseCentroids;
 
-        public bool DefaultUseCentroids
+        public bool? DefaultUseCentroids
         {
             get { return _defaultUseCentroids; }
         }
 
-        private bool _defaultUploadToServer;
+        private bool? _defaultUploadToServer;
 
-        public bool DefaultUploadToServer
+        public bool? DefaultUploadToServer
         {
             get { return _defaultUploadToServer; }
         }

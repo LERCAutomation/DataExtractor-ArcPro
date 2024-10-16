@@ -65,17 +65,17 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding PartnerName}">
+                            <GridViewColumn DisplayMemberBinding="{Binding PartnerName}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
+                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn DisplayMemberBinding="{Binding ShortName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
+                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -165,10 +165,10 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding SQLNodeGroupWidth}">
+                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding SQLNodeGroupWidth}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
+                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -227,7 +227,7 @@
             <Grid Name="GridMapLayers" Grid.Row="2" Margin="0,4,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="{Binding SQLLayersListHeight}" />
+                    <RowDefinition Height="{Binding MapLayersListHeight}" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="8" />
@@ -265,14 +265,14 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding MapNodeGroupWidth}">
+                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding MapNodeGroupWidth}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeLayer}">
+                            <GridViewColumn DisplayMemberBinding="{Binding NodeLayer}" Width="Auto" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />

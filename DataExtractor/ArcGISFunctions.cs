@@ -23,6 +23,7 @@ using ArcGIS.Core.CIM;
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Data.DDL;
 using ArcGIS.Core.Data.Exceptions;
+using ArcGIS.Core.Internal.CIM;
 using ArcGIS.Desktop.Catalog;
 using ArcGIS.Desktop.Core;
 using ArcGIS.Desktop.Core.Events;
@@ -30,6 +31,7 @@ using ArcGIS.Desktop.Core.Geoprocessing;
 using ArcGIS.Desktop.Editing;
 using ArcGIS.Desktop.Editing.Attributes;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
+using ArcGIS.Desktop.Internal.Catalog.Wizards;
 using ArcGIS.Desktop.Internal.Core.Geoprocessing;
 using ArcGIS.Desktop.Mapping;
 using DataExtractor.UI;
@@ -39,6 +41,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using QueryFilter = ArcGIS.Core.Data.QueryFilter;
 
 namespace DataTools
@@ -589,6 +592,60 @@ namespace DataTools
         }
 
         /// <summary>
+        /// Select features in feature class by location.
+        /// </summary>
+        /// <param name="targetLayer"></param>
+        /// <param name="searchLayer"></param>
+        /// <param name="overlapType"></param>
+        /// <param name="searchDistance"></param>
+        /// <param name="selectionType"></param>
+        /// <returns>bool</returns>
+        public static async Task<bool> SelectLayerByLocationAsync(string targetLayer, string searchLayer,
+            string overlapType = "INTERSECT", string searchDistance = "", string selectionType = "NEW_SELECTION")
+        {
+            // Check if there is an input target layer name.
+            if (String.IsNullOrEmpty(targetLayer))
+                return false;
+
+            // Check if there is an input search layer name.
+            if (String.IsNullOrEmpty(searchLayer))
+                return false;
+
+            // Make a value array of strings to be passed to the tool.
+            IReadOnlyList<string> parameters = Geoprocessing.MakeValueArray(targetLayer, overlapType, searchLayer, searchDistance, selectionType);
+
+            // Make a value array of the environments to be passed to the tool.
+            var environments = Geoprocessing.MakeEnvironmentArray(overwriteoutput: true);
+
+            // Set the geprocessing flags.
+            GPExecuteToolFlags executeFlags = GPExecuteToolFlags.GPThread; // | GPExecuteToolFlags.RefreshProjectItems;
+
+            //Geoprocessing.OpenToolDialog("management.SelectLayerByLocation", parameters);  // Useful for debugging.
+
+            // Execute the tool.
+            try
+            {
+                IGPResult gp_result = await Geoprocessing.ExecuteToolAsync("management.SelectLayerByLocation", parameters, environments, null, null, executeFlags);
+
+                if (gp_result.IsFailed)
+                {
+                    Geoprocessing.ShowMessageBox(gp_result.Messages, "GP Messages", GPMessageBoxStyle.Error);
+
+                    var messages = gp_result.Messages;
+                    var errMessages = gp_result.ErrorMessages;
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                // Handle Exception.
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Select features in layerName by attributes.
         /// </summary>
         /// <param name="layerName"></param>
@@ -848,12 +905,13 @@ namespace DataTools
         }
 
         /// <summary>
-        /// Check if a list of fields exists in a feature class.
+        /// Check if a list of fields exists in a feature class and
+        /// return a list of those that do.
         /// </summary>
         /// <param name="layerName"></param>
         /// <param name="fieldNames"></param>
         /// <returns>List<string></returns>
-        public async Task<List<string>> GetExstingFieldsAsync(string layerName, List<string> fieldNames)
+        public async Task<List<string>> GetExistingFieldsAsync(string layerName, List<string> fieldNames)
         {
             List<string> fieldsThatExist = [];
             foreach (string fieldName in fieldNames)
@@ -935,6 +993,78 @@ namespace DataTools
                 // Handle Exception.
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Deletes all the fields from a feature class that are not required.
+        /// </summary>
+        /// <param name="layerName"></param>
+        /// <param name="fieldList"></param>
+        /// <returns></returns>
+        public async Task<bool> KeepSelectedFieldsAsync(string layerName, List<string> fieldList)
+        {
+            // Check the input parameters.
+            if (String.IsNullOrEmpty(layerName))
+                return false;
+
+            if (fieldList == null || fieldList.Count == 0)
+                return false;
+
+            // Add a FID field so that it isn't tried to be removed.
+            //fieldList.Add("FID");
+
+            // Get the list of fields for the input table.
+            IReadOnlyList<ArcGIS.Core.Data.Field> inputfields = await GetFCFieldsAsync(layerName);
+
+            // Check a list of fields is returned.
+            if (inputfields == null || inputfields.Count == 0)
+                return false;
+
+            // Get the list of field names for the input table that
+            // aren't required fields (e.g. excluding FID and Shape).
+            List<string> inputFieldNames = inputfields.Where(x => !x.IsRequired).Select(y => y.Name).ToList();
+
+            // Get the list of fields that do exist in the layer.
+            List<string> existingFields = await GetExistingFieldsAsync(layerName, fieldList);
+
+            // Get the list of layer fields that aren't in the field list.
+            var remainingFields = inputFieldNames.Except(existingFields).ToList();
+
+            if (remainingFields == null || remainingFields.Count == 0)
+                return true;
+
+            // Make a value array of strings to be passed to the tool.
+            var parameters = Geoprocessing.MakeValueArray(layerName, remainingFields);
+
+            // Make a value array of the environments to be passed to the tool.
+            var environments = Geoprocessing.MakeEnvironmentArray(overwriteoutput: true);
+
+            // Set the geprocessing flags.
+            GPExecuteToolFlags executeFlags = GPExecuteToolFlags.GPThread; //| GPExecuteToolFlags.RefreshProjectItems;
+
+            //Geoprocessing.OpenToolDialog("management.DeleteField", parameters);  // Useful for debugging.
+
+            // Execute the tool.
+            try
+            {
+                IGPResult gp_result = await Geoprocessing.ExecuteToolAsync("management.DeleteField", parameters, environments, null, null, executeFlags);
+
+                if (gp_result.IsFailed)
+                {
+                    Geoprocessing.ShowMessageBox(gp_result.Messages, "GP Messages", GPMessageBoxStyle.Error);
+
+                    var messages = gp_result.Messages;
+                    var errMessages = gp_result.ErrorMessages;
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                // Handle Exception.
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -1598,30 +1728,31 @@ namespace DataTools
         /// Copy a feature class to a text fiile.
         /// </summary>
         /// <param name="inputLayer"></param>
-        /// <param name="outputTable"></param>
+        /// <param name="outFile"></param>
         /// <param name="columns"></param>
         /// <param name="orderByColumns"></param>
+        /// <param name="separator"></param>
         /// <param name="append"></param>
         /// <param name="includeHeader"></param>
-        /// <returns>bool</returns>
-        public async Task<int> CopyFCToTextFileAsync(string inputLayer, string outputTable, string columns, string orderByColumns,
-            bool append = false, bool includeHeader = true)
+        /// <returns>int</returns>
+        public async Task<int> CopyFCToTextFileAsync(string inputLayer, string outFile, string columns, string orderByColumns,
+             string separator, bool append = false, bool includeHeader = true)
         {
             // Check there is an input layer name.
             if (String.IsNullOrEmpty(inputLayer))
                 return -1;
 
             // Check there is an output table name.
-            if (String.IsNullOrEmpty(outputTable))
+            if (String.IsNullOrEmpty(outFile))
                 return -1;
 
             // Check there are columns to output.
             if (String.IsNullOrEmpty(columns))
                 return -1;
 
-            bool missingColumns = false;
+            string outColumns;
             FeatureLayer inputFeaturelayer;
-            List<string> columnsList = [];
+            List<string> outColumnsList = [];
             List<string> orderByColumnsList = [];
             IReadOnlyList<ArcGIS.Core.Data.Field> inputfields;
 
@@ -1641,17 +1772,15 @@ namespace DataTools
                     return -1;
 
                 // Align the columns with what actually exists in the layer.
-                columnsList = [.. columns.Split(',')];
-                columns = "";
+                List<string> columnsList = [.. columns.Split(',')];
+                outColumns = "";
                 foreach (string column in columnsList)
                 {
                     string columnName = column.Trim();
                     if ((columnName.Substring(0, 1) == "\"") || (FieldExists(inputfields, columnName)))
-                        columns = columns + columnName + ",";
-                    else
                     {
-                        missingColumns = true;
-                        break;
+                        outColumnsList.Add(columnName);
+                        outColumns = outColumns + columnName + separator;
                     }
                 }
             }
@@ -1661,18 +1790,19 @@ namespace DataTools
                 return -1;
             }
 
-            // Stop if there are any missing columns.
-            if (missingColumns || string.IsNullOrEmpty(columns))
+            // Stop if there aren't any columns.
+            if (outColumnsList.Count == 0 || string.IsNullOrEmpty(outColumns))
                 return -1;
-            else
-                columns = columns[..^1];
+
+            // Remove the final separator.
+            outColumns = outColumns[..^1];
 
             // Open output file.
-            StreamWriter txtFile = new(outputTable, append);
+            StreamWriter txtFile = new(outFile, append);
 
             // Write the header if required.
             if (!append && includeHeader)
-                txtFile.WriteLine(columns);
+                txtFile.WriteLine(outColumns);
 
             int intLineCount = 0;
             try
@@ -1695,7 +1825,7 @@ namespace DataTools
                     {
                         orderByColumnsList = [.. orderByColumns.Split(',')];
 
-                        // Build the list of sort descriptions for each column in the input layer.
+                        // Build the list of sort descriptions for each orderby column in the input layer.
                         foreach (string column in orderByColumnsList)
                         {
                             // Get the column name (ignoring any trailing ASC/DESC sort order).
@@ -1747,9 +1877,11 @@ namespace DataTools
                         using Row record = rowCursor.Current;
 
                         string newRow = "";
-                        foreach (string column in columnsList)
+                        foreach (string column in outColumnsList)
                         {
                             string columnName = column.Trim();
+
+                            // If the column name isn't a literal.
                             if (columnName.Substring(0, 1) != "\"")
                             {
                                 // Get the field value.
@@ -1761,15 +1893,16 @@ namespace DataTools
                                     columnValue = "\"" + columnValue.ToString() + "\"";
 
                                 // Append the column value to the new row.
-                                newRow = newRow + columnValue.ToString() + ",";
+                                newRow = newRow + columnValue.ToString() + separator;
                             }
                             else
                             {
-                                newRow = newRow + columnName + ",";
+                                // Append the literal to the new row.
+                                newRow = newRow + columnName + separator;
                             }
                         }
 
-                        // Remove the final comma
+                        // Remove the final separator.
                         newRow = newRow[..^1];
 
                         // Write the new row.
@@ -1786,7 +1919,7 @@ namespace DataTools
             catch
             {
                 // Handle Exception.
-                return 0;
+                return -1;
             }
             finally
             {
@@ -1804,21 +1937,22 @@ namespace DataTools
         /// Copy a table to a text file.
         /// </summary>
         /// <param name="inputLayer"></param>
-        /// <param name="outputTable"></param>
+        /// <param name="outFile"></param>
         /// <param name="columns"></param>
         /// <param name="orderByColumns"></param>
+        /// <param name="separator"></param>
         /// <param name="append"></param>
         /// <param name="includeHeader"></param>
-        /// <returns>bool</returns>
-        public async Task<int> CopyTableToTextFileAsync(string inputLayer, string outputTable, string columns, string orderByColumns,
-            bool append = false, bool includeHeader = true)
+        /// <returns>int</returns>
+        public async Task<int> CopyTableToTextFileAsync(string inputLayer, string outFile, string columns, string orderByColumns,
+            string separator, bool append = false, bool includeHeader = true)
         {
             // Check there is an input table name.
             if (String.IsNullOrEmpty(inputLayer))
                 return -1;
 
             // Check there is an output table name.
-            if (String.IsNullOrEmpty(outputTable))
+            if (String.IsNullOrEmpty(outFile))
                 return -1;
 
             // Check there are columns to output.
@@ -1853,7 +1987,7 @@ namespace DataTools
                 {
                     string columnName = column.Trim();
                     if ((columnName.Substring(0, 1) == "\"") || (FieldExists(inputfields, columnName)))
-                        columns = columns + columnName + ",";
+                        columns = columns + columnName + separator;
                     else
                     {
                         missingColumns = true;
@@ -1871,10 +2005,11 @@ namespace DataTools
             if (missingColumns || string.IsNullOrEmpty(columns))
                 return -1;
 
+            // Remove the final separator.
             columns = columns[..^1];
 
             // Open output file.
-            StreamWriter txtFile = new(outputTable, append);
+            StreamWriter txtFile = new(outFile, append);
 
             // Write the header if required.
             if (!append && includeHeader)
@@ -1904,12 +2039,15 @@ namespace DataTools
                         // Build the list of sort descriptions for each orderby column in the input layer.
                         foreach (string column in orderByColumnsList)
                         {
-                            // Get the column name (ignoring any possible ASC/DESC sort order.
-                            string columnName = column.Split(' ')[0].Trim();
+                            // Get the column name (ignoring any trailing ASC/DESC sort order).
+                            string columnName = column.Trim();
+                            if (columnName.Contains(' '))
+                                columnName = columnName.Split(" ")[0].Trim();
 
                             // Set the sort order to ascending or descending.
                             ArcGIS.Core.Data.SortOrder sortOrder = ArcGIS.Core.Data.SortOrder.Ascending;
-                            if (column.EndsWith(" DESC", true, System.Globalization.CultureInfo.CurrentCulture))
+                            if ((column.EndsWith(" DES", true, System.Globalization.CultureInfo.CurrentCulture)) ||
+                               (column.EndsWith(" DESC", true, System.Globalization.CultureInfo.CurrentCulture)))
                                 sortOrder = ArcGIS.Core.Data.SortOrder.Descending;
 
                             // If the column is in the input table use it for sorting.
@@ -1964,15 +2102,15 @@ namespace DataTools
                                     columnValue = "\"" + columnValue.ToString() + "\"";
 
                                 // Append the column value to the new row.
-                                newRow = newRow + columnValue.ToString() + ",";
+                                newRow = newRow + columnValue.ToString() + separator;
                             }
                             else
                             {
-                                newRow = newRow + columnName + ",";
+                                newRow = newRow + columnName + separator;
                             }
                         }
 
-                        // Remove the final comma
+                        // Remove the final separator.
                         newRow = newRow[..^1];
 
                         // Write the new row.
@@ -1997,6 +2135,228 @@ namespace DataTools
                 txtFile.Close();
 
                 // Dispose of the object.
+                txtFile.Dispose();
+            }
+
+            return intLineCount;
+        }
+
+        /// <summary>
+        /// Copy a table to a text file.
+        /// </summary>
+        /// <param name="inTable"></param>
+        /// <param name="outFile"></param>
+        /// <param name="isSpatial"></param>
+        /// <param name="append"></param>
+        /// <returns>int</returns>
+        public async Task<int> CopyToCSVAsync(string inTable, string outFile, bool isSpatial, bool append)
+        {
+            // Check if there is an input table name.
+            if (String.IsNullOrEmpty(inTable))
+                return -1;
+
+            // Check if there is an output file.
+            if (String.IsNullOrEmpty(outFile))
+                return -1;
+
+            string separator = ",";
+            return await CopyToTextFileAsync(inTable, outFile, separator, isSpatial, append);
+        }
+
+        /// <summary>
+        /// Copy a table to a text file.
+        /// </summary>
+        /// <param name="inTable"></param>
+        /// <param name="outFile"></param>
+        /// <param name="isSpatial"></param>
+        /// <param name="append"></param>
+        /// <returns>int</returns>
+        public async Task<int> CopyToTabAsync(string inTable, string outFile, bool isSpatial, bool append)
+        {
+            // Check if there is an input table name.
+            if (String.IsNullOrEmpty(inTable))
+                return -1;
+
+            // Check if there is an output file.
+            if (String.IsNullOrEmpty(outFile))
+                return -1;
+
+            string separator = "\t";
+            return await CopyToTextFileAsync(inTable, outFile, separator, isSpatial, append);
+        }
+
+        /// <summary>
+        /// Copy a table to a text file.
+        /// </summary>
+        /// <param name="inputLayer"></param>
+        /// <param name="outFile"></param>
+        /// <param name="separator"></param>
+        /// <param name="isSpatial"></param>
+        /// <param name="append"></param>
+        /// <param name="includeHeader"></param>
+        /// <returns>int</returns>
+        public async Task<int> CopyToTextFileAsync(string inputLayer, string outFile, string separator, bool isSpatial, bool append = false, bool includeHeader = true)
+        {
+            // Check there is an input table name.
+            if (String.IsNullOrEmpty(inputLayer))
+                return -1;
+
+            // Check there is an output file.
+            if (String.IsNullOrEmpty(outFile))
+                return -1;
+
+            string fieldName = null;
+            string header = "";
+            int ignoreField = -1;
+
+            int intFieldCount;
+            IReadOnlyList<ArcGIS.Core.Data.Field> fields;
+
+            try
+            {
+                if (isSpatial)
+                {
+                    // Get the list of fields for the input table.
+                    fields = await GetFCFieldsAsync(inputLayer);
+                }
+                else
+                {
+                    // Get the list of fields for the input table.
+                    fields = await GetTableFieldsAsync(inputLayer);
+                }
+
+                // Check a list of fields is returned.
+                if (fields == null || fields.Count == 0)
+                    return -1;
+
+                intFieldCount = fields.Count;
+
+                // Iterate through the fields in the collection to create header
+                // and flag which fields to ignore.
+                for (int i = 0; i < intFieldCount; i++)
+                {
+                    // Get the fieldName name.
+                    fieldName = fields[i].Name;
+
+                    ArcGIS.Core.Data.Field field = fields[i];
+
+                    // Get the fieldName type.
+                    FieldType fieldType = field.FieldType;
+
+                    string fieldTypeName = fieldType.ToString();
+
+                    if (fieldName.Equals("sp_geometry", StringComparison.OrdinalIgnoreCase) || fieldName.Equals("shape", StringComparison.OrdinalIgnoreCase))
+                        ignoreField = i;
+                    else
+                        header = header + fieldName + separator;
+                }
+
+                if (!append && includeHeader)
+                {
+                    // Remove the final separator from the header.
+                    header = header.Substring(0, header.Length - 1);
+
+                    // Write the header to the output file.
+                    FileFunctions.WriteEmptyTextFile(outFile, header);
+                }
+
+            }
+            catch
+            {
+                // Handle Exception.
+                return -1;
+            }
+
+            // Open output file.
+            StreamWriter txtFile = new(outFile, append);
+
+            int intLineCount = 0;
+            try
+            {
+                await QueuedTask.Run(() =>
+                {
+                    // Create a row cursor.
+                    RowCursor rowCursor;
+
+                    if (isSpatial)
+                    {
+                        FeatureLayer inputFC;
+
+                        // Get the input feature layer.
+                        inputFC = FindLayer(inputLayer);
+
+                        /// Get the underlying table for the input layer.
+                        using FeatureClass featureClass = inputFC.GetFeatureClass();
+
+                        // Create a cursor of the features.
+                        rowCursor = featureClass.Search();
+                    }
+                    else
+                    {
+                        StandaloneTable inputTable;
+
+                        // Get the input table.
+                        inputTable = FindTable(inputLayer);
+
+                        /// Get the underlying table for the input layer.
+                        using Table table = inputTable.GetTable();
+
+                        // Create a cursor of the features.
+                        rowCursor = table.Search();
+                    }
+
+                    // Loop through the feature class/table using the cursor.
+                    while (rowCursor.MoveNext())
+                    {
+                        // Get the current row.
+                        using Row row = rowCursor.Current;
+
+                        // Loop through the fields.
+                        string rowStr = "";
+                        for (int i = 0; i < intFieldCount; i++)
+                        {
+                            // String the column values together (if they are not to be ignored).
+                            if (i != ignoreField)
+                            {
+                                // Get the column value.
+                                var colValue = row.GetOriginalValue(i);
+
+                                // Wrap the value if quotes if it is a string that contains a comma
+                                string colStr = null;
+                                if (colValue != null)
+                                {
+                                    if ((colValue is string) && (colValue.ToString().Contains(',')))
+                                        colStr = "\"" + colValue.ToString() + "\"";
+                                    else
+                                        colStr = colValue.ToString();
+                                }
+
+                                // Add the column string to the row string.
+                                rowStr += colStr;
+
+                                // Add the column separator (if not the last column).
+                                if (i < intFieldCount - 1)
+                                    rowStr += separator;
+                            }
+                        }
+
+                        // Write the row string to the output file.
+                        txtFile.WriteLine(rowStr);
+                    }
+                    // Dispose of the objects.
+                    rowCursor.Dispose();
+                    rowCursor = null;
+                });
+            }
+            catch
+            {
+                // Handle Exception.
+                return -1;
+            }
+            finally
+            {
+                // Close the output file and dispose of the object.
+                txtFile.Close();
                 txtFile.Dispose();
             }
 
@@ -2501,60 +2861,6 @@ namespace DataTools
             }
 
             return featureCount;
-        }
-
-        /// <summary>
-        /// Select features in feature class by location.
-        /// </summary>
-        /// <param name="targetLayer"></param>
-        /// <param name="searchLayer"></param>
-        /// <param name="overlapType"></param>
-        /// <param name="searchDistance"></param>
-        /// <param name="selectionType"></param>
-        /// <returns>bool</returns>
-        public static async Task<bool> SelectLayerByLocationAsync(string targetLayer, string searchLayer,
-            string overlapType = "INTERSECT", string searchDistance = "", string selectionType = "NEW_SELECTION")
-        {
-            // Check if there is an input target layer name.
-            if (String.IsNullOrEmpty(targetLayer))
-                return false;
-
-            // Check if there is an input search layer name.
-            if (String.IsNullOrEmpty(searchLayer))
-                return false;
-
-            // Make a value array of strings to be passed to the tool.
-            IReadOnlyList<string> parameters = Geoprocessing.MakeValueArray(targetLayer, overlapType, searchLayer, searchDistance, selectionType);
-
-            // Make a value array of the environments to be passed to the tool.
-            var environments = Geoprocessing.MakeEnvironmentArray(overwriteoutput: true);
-
-            // Set the geprocessing flags.
-            GPExecuteToolFlags executeFlags = GPExecuteToolFlags.GPThread; // | GPExecuteToolFlags.RefreshProjectItems;
-
-            //Geoprocessing.OpenToolDialog("management.SelectLayerByLocation", parameters);  // Useful for debugging.
-
-            // Execute the tool.
-            try
-            {
-                IGPResult gp_result = await Geoprocessing.ExecuteToolAsync("management.SelectLayerByLocation", parameters, environments, null, null, executeFlags);
-
-                if (gp_result.IsFailed)
-                {
-                    Geoprocessing.ShowMessageBox(gp_result.Messages, "GP Messages", GPMessageBoxStyle.Error);
-
-                    var messages = gp_result.Messages;
-                    var errMessages = gp_result.ErrorMessages;
-                    return false;
-                }
-            }
-            catch (Exception)
-            {
-                // Handle Exception.
-                return false;
-            }
-
-            return true;
         }
 
         /// <summary>
