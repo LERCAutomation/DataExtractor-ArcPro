@@ -62,6 +62,11 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 	<value>%partner%_DataExchange_%qq%_%ffff%</value>
   </PartnerFolder>
 
+  <!-- The output filegeodatabase into which GDB files will be saved. -->
+  <GDBName>
+	<value>GiGL_DataExchange_%qq%_%ffff%</value>
+  </GDBName>
+
   <!-- The output sub-folder into which ArcGIS files will be saved. -->
   <ArcGISFolder>
 	<value>ArcGIS</value>

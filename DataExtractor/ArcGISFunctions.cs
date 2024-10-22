@@ -570,7 +570,7 @@ namespace DataTools
                 {
                     if (!await editOperation.ExecuteAsync())
                     {
-                        MessageBox.Show(editOperation.ErrorMessage);
+                        //MessageBox.Show(editOperation.ErrorMessage);
                         return false;
                     }
                 }
@@ -948,7 +948,6 @@ namespace DataTools
                     return false;
 
                 IReadOnlyList<ArcGIS.Core.Data.Field> fields = null;
-                List<string> fieldList = [];
 
                 bool fldIsNumeric = false;
 
@@ -992,6 +991,68 @@ namespace DataTools
             {
                 // Handle Exception.
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Calculate the total row length for a feature class
+        /// </summary>
+        /// <param name="layerName"></param>
+        /// <returns>bool</returns>
+        public async Task<int> GetFCRowLength(string layerName)
+        {
+            // Check there is an input feature layer name.
+            if (String.IsNullOrEmpty(layerName))
+                return 0;
+
+            try
+            {
+                // Find the feature layerName by name if it exists. Only search existing layers.
+                FeatureLayer featurelayer = FindLayer(layerName);
+
+                if (featurelayer == null)
+                    return 0;
+
+                IReadOnlyList<ArcGIS.Core.Data.Field> fields = null;
+                List<string> fieldList = [];
+
+                int rowLength = 1;
+
+                await QueuedTask.Run(() =>
+                {
+                    // Get the underlying feature class as a table.
+                    ArcGIS.Core.Data.Table table = featurelayer.GetTable();
+                    if (table != null)
+                    {
+                        // Get the table definition of the table.
+                        TableDefinition tableDef = table.GetDefinition();
+
+                        // Get the fields in the table.
+                        fields = tableDef.GetFields();
+
+                        int fldLength;
+
+                        // Loop through all fields.
+                        foreach (ArcGIS.Core.Data.Field fld in fields)
+                        {
+                            if (fld.FieldType == FieldType.Integer)
+                                fldLength = 10;
+                            else if (fld.FieldType == FieldType.Geometry)
+                                fldLength = 0;
+                            else
+                                fldLength = fld.Length;
+
+                            rowLength += fldLength;
+                        }
+                    }
+                });
+
+                return rowLength;
+            }
+            catch
+            {
+                // Handle Exception.
+                return 0;
             }
         }
 
@@ -1254,28 +1315,28 @@ namespace DataTools
                     ArcGIS.Core.Data.Field partnerField = featureClassDefinition.GetFields()
                         .First(x => x.Name.Equals(partnerColumn, StringComparison.OrdinalIgnoreCase));
 
-                    //TODO - find way to use partner clause AND order by
-                    //QueryFilter queryFilter = new QueryFilter
-                    //{
-                    //    WhereClause = partnerClause,
-                    //    PostfixClause = "ORDER BY " + partnerColumn
-                    //};
-
-                    //// Create a cursor of the sorted features.
-                    //using RowCursor rowCursor = featureClass.Search(queryFilter, false);
-
-                    // Create a SortDescription for the key field.
-                    ArcGIS.Core.Data.SortDescription sortDescription = new(partnerField)
+                    // Create a query filter using the partner clause.
+                    QueryFilter queryFilter = new()
                     {
-                        CaseSensitivity = CaseSensitivity.Insensitive,
-                        SortOrder = ArcGIS.Core.Data.SortOrder.Ascending
+                        WhereClause = partnerClause,
+                        PostfixClause = "ORDER BY " + partnerColumn
                     };
 
-                    // Create a TableSortDescription.
-                    TableSortDescription tableSortDescription = new([sortDescription]);
-
                     // Create a cursor of the sorted features.
-                    using RowCursor rowCursor = featureClass.Sort(tableSortDescription);
+                    using RowCursor rowCursor = featureClass.Search(queryFilter, false);
+
+                    //// Create a SortDescription for the key field.
+                    //ArcGIS.Core.Data.SortDescription sortDescription = new(partnerField)
+                    //{
+                    //    CaseSensitivity = CaseSensitivity.Insensitive,
+                    //    SortOrder = ArcGIS.Core.Data.SortOrder.Ascending
+                    //};
+
+                    //// Create a TableSortDescription.
+                    //TableSortDescription tableSortDescription = new([sortDescription]);
+
+                    //// Create a cursor of the sorted features.
+                    //using RowCursor rowCursor = featureClass.Sort(tableSortDescription);
 
                     // Loop through the feature class/table using the cursor.
                     while (rowCursor.MoveNext())
@@ -1283,7 +1344,6 @@ namespace DataTools
                         // Get the current row.
                         using Row record = rowCursor.Current;
 
-                        //TODO - find way to use partner clause instead
                         if (Convert.ToString(record[activeColumn]).ToLower(System.Globalization.CultureInfo.CurrentCulture) is "y")
                         {
                             // Create a new partner for this row.
@@ -1297,8 +1357,7 @@ namespace DataTools
                                 SQLTable = Convert.ToString(record[sqlTableColumn]),
                                 SQLFiles = Convert.ToString(record[sqlFilesColumn]),
                                 MapFiles = Convert.ToString(record[mapFilesColumn]),
-                                Tags = Convert.ToString(record[tagsColumn]),
-                                IsActive = true
+                                Tags = Convert.ToString(record[tagsColumn])
                             };
 
                             // Add the partner to the list of active partners.

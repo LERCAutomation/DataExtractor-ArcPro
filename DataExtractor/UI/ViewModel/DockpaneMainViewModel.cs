@@ -437,7 +437,8 @@ namespace DataExtractor.UI
             _paneH2VM = new PaneHeader2ViewModel(_dockPane, _paneH1VM.ToolConfig);
 
             // Load the form (don't wait for the response).
-            Task.Run(() => _paneH2VM.ResetFormAsync(false));
+            //Task.Run(() => _paneH2VM.ResetFormAsync(false));
+            await _paneH2VM.ResetFormAsync(false);
 
             return true;
         }

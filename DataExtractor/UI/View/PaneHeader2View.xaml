@@ -54,6 +54,7 @@
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
                           ItemsSource="{Binding PartnersList}"
+                          MouseDoubleClick="ListViewPartners_MouseDoubleClick"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           SelectionChanged="ListViewPartners_SelectionChanged"
                           SelectedIndex="{Binding PartnersList_SelectedIndex}"
@@ -154,7 +155,9 @@
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
                           ItemsSource="{Binding SQLLayersList}"
+                          MouseDoubleClick="ListViewSQLLayers_MouseDoubleClick"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          SizeChanged="ListViewSQLLayers_SizeChanged"
                           SelectionChanged="ListViewSQLLayers_SelectionChanged"
                           SelectedIndex="{Binding SQLLayersList_SelectedIndex}"
                           SelectionMode="Extended">
@@ -165,7 +168,7 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding SQLNodeGroupWidth}" >
+                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding SQLNodeGroupWidth}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
@@ -175,7 +178,7 @@
                             <GridViewColumn DisplayMemberBinding="{Binding NodeTable}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
+                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -254,7 +257,9 @@
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
                           ItemsSource="{Binding MapLayersList}"
+                          MouseDoubleClick="ListViewMapLayers_MouseDoubleClick"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          SizeChanged="ListViewMapLayers_SizeChanged"
                           SelectionChanged="ListViewMapLayers_SelectionChanged"
                           SelectedIndex="{Binding MapLayersList_SelectedIndex}"
                           SelectionMode="Extended">
@@ -268,14 +273,14 @@
                             <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding MapNodeGroupWidth}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
+                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn DisplayMemberBinding="{Binding NodeLayer}" Width="Auto" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" />
+                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

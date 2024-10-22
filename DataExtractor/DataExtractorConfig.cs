@@ -234,6 +234,16 @@ namespace DataExtractor
                 throw new("Could not locate item 'PartnerFolder' in the XML profile.");
             }
 
+            // The output filegeodatabase into which GDB files will be saved.
+            try
+            {
+                _gdbName = _xmlDataExtractor["GDBName"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'GDBName' in the XML profile.");
+            }
+
             // The name of the sub-folder which wil be created for all partner ArcGIS outputs.
             try
             {
@@ -748,13 +758,14 @@ namespace DataExtractor
                     if (node.NodeType != XmlNodeType.Comment)
                     {
                         string nodeName = node.Name;
-                        nodeName = nodeName.Replace("_", " "); // Replace any underscores with spaces for better display.
 
                         // Create a new layer for this node.
                         MapLayer layer = new(nodeName);
 
                         try
                         {
+                            nodeName = nodeName.Replace("_", " "); // Replace any underscores with spaces for better display.
+
                             string nodeGroup = nodeName.Substring(0, nodeName.IndexOf('-')).Trim();
                             string nodeLayer = nodeName.Substring(nodeName.IndexOf('-') + 1).Trim();
                             layer.NodeGroup = nodeGroup;
@@ -983,6 +994,13 @@ namespace DataExtractor
         public string PartnerFolder
         {
             get { return _partnerFolder; }
+        }
+
+        private string _gdbName;
+
+        public string GDBName
+        {
+            get { return _gdbName; }
         }
 
         private string _arcGISFolder;

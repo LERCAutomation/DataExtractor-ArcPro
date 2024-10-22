@@ -19,16 +19,22 @@
 // You should have received a copy of the GNU General Public License
 // along with with program.  If not, see <http://www.gnu.org/licenses/>.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
+using System.Windows.Input;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using MessageBox = ArcGIS.Desktop.Framework.Dialogs.MessageBox;
 
 namespace DataExtractor.UI
 {
     /// <summary>
     /// Interaction logic for PaneHeader2View.xaml
     /// </summary>
-    public partial class PaneHeader2View : UserControl
+    public partial class PaneHeader2View : System.Windows.Controls.UserControl
     {
         public PaneHeader2View()
         {
@@ -40,7 +46,7 @@ namespace DataExtractor.UI
             List<Partner> added = e.AddedItems.OfType<Partner>().ToList();
             List<Partner> removed = e.RemovedItems.OfType<Partner>().ToList();
 
-            var listView = sender as ListView;
+            var listView = sender as System.Windows.Controls.ListView;
             var itemsSelected = listView.Items.OfType<Partner>().ToList().Where(s => s.IsSelected == true).ToList();
             var itemsUnselected = listView.Items.OfType<Partner>().Where(p => p.IsSelected == false).ToList();
             var selectedItems = listView.SelectedItems.OfType<Partner>().ToList();
@@ -54,12 +60,27 @@ namespace DataExtractor.UI
                     listView.Items.OfType<Partner>().ToList().Where(s => selectedItems.All(s2 => s2.PartnerName != s.PartnerName)).ToList().ForEach(p => p.IsSelected = false);
             }
         }
+
+        private void ListViewPartners_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var partner = ListViewPartners.SelectedItem as Partner;
+            if (partner != null)
+            {
+                string notes = (string.IsNullOrEmpty(partner.Notes.Trim()) ? string.Empty : "\r\n\r\nNotes : " + partner.Notes);
+
+                // Display the selected partner's details.
+                string strText = string.Format("{0} ({1})\r\nGIS Format : {2}\r\nExport Format : {3}\r\n\r\nSQL Table : {4}\r\nSQL Files : {5}\r\n\r\nMap Files : {6}{7}",
+                    partner.PartnerName, partner.ShortName, partner.GISFormat, partner.ExportFormat, partner.SQLTable, partner.SQLFiles.Replace(" ","").Replace(",", ", "), partner.MapFiles.Replace(" ", "").Replace(",", ", "), notes);
+                MessageBox.Show(strText, "Partner Details", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
         private void ListViewSQLLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             List<SQLLayer> added = e.AddedItems.OfType<SQLLayer>().ToList();
             List<SQLLayer> removed = e.RemovedItems.OfType<SQLLayer>().ToList();
 
-            var listView = sender as ListView;
+            var listView = sender as System.Windows.Controls.ListView;
             var itemsSelected = listView.Items.OfType<SQLLayer>().ToList().Where(s => s.IsSelected == true).ToList();
             var itemsUnselected = listView.Items.OfType<SQLLayer>().Where(p => p.IsSelected == false).ToList();
             var selectedItems = listView.SelectedItems.OfType<SQLLayer>().ToList();
@@ -73,12 +94,31 @@ namespace DataExtractor.UI
                     listView.Items.OfType<SQLLayer>().ToList().Where(s => selectedItems.All(s2 => s2.NodeName != s.NodeName)).ToList().ForEach(p => p.IsSelected = false);
             }
         }
+
+        private void ListViewSQLLayers_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var sqlLayer = ListViewSQLLayers.SelectedItem as SQLLayer;
+            if (sqlLayer != null)
+            {
+                string outputType = (string.IsNullOrEmpty(sqlLayer.OutputType) ? string.Empty : "\r\nOutput Type : " + sqlLayer.OutputType);
+                string macroName = (string.IsNullOrEmpty(sqlLayer.MacroName) ? string.Empty : "\r\n\r\nMacro Name : " + sqlLayer.MacroName);
+                string macroParms = (string.IsNullOrEmpty(sqlLayer.MacroParms) ? string.Empty : "\r\n\r\nMacro Parms : " + sqlLayer.MacroParms);
+                string whereClause = (string.IsNullOrEmpty(sqlLayer.WhereClause) ? string.Empty : "\r\n\r\nWhere Clause : " + sqlLayer.WhereClause);
+                string orderBy = (string.IsNullOrEmpty(sqlLayer.OrderColumns) ? string.Empty : "\r\n\r\nOrder By : " + sqlLayer.OrderColumns);
+
+                // Display the selected sql layer's details.
+                string strText = string.Format("{0}\r\nOutput Name : {1}{2}{3}{4}{5}{6}",
+                    sqlLayer.NodeName, sqlLayer.OutputName, outputType, whereClause, orderBy, macroName, macroParms);
+                MessageBox.Show(strText, "SQL Layer Details", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
         private void ListViewMapLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             List<MapLayer> added = e.AddedItems.OfType<MapLayer>().ToList();
             List<MapLayer> removed = e.RemovedItems.OfType<MapLayer>().ToList();
 
-            var listView = sender as ListView;
+            var listView = sender as System.Windows.Controls.ListView;
             var itemsSelected = listView.Items.OfType<MapLayer>().ToList().Where(s => s.IsSelected == true).ToList();
             var itemsUnselected = listView.Items.OfType<MapLayer>().Where(p => p.IsSelected == false).ToList();
             var selectedItems = listView.SelectedItems.OfType<MapLayer>().ToList();
@@ -91,6 +131,80 @@ namespace DataExtractor.UI
                 if (selectedItems.Count == 1)
                     listView.Items.OfType<MapLayer>().ToList().Where(s => selectedItems.All(s2 => s2.NodeName != s.NodeName)).ToList().ForEach(p => p.IsSelected = false);
             }
+        }
+
+        private void ListViewMapLayers_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var mapLayer = ListViewMapLayers.SelectedItem as MapLayer;
+            if (mapLayer != null)
+            {
+                string outputType = (string.IsNullOrEmpty(mapLayer.OutputType) ? string.Empty : "\r\nOutput Type : " + mapLayer.OutputType);
+                string macroName = (string.IsNullOrEmpty(mapLayer.MacroName) ? string.Empty : "\r\n\r\nMacro Name : " + mapLayer.MacroName);
+                string macroParms = (string.IsNullOrEmpty(mapLayer.MacroParms) ? string.Empty : "\r\n\r\nMacro Parms : " + mapLayer.MacroParms);
+                string whereClause = (string.IsNullOrEmpty(mapLayer.WhereClause) ? string.Empty : "\r\n\r\nWhere Clause : " + mapLayer.WhereClause);
+                string orderBy = (string.IsNullOrEmpty(mapLayer.OrderColumns) ? string.Empty : "\r\n\r\nOrder By : " + mapLayer.OrderColumns);
+
+                // Display the selected sql layer's details.
+                string strText = string.Format("{0}\r\nLayer Name : {1}\r\nOutput Name : {2}{3}{4}{5}{6}{7}",
+                    mapLayer.NodeName, mapLayer.LayerName, mapLayer.OutputName, outputType, whereClause, orderBy, macroName, macroParms);
+                MessageBox.Show(strText, "Map Layer Details", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void ListViewSQLLayers_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            //MessageBox.Show("SizeChanged");
+
+            //foreach (GridViewColumn c in ((GridView)ListViewMapLayers.View).Columns)
+            //{
+            //    //if (!double.IsNaN(c.Width))
+            //    if ((c.Width != 0) && (c.ActualWidth != 0))
+            //    {
+            //        //c.Width = double.NaN;
+            //        c.Width = c.ActualWidth;
+            //        //c.Width = double.NaN;
+            //    }
+            //}
+
+            int autoFillColumnIndex = (ListViewSQLLayers.View as GridView).Columns.Count - 1;
+
+            if (double.IsNaN(ListViewSQLLayers.ActualWidth))
+                ListViewSQLLayers.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
+
+            double remainingSpace = ListViewSQLLayers.ActualWidth - SystemParameters.VerticalScrollBarWidth - 10;
+            for (int i = 0; i < (ListViewSQLLayers.View as GridView).Columns.Count; i++)
+                if (i != autoFillColumnIndex)
+                    remainingSpace -= (ListViewSQLLayers.View as GridView).Columns[i].ActualWidth;
+
+            (ListViewSQLLayers.View as GridView).Columns[autoFillColumnIndex].Width = remainingSpace >= 0 ? remainingSpace : 0;
+        }
+
+        private void ListViewMapLayers_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            //MessageBox.Show("SizeChanged");
+
+            //foreach (GridViewColumn c in ((GridView)ListViewMapLayers.View).Columns)
+            //{
+            //    //if (!double.IsNaN(c.Width))
+            //    if ((c.Width != 0) && (c.ActualWidth != 0))
+            //    {
+            //        //c.Width = double.NaN;
+            //        c.Width = c.ActualWidth;
+            //        //c.Width = double.NaN;
+            //    }
+            //}
+
+            int autoFillColumnIndex = (ListViewMapLayers.View as GridView).Columns.Count - 1;
+
+            if (double.IsNaN(ListViewMapLayers.ActualWidth))
+                ListViewMapLayers.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
+
+            double remainingSpace = ListViewMapLayers.ActualWidth - SystemParameters.VerticalScrollBarWidth - 10;
+            for (int i = 0; i < (ListViewMapLayers.View as GridView).Columns.Count; i++)
+                if (i != autoFillColumnIndex)
+                    remainingSpace -= (ListViewMapLayers.View as GridView).Columns[i].ActualWidth;
+
+            (ListViewMapLayers.View as GridView).Columns[autoFillColumnIndex].Width = remainingSpace >= 0 ? remainingSpace : 0;
         }
     }
 }

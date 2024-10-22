@@ -334,8 +334,7 @@ namespace DataExtractor.UI
             }
 
             // Initialise the search pane.
-            bool initialised = await _dockPane.InitialiseExtractPaneAsync();
-            if (initialised)
+            if (await _dockPane.InitialiseExtractPaneAsync())
             {
                 // Select the search pane.
                 _dockPane.SelectedPanelHeaderIndex = 1;
@@ -594,7 +593,6 @@ namespace DataExtractor.UI
             // If the XML config file can't be loaded.
             if (!_xmlConfig.XMLLoaded)
             {
-                //MessageBox.Show(string.Format("Error loading XML File '{0}'.", _xmlConfigPath), _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
                 _xmlLoaded = false;
                 return;
             }

@@ -21,6 +21,7 @@
 
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Data.Exceptions;
+using ArcGIS.Core.Threading.Tasks;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
 using ArcGIS.Desktop.Internal.Mapping;
 using System;
@@ -318,7 +319,7 @@ namespace DataTools
         }
 
         /// <summary>
-        /// Get the fields  for the specified table in the geodatabase.
+        /// Get the fields for the specified table in the geodatabase.
         /// </summary>
         /// <param name="fullPath"></param>
         /// <returns>IReadOnlyList<Field></returns>
@@ -363,10 +364,9 @@ namespace DataTools
                 catch (Exception)
                 {
                     // ExecuteStatement throws an exception.
-                    //MessageBox.Show(ex.Message);
                     throw;
                 }
-            });
+            }, TaskCreationOptions.LongRunning);
 
             return true;
         }
@@ -744,6 +744,59 @@ namespace DataTools
             });
 
             return rows;
+        }
+
+        /// <summary>
+        /// Calculate the total row length in a table within the database.
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <returns>bool</returns>
+        public async Task<int> TableRowLength(string tableName)
+        {
+            // Check there is an input table name.
+            if (String.IsNullOrEmpty(tableName))
+                return -1;
+
+            int rowLength = 0;
+
+            // Open a connection to the geodatabase if not already open.
+            if (!GeodatabaseOpen) await OpenGeodatabase();
+
+            // If still not open.
+            if (!GeodatabaseOpen) return -1;
+
+            try
+            {
+                // Open the SQLServer geodatabase via the .sde connection file.
+                await QueuedTask.Run(() =>
+                {
+                    // Try and get the table definition.
+                    using TableDefinition tableDefinition = _geodatabase.GetDefinition<TableDefinition>(tableName);
+
+                    // Get the fields in the table.
+                    IReadOnlyList<Field> tableFields = tableDefinition.GetFields();
+
+                    int fldLength;
+
+                    // Loop through all fields.
+                    foreach (Field fld in tableFields)
+                    {
+                        if (fld.FieldType == FieldType.Geometry)
+                            fldLength = 0;
+                        else
+                            fldLength = fld.Length;
+
+                        rowLength += fldLength;
+                    }
+                });
+            }
+            catch
+            {
+                // Handle Exception.
+                return -1;
+            }
+
+            return rowLength;
         }
 
         #endregion Tables
