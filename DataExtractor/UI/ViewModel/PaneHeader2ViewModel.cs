@@ -779,6 +779,7 @@ namespace DataExtractor.UI
         /// </summary>
         private ObservableCollection<MapLayer> _mapLayersList;
         private ObservableCollection<MapLayer> _openLayersList;
+        private List<string> _closedLayers;
 
         /// <summary>
         /// Get the list of loaded GIS Map layers.
@@ -1110,14 +1111,14 @@ namespace DataExtractor.UI
                 // Load the list of partners (don't wait)
                 Task partnersTask = LoadPartnersAsync(message);
 
+                // Reload the list of SQL layers from the XML profile (don't wait).
+                Task sqlLayersTask = LoadSQLLayersAsync(message);
+
                 // Reload the list of GIS map layers (don't wait).
                 Task mapLayersTask = LoadMapLayersAsync(message);
 
-                // Reload the list of SQL layers from the XML profile.
-                LoadSQLLayers();
-
                 // Wait for all of the lists to load.
-                await Task.WhenAll(partnersTask, sqlTableNamesTask, mapLayersTask);
+                await Task.WhenAll(partnersTask, sqlTableNamesTask, sqlLayersTask, mapLayersTask);
 
                 // Set the list of active partners (in partner name order).
                 PartnersList = new ObservableCollection<Partner>(_activePartnersList.OrderBy(a => a.PartnerName));
@@ -1137,6 +1138,33 @@ namespace DataExtractor.UI
                 // Update the fields and buttons in the form.
                 UpdateFormControls();
                 _dockPane.RefreshPanel1Buttons();
+
+                // Show a message if there are no open map layers.
+                if (!_openLayersList.Any())
+                {
+                    ShowMessage("No map layers in active map.", MessageType.Warning);
+                    return;
+                }
+
+                // Warn the user of any closed map layers.
+                int closedLayerCount = _closedLayers.Count;
+                if (closedLayerCount > 0)
+                {
+                    string closedLayerWarning = "";
+                    if (closedLayerCount == 1)
+                    {
+                        closedLayerWarning = "Layer '" + _closedLayers[0] + "' is not loaded.";
+                    }
+                    else
+                    {
+                        closedLayerWarning = string.Format("{0} layers are not loaded.", closedLayerCount.ToString());
+                    }
+
+                    ShowMessage(closedLayerWarning, MessageType.Warning);
+
+                    if (message)
+                        MessageBox.Show(closedLayerWarning, _displayName, MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
         }
 
@@ -1222,19 +1250,41 @@ namespace DataExtractor.UI
         /// <summary>
         /// Load the list of SQL layers.
         /// </summary>
+        /// <param name="message"></param>
         /// <returns></returns>
-        public void LoadSQLLayers()
+        public async Task LoadSQLLayersAsync(bool message)
         {
             // Reset the list of SQL tables.
             _sqlLayersListTemp = [];
 
-            // Loop through all of the layers to check if they are open
-            // in the active map.
-            foreach (SQLLayer table in _sqlLayers)
+            // Load the SQL table variables from the XML profile.
+            try
             {
-                // Add the open layers to the list.
-                _sqlLayersListTemp.Add(table);
+                await Task.Run(() =>
+                {
+                if (!_toolConfig.GetSQLVariables())
+                    return;
+                });
             }
+            catch (Exception ex)
+            {
+                // Only report message if user was prompted for the XML
+                // file (i.e. the user interface has already loaded).
+                if (message)
+                    ShowMessage("Error loading SQL variables from XML file. " + ex.Message, MessageType.Warning);
+                return;
+            }
+
+            await Task.Run(() =>
+            {
+                // Loop through all of the layers to check if they are open
+                // in the active map.
+                foreach (SQLLayer table in _sqlLayers)
+                {
+                    // Add the open layers to the list.
+                    _sqlLayersListTemp.Add(table);
+                }
+            });
         }
 
         /// <summary>
@@ -1244,7 +1294,29 @@ namespace DataExtractor.UI
         /// <returns></returns>
         public async Task LoadMapLayersAsync(bool message)
         {
-            List<string> closedLayers = []; // The closed layers by name.
+            // Reset the list of open layers.
+            _openLayersList = [];
+
+            // Rest the list of closed layers.
+            _closedLayers = [];
+
+            // Load the map layer variables from the XML profile.
+            try
+            {
+                await Task.Run(() =>
+                {
+                    if (!_toolConfig.GetMapVariables())
+                        return;
+                });
+            }
+            catch (Exception ex)
+            {
+                // Only report message if user was prompted for the XML
+                // file (i.e. the user interface has already loaded).
+                if (message)
+                    ShowMessage("Error loading Map variables from XML file. " + ex.Message, MessageType.Warning);
+                return;
+            }
 
             await Task.Run(() =>
             {
@@ -1256,9 +1328,6 @@ namespace DataExtractor.UI
 
                 // Check if there is an active map.
                 bool mapOpen = _mapFunctions.MapName != null;
-
-                // Reset the list of open layers.
-                _openLayersList = [];
 
                 if (mapOpen)
                 {
@@ -1277,38 +1346,11 @@ namespace DataExtractor.UI
                         {
                             // Only add if the user wants to be warned of this one.
                             if (layer.LoadWarning)
-                                closedLayers.Add(layer.LayerName);
+                                _closedLayers.Add(layer.LayerName);
                         }
                     }
                 }
             });
-
-            // Show a message if there are no open layers.
-            if (!_openLayersList.Any())
-            {
-                ShowMessage("No map layers in active map.", MessageType.Warning);
-                return;
-            }
-
-            // Warn the user of closed layers.
-            int closedLayerCount = closedLayers.Count;
-            if (closedLayerCount > 0)
-            {
-                string closedLayerWarning = "";
-                if (closedLayerCount == 1)
-                {
-                    closedLayerWarning = "Layer '" + closedLayers[0] + "' is not loaded.";
-                }
-                else
-                {
-                    closedLayerWarning = string.Format("{0} layers are not loaded.", closedLayerCount.ToString());
-                }
-
-                ShowMessage(closedLayerWarning, MessageType.Warning);
-
-                if (message)
-                    MessageBox.Show(closedLayerWarning, _displayName, MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
         }
 
         /// <summary>

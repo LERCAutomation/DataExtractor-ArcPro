@@ -438,7 +438,7 @@ namespace DataExtractor.UI
 
             // Load the form (don't wait for the response).
             //Task.Run(() => _paneH2VM.ResetFormAsync(false));
-            await _paneH2VM.ResetFormAsync(false);
+            _paneH2VM.ResetFormAsync(false);
 
             return true;
         }

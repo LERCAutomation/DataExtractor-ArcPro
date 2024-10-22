@@ -98,38 +98,6 @@ namespace DataExtractor
                 _xmlLoaded = false;
                 return;
             }
-
-            // Get the SQL variables.
-            try
-            {
-                if (!GetSQLVariables())
-                    return;
-            }
-            catch (Exception ex)
-            {
-                // Only report message if user was prompted for the XML
-                // file (i.e. the user interface has already loaded).
-                if (msgErrors)
-                    MessageBox.Show("Error loading XML file. " + ex.Message, _toolName, MessageBoxButton.OK, MessageBoxImage.Error);
-                _xmlLoaded = false;
-                return;
-            }
-
-            // Get the map variables.
-            try
-            {
-                if (!GetMapVariables())
-                    return;
-            }
-            catch (Exception ex)
-            {
-                // Only report message if user was prompted for the XML
-                // file (i.e. the user interface has already loaded).
-                if (msgErrors)
-                    MessageBox.Show("Error loading XML file. " + ex.Message, _toolName, MessageBoxButton.OK, MessageBoxImage.Error);
-                _xmlLoaded = false;
-                return;
-            }
         }
 
         #endregion Constructor
