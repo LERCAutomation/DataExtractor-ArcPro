@@ -26,6 +26,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Media;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using MessageBox = ArcGIS.Desktop.Framework.Dialogs.MessageBox;
 
@@ -151,60 +152,59 @@ namespace DataExtractor.UI
             }
         }
 
+        private void ListViewPartners_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            var listView = sender as System.Windows.Controls.ListView;
+
+            ScrollViewer sv = FindVisualChild<ScrollViewer>(listView);
+            Visibility vsVisibility = sv.ComputedVerticalScrollBarVisibility;
+            double vsWidth = ((vsVisibility == Visibility.Visible) ? SystemParameters.VerticalScrollBarWidth : 0);
+
+            var gridView = listView.View as GridView;
+            gridView.Columns[0].Width = listView.ActualWidth - vsWidth - 10;
+        }
+
         private void ListViewSQLLayers_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            //MessageBox.Show("SizeChanged");
+            var listView = sender as System.Windows.Controls.ListView;
 
-            //foreach (GridViewColumn c in ((GridView)ListViewMapLayers.View).Columns)
-            //{
-            //    //if (!double.IsNaN(c.Width))
-            //    if ((c.Width != 0) && (c.ActualWidth != 0))
-            //    {
-            //        //c.Width = double.NaN;
-            //        c.Width = c.ActualWidth;
-            //        //c.Width = double.NaN;
-            //    }
-            //}
+            ScrollViewer sv = FindVisualChild<ScrollViewer>(listView);
+            Visibility vsVisibility = sv.ComputedVerticalScrollBarVisibility;
+            double vsWidth = ((vsVisibility == Visibility.Visible) ? SystemParameters.VerticalScrollBarWidth : 0);
 
-            int autoFillColumnIndex = (ListViewSQLLayers.View as GridView).Columns.Count - 1;
-
-            if (double.IsNaN(ListViewSQLLayers.ActualWidth))
-                ListViewSQLLayers.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
-
-            double remainingSpace = ListViewSQLLayers.ActualWidth - SystemParameters.VerticalScrollBarWidth - 10;
-            for (int i = 0; i < (ListViewSQLLayers.View as GridView).Columns.Count; i++)
-                if (i != autoFillColumnIndex)
-                    remainingSpace -= (ListViewSQLLayers.View as GridView).Columns[i].ActualWidth;
-
-            (ListViewSQLLayers.View as GridView).Columns[autoFillColumnIndex].Width = remainingSpace >= 0 ? remainingSpace : 0;
+            var gridView = listView.View as GridView;
+            gridView.Columns[0].Width = listView.ActualWidth - vsWidth - 10;
         }
 
         private void ListViewMapLayers_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            //MessageBox.Show("SizeChanged");
+            var listView = sender as System.Windows.Controls.ListView;
 
-            //foreach (GridViewColumn c in ((GridView)ListViewMapLayers.View).Columns)
-            //{
-            //    //if (!double.IsNaN(c.Width))
-            //    if ((c.Width != 0) && (c.ActualWidth != 0))
-            //    {
-            //        //c.Width = double.NaN;
-            //        c.Width = c.ActualWidth;
-            //        //c.Width = double.NaN;
-            //    }
-            //}
+            ScrollViewer sv = FindVisualChild<ScrollViewer>(listView);
+            Visibility vsVisibility = sv.ComputedVerticalScrollBarVisibility;
+            double vsWidth = ((vsVisibility == Visibility.Visible) ? SystemParameters.VerticalScrollBarWidth : 0);
 
-            int autoFillColumnIndex = (ListViewMapLayers.View as GridView).Columns.Count - 1;
+            var gridView = listView.View as GridView;
+            gridView.Columns[0].Width = listView.ActualWidth - vsWidth - 10;
+        }
 
-            if (double.IsNaN(ListViewMapLayers.ActualWidth))
-                ListViewMapLayers.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
+        private childItem FindVisualChild<childItem>(DependencyObject obj)
+               where childItem : DependencyObject
 
-            double remainingSpace = ListViewMapLayers.ActualWidth - SystemParameters.VerticalScrollBarWidth - 10;
-            for (int i = 0; i < (ListViewMapLayers.View as GridView).Columns.Count; i++)
-                if (i != autoFillColumnIndex)
-                    remainingSpace -= (ListViewMapLayers.View as GridView).Columns[i].ActualWidth;
-
-            (ListViewMapLayers.View as GridView).Columns[autoFillColumnIndex].Width = remainingSpace >= 0 ? remainingSpace : 0;
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(obj, i);
+                if (child != null && child is childItem)
+                    return (childItem)child;
+                else
+                {
+                    childItem childOfChild = FindVisualChild<childItem>(child);
+                    if (childOfChild != null)
+                        return childOfChild;
+                }
+            }
+            return null;
         }
     }
 }

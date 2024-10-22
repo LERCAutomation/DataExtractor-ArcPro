@@ -56,6 +56,7 @@
                           ItemsSource="{Binding PartnersList}"
                           MouseDoubleClick="ListViewPartners_MouseDoubleClick"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          SizeChanged="ListViewPartners_SizeChanged"
                           SelectionChanged="ListViewPartners_SelectionChanged"
                           SelectedIndex="{Binding PartnersList_SelectedIndex}"
                           SelectionMode="Extended">
@@ -67,13 +68,6 @@
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
                             <GridViewColumn DisplayMemberBinding="{Binding PartnerName}" >
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn DisplayMemberBinding="{Binding ShortName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
@@ -150,6 +144,10 @@
                        Margin="0,0,0,2"
                        Padding="0"
                        VerticalAlignment="Center" />
+                <Label Name="LabelSQLLayersMax"
+                       Grid.Row="0"
+                       Grid.Column="1"
+                       Visibility="Hidden" />
                 <ListView Name="ListViewSQLLayers"
                           Grid.Row="1"
                           Grid.Column="1"
@@ -168,14 +166,7 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding SQLNodeGroupWidth}">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeTable}">
+                            <GridViewColumn DisplayMemberBinding="{Binding NodeName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
@@ -270,14 +261,7 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeGroup}" Width="{Binding MapNodeGroupWidth}" >
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeLayer}" Width="Auto" >
+                            <GridViewColumn DisplayMemberBinding="{Binding NodeName}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />

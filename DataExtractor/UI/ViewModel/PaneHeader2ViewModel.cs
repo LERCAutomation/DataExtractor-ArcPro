@@ -625,28 +625,6 @@ namespace DataExtractor.UI
 
         #region Properties
 
-        public string SQLNodeGroupWidth
-        {
-            get { return _toolConfig.SQLNodeGroupWidth; }
-        }
-
-        public string MapNodeGroupWidth
-        {
-            get { return _toolConfig.MapNodeGroupWidth; }
-        }
-
-        //private double _mapNodeLayerWidth = Double.NaN;
-
-        //public double MapNodeLayerWidth
-        //{
-        //    get { return _mapNodeLayerWidth; }
-        //    set
-        //    {
-        //        //if ((!Double.IsNaN(value)) && ((value > _mapNodeLayerWidth) || (Double.IsNaN(_mapNodeLayerWidth))))
-        //            _mapNodeLayerWidth = value;
-        //    }
-        //}
-
         /// <summary>
         /// The list of active partners.
         /// </summary>
@@ -669,7 +647,7 @@ namespace DataExtractor.UI
             }
         }
 
-        private int? _partnersListHeight = null;
+        private int? _partnersListHeight = 179;
 
         public int? PartnersListHeight
         {
@@ -746,7 +724,7 @@ namespace DataExtractor.UI
             }
         }
 
-        private int? _sqlLayersListHeight = null;
+        private int? _sqlLayersListHeight = 162;
 
         public int? SQLLayersListHeight
         {
@@ -818,7 +796,7 @@ namespace DataExtractor.UI
             }
         }
 
-        private int? _mapLayersListHeight = null;
+        private int? _mapLayersListHeight = 162;
 
         public int? MapLayersListHeight
         {
@@ -1050,7 +1028,6 @@ namespace DataExtractor.UI
             OnPropertyChanged(nameof(SQLLayersList));
             OnPropertyChanged(nameof(SQLLayersListEnabled));
             OnPropertyChanged(nameof(MapLayersList));
-            OnPropertyChanged(nameof(MapNodeGroupWidth));
             OnPropertyChanged(nameof(SelectionTypeList));
             OnPropertyChanged(nameof(SelectionTypeListEnabled));
             OnPropertyChanged(nameof(Message));
@@ -1160,13 +1137,6 @@ namespace DataExtractor.UI
                 // Update the fields and buttons in the form.
                 UpdateFormControls();
                 _dockPane.RefreshPanel1Buttons();
-
-                // Force list column widths to reset.
-                //_mapNodeLayerWidth = 100;
-                //OnPropertyChanged(nameof(MapNodeLayerWidth));
-                PartnersListExpandCommandClick(null);
-                SQLLayersListExpandCommandClick(null);
-                MapLayersListExpandCommandClick(null);
             }
         }
 
@@ -1358,10 +1328,6 @@ namespace DataExtractor.UI
 
                 // Clear the list of open GIS map layers.
                 MapLayersList = [];
-
-                //// Force map node layer column width to reset.
-                //_mapNodeLayerWidth = 10;
-                //OnPropertyChanged(nameof(MapNodeLayerWidth));
 
                 // Update the fields and buttons in the form.
                 UpdateFormControls();
