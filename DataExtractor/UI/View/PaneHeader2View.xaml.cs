@@ -64,14 +64,13 @@ namespace DataExtractor.UI
 
         private void ListViewPartners_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var partner = ListViewPartners.SelectedItem as Partner;
-            if (partner != null)
+            if (ListViewPartners.SelectedItem is Partner partner)
             {
                 string notes = (string.IsNullOrEmpty(partner.Notes.Trim()) ? string.Empty : "\r\n\r\nNotes : " + partner.Notes);
 
                 // Display the selected partner's details.
                 string strText = string.Format("{0} ({1})\r\nGIS Format : {2}\r\nExport Format : {3}\r\n\r\nSQL Table : {4}\r\nSQL Files : {5}\r\n\r\nMap Files : {6}{7}",
-                    partner.PartnerName, partner.ShortName, partner.GISFormat, partner.ExportFormat, partner.SQLTable, partner.SQLFiles.Replace(" ","").Replace(",", ", "), partner.MapFiles.Replace(" ", "").Replace(",", ", "), notes);
+                    partner.PartnerName, partner.ShortName, partner.GISFormat, partner.ExportFormat, partner.SQLTable, partner.SQLFiles.Replace(" ", "").Replace(",", ", "), partner.MapFiles.Replace(" ", "").Replace(",", ", "), notes);
                 MessageBox.Show(strText, "Partner Details", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
@@ -98,8 +97,7 @@ namespace DataExtractor.UI
 
         private void ListViewSQLLayers_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var sqlLayer = ListViewSQLLayers.SelectedItem as SQLLayer;
-            if (sqlLayer != null)
+            if (ListViewSQLLayers.SelectedItem is SQLLayer sqlLayer)
             {
                 string outputType = (string.IsNullOrEmpty(sqlLayer.OutputType) ? string.Empty : "\r\nOutput Type : " + sqlLayer.OutputType);
                 string macroName = (string.IsNullOrEmpty(sqlLayer.MacroName) ? string.Empty : "\r\n\r\nMacro Name : " + sqlLayer.MacroName);
@@ -136,8 +134,7 @@ namespace DataExtractor.UI
 
         private void ListViewMapLayers_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var mapLayer = ListViewMapLayers.SelectedItem as MapLayer;
-            if (mapLayer != null)
+            if (ListViewMapLayers.SelectedItem is MapLayer mapLayer)
             {
                 string outputType = (string.IsNullOrEmpty(mapLayer.OutputType) ? string.Empty : "\r\nOutput Type : " + mapLayer.OutputType);
                 string macroName = (string.IsNullOrEmpty(mapLayer.MacroName) ? string.Empty : "\r\n\r\nMacro Name : " + mapLayer.MacroName);
@@ -188,15 +185,14 @@ namespace DataExtractor.UI
             gridView.Columns[0].Width = listView.ActualWidth - vsWidth - 10;
         }
 
-        private childItem FindVisualChild<childItem>(DependencyObject obj)
+        static private childItem FindVisualChild<childItem>(DependencyObject obj)
                where childItem : DependencyObject
-
         {
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
             {
                 DependencyObject child = VisualTreeHelper.GetChild(obj, i);
-                if (child != null && child is childItem)
-                    return (childItem)child;
+                if (child != null && child is childItem item)
+                    return item;
                 else
                 {
                     childItem childOfChild = FindVisualChild<childItem>(child);
@@ -204,6 +200,7 @@ namespace DataExtractor.UI
                         return childOfChild;
                 }
             }
+
             return null;
         }
     }

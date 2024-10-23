@@ -122,8 +122,6 @@ namespace DataExtractor.UI
         private bool? _defaultApplyExclusionClause;
         private bool? _defaultUseCentroids;
         private bool? _defaultUploadToServer;
-        private bool _defaultClearLogFile;
-        private bool _defaultOpenLogFile;
 
         private string _userID;
 
@@ -237,14 +235,6 @@ namespace DataExtractor.UI
             _defaultApplyExclusionClause = _toolConfig.DefaultApplyExclusionClause;
             _defaultUseCentroids = _toolConfig.DefaultUseCentroids;
             _defaultUploadToServer = _toolConfig.DefaultUploadToServer;
-            _defaultClearLogFile = _toolConfig.DefaultClearLogFile;
-            _defaultOpenLogFile = _toolConfig.DefaultOpenLogFile;
-
-            // Get all of the SQL table details.
-            _sqlLayers = _toolConfig.SQLLayers;
-
-            // Get all of the map layer details.
-            _mapLayers = _toolConfig.MapLayers;
         }
 
         #endregion Creator
@@ -647,13 +637,16 @@ namespace DataExtractor.UI
             }
         }
 
-        private int? _partnersListHeight = 179;
+        private double? _partnersListHeight = null;
 
-        public int? PartnersListHeight
+        public double? PartnersListHeight
         {
             get
             {
-                return _partnersListHeight;
+                if (_activePartnersList == null || _activePartnersList.Count == 0)
+                    return Double.NaN;
+                else
+                    return _partnersListHeight;
             }
         }
 
@@ -680,11 +673,6 @@ namespace DataExtractor.UI
             }
         }
 
-        public void ListViewPartners_MouseDoubleClick()
-        {
-
-        }
-
         private List<Partner> _selectedPartners;
 
         /// <summary>
@@ -706,7 +694,7 @@ namespace DataExtractor.UI
         /// The list of SQL tables.
         /// </summary>
         private ObservableCollection<SQLLayer> _sqlLayersList;
-        private ObservableCollection<SQLLayer> _sqlLayersListTemp;
+        private ObservableCollection<SQLLayer> _sqlXMLLayersList;
 
         /// <summary>
         /// Get the list of SQL tables.
@@ -724,13 +712,16 @@ namespace DataExtractor.UI
             }
         }
 
-        private int? _sqlLayersListHeight = 162;
+        private double? _sqlLayersListHeight = null;
 
-        public int? SQLLayersListHeight
+        public double? SQLLayersListHeight
         {
             get
             {
-                return _sqlLayersListHeight;
+                if (_sqlLayersList == null || _sqlLayersList.Count == 0)
+                    return Double.NaN;
+                else
+                    return _sqlLayersListHeight;
             }
         }
 
@@ -778,8 +769,8 @@ namespace DataExtractor.UI
         /// The list of loaded GIS Map layers.
         /// </summary>
         private ObservableCollection<MapLayer> _mapLayersList;
-        private ObservableCollection<MapLayer> _openLayersList;
-        private List<string> _closedLayers;
+        private ObservableCollection<MapLayer> _openMapLayersList;
+        private List<string> _closedMapLayersList;
 
         /// <summary>
         /// Get the list of loaded GIS Map layers.
@@ -797,13 +788,16 @@ namespace DataExtractor.UI
             }
         }
 
-        private int? _mapLayersListHeight = 162;
+        private double? _mapLayersListHeight = null;
 
-        public int? MapLayersListHeight
+        public double? MapLayersListHeight
         {
             get
             {
-                return _mapLayersListHeight;
+                if (_openMapLayersList == null || _openMapLayersList.Count == 0)
+                    return Double.NaN;
+                else
+                    return _mapLayersListHeight;
             }
         }
 
@@ -1090,81 +1084,91 @@ namespace DataExtractor.UI
         /// <returns></returns>
         public async Task LoadListsAsync(bool reset, bool message)
         {
-            // If not already processing.
-            if (_dockPane.ProcessStatus == null)
+            // If already processing then exit.
+            if (_dockPane.ProcessStatus != null)
+                return;
+
+            // Expand the lists (ready to be resized later).
+            _partnersListHeight = null;
+            _sqlLayersListHeight = null;
+            _mapLayersListHeight = null;
+
+            _dockPane.FormListsLoading = true;
+            if (reset)
+                _dockPane.ProgressUpdate("Refreshing lists...");
+            else
+                _dockPane.ProgressUpdate("Loading lists...");
+
+            // Clear any messages.
+            ClearMessage();
+
+            // Update the fields and buttons in the form.
+            UpdateFormControls();
+
+            // Get the list of SQL table names from SQL Server (don't wait).
+            Task sqlTableNamesTask = GetSQLTableNamesAsync();
+
+            // Load the list of partners (don't wait)
+            Task<string> partnersTask = LoadPartnersAsync();
+
+            // Reload the list of SQL layers from the XML profile (don't wait).
+            Task<string> sqlLayersTask = LoadSQLLayersAsync();
+
+            // Reload the list of GIS map layers (don't wait).
+            Task<string> mapLayersTask = LoadMapLayersAsync();
+
+            // Wait for all of the lists to load.
+            await Task.WhenAll(partnersTask, sqlTableNamesTask, sqlLayersTask, mapLayersTask);
+
+            // Set the list of active partners (in partner name order).
+            PartnersList = new ObservableCollection<Partner>(_activePartnersList.OrderBy(a => a.PartnerName));
+
+            // Set the list of SQL tables.
+            SQLLayersList = _sqlXMLLayersList;
+
+            // Set the list of open layers.
+            MapLayersList = _openMapLayersList;
+
+            // Hide progress update.
+            _dockPane.ProgressUpdate(null, -1, -1);
+
+            // Indicate the refresh has finished.
+            _dockPane.FormListsLoading = false;
+
+            // Update the fields and buttons in the form.
+            UpdateFormControls();
+            _dockPane.RefreshPanel1Buttons();
+
+            // Force list column widths to reset.
+            PartnersListExpandCommandClick(null);
+            SQLLayersListExpandCommandClick(null);
+            MapLayersListExpandCommandClick(null);
+
+            // Show any message from loading the partner list.
+            if (partnersTask.Result != null!)
             {
-                _dockPane.FormListsLoading = true;
-                if (reset)
-                    _dockPane.ProgressUpdate("Refreshing lists...");
-                else
-                    _dockPane.ProgressUpdate("Loading lists...");
+                ShowMessage(partnersTask.Result, MessageType.Warning);
+                if (message)
+                    MessageBox.Show(partnersTask.Result, _displayName, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-                // Clear any messages.
-                ClearMessage();
+            // Show any message from loading the SQL layers list.
+            if (sqlLayersTask.Result != null!)
+            {
+                ShowMessage(sqlLayersTask.Result, MessageType.Warning);
+                if (message)
+                    MessageBox.Show(sqlLayersTask.Result, _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
-                // Update the fields and buttons in the form.
-                UpdateFormControls();
-
-                // Get the list of SQL table names from SQL Server (don't wait).
-                Task sqlTableNamesTask = GetSQLTableNamesAsync();
-
-                // Load the list of partners (don't wait)
-                Task partnersTask = LoadPartnersAsync(message);
-
-                // Reload the list of SQL layers from the XML profile (don't wait).
-                Task sqlLayersTask = LoadSQLLayersAsync(message);
-
-                // Reload the list of GIS map layers (don't wait).
-                Task mapLayersTask = LoadMapLayersAsync(message);
-
-                // Wait for all of the lists to load.
-                await Task.WhenAll(partnersTask, sqlTableNamesTask, sqlLayersTask, mapLayersTask);
-
-                // Set the list of active partners (in partner name order).
-                PartnersList = new ObservableCollection<Partner>(_activePartnersList.OrderBy(a => a.PartnerName));
-
-                // Set the list of SQL tables.
-                SQLLayersList = _sqlLayersListTemp;
-
-                // Set the list of open layers.
-                MapLayersList = _openLayersList;
-
-                // Hide progress update.
-                _dockPane.ProgressUpdate(null, -1, -1);
-
-                // Indicate the refresh has finished.
-                _dockPane.FormListsLoading = false;
-
-                // Update the fields and buttons in the form.
-                UpdateFormControls();
-                _dockPane.RefreshPanel1Buttons();
-
-                // Show a message if there are no open map layers.
-                if (!_openLayersList.Any())
-                {
-                    ShowMessage("No map layers in active map.", MessageType.Warning);
-                    return;
-                }
-
-                // Warn the user of any closed map layers.
-                int closedLayerCount = _closedLayers.Count;
-                if (closedLayerCount > 0)
-                {
-                    string closedLayerWarning = "";
-                    if (closedLayerCount == 1)
-                    {
-                        closedLayerWarning = "Layer '" + _closedLayers[0] + "' is not loaded.";
-                    }
-                    else
-                    {
-                        closedLayerWarning = string.Format("{0} layers are not loaded.", closedLayerCount.ToString());
-                    }
-
-                    ShowMessage(closedLayerWarning, MessageType.Warning);
-
-                    if (message)
-                        MessageBox.Show(closedLayerWarning, _displayName, MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
+            // Show any message from loading the map layers list.
+            if (mapLayersTask.Result != null!)
+            {
+                ShowMessage(mapLayersTask.Result, MessageType.Warning);
+                if (message)
+                    MessageBox.Show(mapLayersTask.Result, _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
         }
 
@@ -1172,7 +1176,7 @@ namespace DataExtractor.UI
         /// Load the list of active partners.
         /// </summary>
         /// <returns></returns>
-        public async Task LoadPartnersAsync(bool message)
+        public async Task<string> LoadPartnersAsync()
         {
             if (_mapFunctions == null || _mapFunctions.MapName == null || MapView.Active.Map.Name != _mapFunctions.MapName)
             {
@@ -1186,65 +1190,53 @@ namespace DataExtractor.UI
             // Reset the list of active partners.
             _activePartnersList = [];
 
-            if (mapOpen)
+            if (!mapOpen)
+                return null;
+
+            // Check the partner table is loaded.
+            if (_mapFunctions.FindLayer(_partnerTable) == null)
+                return "Partner table '" + _partnerTable + "' not found.";
+
+            // Check all of the partner columns are in the partner table.
+            List<string> allPartnerColumns = _toolConfig.AllPartnerColumns;
+
+            // Get the list of partner columns that exist in the partner table.
+            List<string> existingPartnerColumns = await _mapFunctions.GetExistingFieldsAsync(_partnerTable, allPartnerColumns);
+
+            // Report on the fields that aren't found.
+            var missingPartnerColumns = allPartnerColumns.Except(existingPartnerColumns).ToList();
+            if (missingPartnerColumns.Count != 0)
             {
-                // Check the partner table is loaded.
-                if (_mapFunctions.FindLayer(_partnerTable) == null)
+                string errMessage = "";
+                foreach (string columnName in missingPartnerColumns)
                 {
-                    if (message)
-                        MessageBox.Show("Partner table '" + _partnerTable + "' not found.", _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
-
-                    return;
+                    errMessage = errMessage + "'" + columnName + "', ";
                 }
-
-                // Check all of the partner columns are in the partner table.
-                List<string> allPartnerColumns = _toolConfig.AllPartnerColumns;
-
-                // Get the list of partner columns that exist in the partner table.
-                List<string> existingPartnerColumns = await _mapFunctions.GetExistingFieldsAsync(_partnerTable, allPartnerColumns);
-
-                // Report on the fields that aren't found.
-                var missingPartnerColumns = allPartnerColumns.Except(existingPartnerColumns).ToList();
-                if (missingPartnerColumns.Count != 0)
-                {
-                    string errMessage = "";
-                    foreach (string columnName in missingPartnerColumns)
-                    {
-                        errMessage = errMessage + "'" + columnName + "', ";
-                    }
-                    errMessage = string.Format("The column(s) {0} could not be found in table {1}.", errMessage.Substring(0, errMessage.Length - 2), _partnerTable);
-
-                    if (message)
-                        MessageBox.Show(errMessage, _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
-
-                    return;
-                }
-
-                // Set the default partner where clause
-                _partnerClause = _toolConfig.PartnerClause;
-                if (String.IsNullOrEmpty(_partnerClause))
-                    _partnerClause = _toolConfig.ActiveColumn + " = 'Y'";
-
-                // Get the list of active partners from the partner layer.
-                _partners = await _mapFunctions.GetActiveParnersAsync(_partnerTable, _partnerClause, _partnerColumn, _shortColumn, _notesColumn,
-                    _formatColumn, _exportColumn, _sqlTableColumn, _sqlFilesColumn, _mapFilesColumn, _tagsColumn, _activeColumn);
-
-                if (_partners == null || _partners.Count == 0)
-                {
-                    if (message)
-                        MessageBox.Show(string.Format("No active partners found in table {0}", _partnerTable), _displayName, MessageBoxButton.OK, MessageBoxImage.Error);
-
-                    return;
-                }
-
-                // Loop through all of the active partners and add them
-                // to the list.
-                foreach (Partner partner in _partners)
-                {
-                    // Add the active partners to the list.
-                    _activePartnersList.Add(partner);
-                }
+                return string.Format("The column(s) {0} could not be found in table {1}.", errMessage.Substring(0, errMessage.Length - 2), _partnerTable);
             }
+
+            // Set the default partner where clause
+            _partnerClause = _toolConfig.PartnerClause;
+            if (String.IsNullOrEmpty(_partnerClause))
+                _partnerClause = _toolConfig.ActiveColumn + " = 'Y'";
+
+            // Get the list of active partners from the partner layer.
+            _partners = await _mapFunctions.GetActiveParnersAsync(_partnerTable, _partnerClause, _partnerColumn, _shortColumn, _notesColumn,
+                _formatColumn, _exportColumn, _sqlTableColumn, _sqlFilesColumn, _mapFilesColumn, _tagsColumn, _activeColumn);
+
+            // Show a message if there are no active partners.
+            if (_partners == null || _partners.Count == 0)
+                return string.Format("No active partners found in table {0}", _partnerTable);
+
+            // Loop through all of the active partners and add them
+            // to the list.
+            foreach (Partner partner in _partners)
+            {
+                // Add the active partners to the list.
+                _activePartnersList.Add(partner);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -1252,10 +1244,10 @@ namespace DataExtractor.UI
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public async Task LoadSQLLayersAsync(bool message)
+        public async Task<string> LoadSQLLayersAsync()
         {
             // Reset the list of SQL tables.
-            _sqlLayersListTemp = [];
+            _sqlXMLLayersList = [];
 
             // Load the SQL table variables from the XML profile.
             try
@@ -1266,14 +1258,15 @@ namespace DataExtractor.UI
                     return;
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Only report message if user was prompted for the XML
                 // file (i.e. the user interface has already loaded).
-                if (message)
-                    ShowMessage("Error loading SQL variables from XML file. " + ex.Message, MessageType.Warning);
-                return;
+                return "Error loading SQL variables from XML file.";
             }
+
+            // Get all of the SQL table details.
+            _sqlLayers = _toolConfig.SQLLayers;
 
             await Task.Run(() =>
             {
@@ -1282,9 +1275,11 @@ namespace DataExtractor.UI
                 foreach (SQLLayer table in _sqlLayers)
                 {
                     // Add the open layers to the list.
-                    _sqlLayersListTemp.Add(table);
+                    _sqlXMLLayersList.Add(table);
                 }
             });
+
+            return null;
         }
 
         /// <summary>
@@ -1292,13 +1287,13 @@ namespace DataExtractor.UI
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public async Task LoadMapLayersAsync(bool message)
+        public async Task<string> LoadMapLayersAsync()
         {
             // Reset the list of open layers.
-            _openLayersList = [];
+            _openMapLayersList = [];
 
             // Rest the list of closed layers.
-            _closedLayers = [];
+            _closedMapLayersList = [];
 
             // Load the map layer variables from the XML profile.
             try
@@ -1309,14 +1304,15 @@ namespace DataExtractor.UI
                         return;
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Only report message if user was prompted for the XML
                 // file (i.e. the user interface has already loaded).
-                if (message)
-                    ShowMessage("Error loading Map variables from XML file. " + ex.Message, MessageType.Warning);
-                return;
+                return "Error loading Map variables from XML file.";
             }
+
+            // Get all of the map layer details.
+            _mapLayers = _toolConfig.MapLayers;
 
             await Task.Run(() =>
             {
@@ -1340,17 +1336,40 @@ namespace DataExtractor.UI
                         if (_mapFunctions.FindLayer(layer.LayerName) != null)
                         {
                             // Add the open layers to the list.
-                            _openLayersList.Add(layer);
+                            _openMapLayersList.Add(layer);
                         }
                         else
                         {
                             // Only add if the user wants to be warned of this one.
                             if (layer.LoadWarning)
-                                _closedLayers.Add(layer.LayerName);
+                                _closedMapLayersList.Add(layer.LayerName);
                         }
                     }
                 }
             });
+
+            // Show a message if there are no open map layers.
+            if (!_openMapLayersList.Any())
+                return "No map layers in active map.";
+
+            // Warn the user of any closed map layers.
+            int closedLayerCount = _closedMapLayersList.Count;
+            if (closedLayerCount > 0)
+            {
+                string closedLayerWarning = "";
+                if (closedLayerCount == 1)
+                {
+                    closedLayerWarning = "Layer '" + _closedMapLayersList[0] + "' is not loaded.";
+                }
+                else
+                {
+                    closedLayerWarning = string.Format("{0} map layers are not loaded.", closedLayerCount.ToString());
+                }
+
+                return closedLayerWarning;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -1703,7 +1722,7 @@ namespace DataExtractor.UI
                     FileFunctions.WriteLine(_logFile, "Starting process " + _extractCnt + " of " + _extractTot + " ...");
 
                     // Process the required outputs from the GIS layers.
-                    if (!await ProcessMapLayerAsync(partner, mapLayer, outFolder, partnerFolder, gdbName, arcGISFolder, csvFolder, txtFolder))
+                    if (!await ProcessMapLayerAsync(partner, mapLayer, outFolder, gdbName, arcGISFolder, csvFolder, txtFolder))
                     {
                         // Continue but flag the error.
                         _extractErrors = true;
@@ -1760,7 +1779,7 @@ namespace DataExtractor.UI
                     FileFunctions.WriteLine(_logFile, "Starting process " + _extractCnt + " of " + _extractTot + " ...");
 
                     // Process the required outputs from the spatial selection.
-                    if (!await ProcessSQLLayerAsync(partner, sqlLayer, applyExclusionClause, outFolder, partnerFolder, gdbName, arcGISFolder, csvFolder, txtFolder))
+                    if (!await ProcessSQLLayerAsync(partner, sqlLayer, applyExclusionClause, outFolder, gdbName, arcGISFolder, csvFolder, txtFolder))
                     {
                         // Continue but flag the error.
                         _extractErrors = true;
@@ -1780,7 +1799,7 @@ namespace DataExtractor.UI
             return true;
         }
 
-        private async Task<bool> ProcessSQLLayerAsync(Partner partner, SQLLayer sqlLayer, bool applyExclusionClause, string outFolder, string partnerFolder,
+        private async Task<bool> ProcessSQLLayerAsync(Partner partner, SQLLayer sqlLayer, bool applyExclusionClause, string outFolder,
             string gdbName, string arcGISFolder, string csvFolder, string txtFolder)
         {
             // Get the partner details.
@@ -1829,9 +1848,6 @@ namespace DataExtractor.UI
             string inPoints = _sdeFileName + @"\" + pointFeatureClass;
             string inPolys = _sdeFileName + @"\" + polyFeatureClass;
             string inFlatTable = _sdeFileName + @"\" + flatTable;
-
-            // Build a list of all of the columns required.
-            List<string> mapFields = [.. outputColumns.Split(',')];
 
             FileFunctions.WriteLine(_logFile, "Processing output '" + nodeName + "' ...");
 
@@ -2232,7 +2248,7 @@ namespace DataExtractor.UI
 
             return true;
         }
-        private async Task<bool> ProcessMapLayerAsync(Partner partner, MapLayer mapLayer, string outFolder, string partnerFolder,
+        private async Task<bool> ProcessMapLayerAsync(Partner partner, MapLayer mapLayer, string outFolder,
             string gdbName, string arcGISFolder, string csvFolder, string txtFolder)
         {
             // Get the partner details.

@@ -582,6 +582,9 @@ namespace DataExtractor
 
             bool nodeGroupFound = false;
 
+            // Reset the SQL layers list.
+            _sqlLayers = [];
+
             // Now cycle through all of the maps.
             if (SQLTablesCollection != null)
             {
@@ -716,6 +719,9 @@ namespace DataExtractor
             }
 
             bool nodeGroupFound = false;
+
+            // Reset the map layers list.
+            _mapLayers = [];
 
             // Now cycle through all of the maps.
             if (MapTablesCollection != null)
@@ -1190,7 +1196,7 @@ namespace DataExtractor
 
         #region SQL Variables
 
-        private readonly List<SQLLayer> _sqlLayers = [];
+        private List<SQLLayer> _sqlLayers = [];
 
         public List<SQLLayer> SQLLayers
         {
@@ -1201,7 +1207,7 @@ namespace DataExtractor
 
         #region Map Variables
 
-        private readonly List<MapLayer> _mapLayers = [];
+        private List<MapLayer> _mapLayers = [];
 
         public List<MapLayer> MapLayers
         {

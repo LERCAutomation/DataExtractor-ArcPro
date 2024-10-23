@@ -384,8 +384,8 @@
                        />
 
                 <CheckBox Name="CheckBoxUseCentroids"
-                          Grid.Row="1"
-                          Grid.Column="1"
+                          Grid.Row="0"
+                          Grid.Column="5"
                           Margin="0,4,4,4"
                           Padding="0"
                           HorizontalAlignment="Left"
@@ -395,8 +395,8 @@
                           IsChecked="{Binding UseCentroids, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Label Name="LabelUseCentroids"
                        Content="Use Centroids?"
-                       Grid.Row="1"
-                       Grid.Column="2"
+                       Grid.Row="0"
+                       Grid.Column="6"
                        Margin="2,4,0,4"
                        Padding="0"
                        VerticalAlignment="Center"
@@ -405,7 +405,7 @@
 
                 <CheckBox Name="CheckBoxUploadToServer"
                           Grid.Row="1"
-                          Grid.Column="5"
+                          Grid.Column="1"
                           Margin="0,4,4,4"
                           Padding="0"
                           HorizontalAlignment="Left"
@@ -416,7 +416,7 @@
                 <Label Name="LabelUploadToServer"
                        Content="Upload to server"
                        Grid.Row="1"
-                       Grid.Column="6"
+                       Grid.Column="2"
                        Margin="2,4,0,4"
                        Padding="0"
                        VerticalAlignment="Center"
@@ -453,7 +453,7 @@
                        Content="Open log file when run?"
                        Grid.Row="2"
                        Grid.Column="6"
-                       Margin="2,4,2,0"
+                       Margin="2,4,0,0"
                        Padding="0"
                        VerticalAlignment="Center" />
             </Grid>
