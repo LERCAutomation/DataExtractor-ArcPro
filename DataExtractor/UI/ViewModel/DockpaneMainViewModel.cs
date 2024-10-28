@@ -350,10 +350,7 @@ namespace DataExtractor.UI
         public bool ExtractCancelled
         {
             get { return _extractCancelled; }
-            set
-            {
-                _extractCancelled = value;
-            }
+            set { _extractCancelled = value; }
         }
 
         private string _helpURL;
