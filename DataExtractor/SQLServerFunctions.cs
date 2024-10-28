@@ -21,14 +21,11 @@
 
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Data.Exceptions;
-using ArcGIS.Core.Threading.Tasks;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
-using ArcGIS.Desktop.Internal.Mapping;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace DataTools
 {
@@ -279,7 +276,8 @@ namespace DataTools
         /// <summary>
         /// Get the fields for the specified table in the geodatabase.
         /// </summary>
-        /// <param name="tableName"></param>
+        /// <param name="filePath"></param>
+        /// <param name="fileName"></param>
         /// <returns>IReadOnlyList<Field></returns>
         public static async Task<IReadOnlyList<Field>> GetFieldNamesAsync(string filePath, string fileName)
         {
@@ -427,8 +425,9 @@ namespace DataTools
         /// <param name="separator"></param>
         /// <param name="isSpatial"></param>
         /// <param name="append"></param>
+        /// <param name="includeHeader"></param>
         /// <returns>bool</returns>
-        public async Task<bool> CopyToTextFileAsync(string inTable, string outFile, string separator, bool isSpatial, bool append)
+        public async Task<bool> CopyToTextFileAsync(string inTable, string outFile, string separator, bool isSpatial, bool append, bool includeHeader = true)
         {
             // Check if there is an input table name.
             if (String.IsNullOrEmpty(inTable))
@@ -445,8 +444,12 @@ namespace DataTools
             string header = "";
             int ignoreField = -1;
 
-            // Get the fields for the input file.
+            // Get the list of fields for the input table.
             IReadOnlyList<Field> fields = await GetFieldsAsync(inTable);
+
+            // Check a list of fields is returned.
+            if (fields == null || fields.Count == 0)
+                return false;
 
             int intFieldCount = fields.Count;
 
@@ -470,7 +473,7 @@ namespace DataTools
                     header = header + fieldName + separator;
             }
 
-            if (!append)
+            if (!append && includeHeader)
             {
                 // Remove the final separator from the header.
                 header = header.Substring(0, header.Length - 1);
@@ -488,20 +491,17 @@ namespace DataTools
             // If still not open.
             if (!GeodatabaseOpen) return false;
 
-            string tabName;
-            string fcName;
-
             try
             {
                 await QueuedTask.Run(() =>
                 {
+                    // Create a row cursor.
                     RowCursor rowCursor;
 
                     if (isSpatial)
                     {
                         // Open the feature class.
                         using FeatureClass featureClass = _geodatabase.OpenDataset<FeatureClass>(fileName);
-                        fcName = featureClass.GetName();
 
                         // Create a cursor on the table.
                         rowCursor = featureClass.Search(null);
@@ -510,7 +510,6 @@ namespace DataTools
                     {
                         // Open the table.
                         using Table table = _geodatabase.OpenDataset<Table>(fileName);
-                        tabName = table.GetName();
 
                         // Create a cursor on the table.
                         rowCursor = table.Search(null);

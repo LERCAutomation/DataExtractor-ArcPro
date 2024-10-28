@@ -19,33 +19,22 @@
 // You should have received a copy of the GNU General Public License
 // along with with program.  If not, see <http://www.gnu.org/licenses/>.
 
-using ArcGIS.Core.Data;
-using ArcGIS.Core.Data.UtilityNetwork.Trace;
-using ArcGIS.Core.Internal.CIM;
 using ArcGIS.Desktop.Framework;
 using ArcGIS.Desktop.Internal.Framework.Controls;
-using ArcGIS.Desktop.Internal.KnowledgeGraph;
-using ArcGIS.Desktop.Internal.Mapping.CommonControls;
-using ArcGIS.Desktop.Internal.Mapping.Controls.QueryBuilder.SqlEditor;
-using ArcGIS.Desktop.Layouts;
 using ArcGIS.Desktop.Mapping;
 using DataTools;
-using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
-using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -91,6 +80,7 @@ namespace DataExtractor.UI
 
         // SQL table fields.
         private string _spatialStoredProcedure;
+
         private string _subsetStoredProcedure;
         private string _clearSpatialStoredProcedure;
         private string _clearSubsetStoredProcedure;
@@ -99,6 +89,7 @@ namespace DataExtractor.UI
 
         // Partner table fields.
         private string _partnerTable;
+
         private string _partnerColumn;
         private string _shortColumn;
         private string _notesColumn;
@@ -115,7 +106,12 @@ namespace DataExtractor.UI
         private List<SQLLayer> _sqlLayers;
         private List<MapLayer> _mapLayers;
 
+        private List<SQLLayer> _sqlXMLLayersList;
+
         private List<string> _sqlTableNames;
+
+        private List<MapLayer> _openMapLayersList;
+        private List<string> _closedMapLayersList;
 
         private int _defaultSelectType;
         private string _exclusionClause;
@@ -164,8 +160,8 @@ namespace DataExtractor.UI
         /// <summary>
         /// Set the global variables.
         /// </summary>
-        /// <param name="xmlFilesList"></param>
-        /// <param name="defaultXMLFile"></param>
+        /// <param name="dockPane"></param>
+        /// <param name="toolConfig"></param>
         public PaneHeader2ViewModel(DockpaneMainViewModel dockPane, DataExtractorConfig toolConfig)
         {
             _dockPane = dockPane;
@@ -583,7 +579,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Validate the form parameters.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>bool</returns>
         private bool ValidateParameters()
         {
             // At least one partner must be selected,
@@ -619,10 +615,11 @@ namespace DataExtractor.UI
         /// The list of active partners.
         /// </summary>
         private ObservableCollection<Partner> _partnersList;
+
         private ObservableCollection<Partner> _activePartnersList;
 
         /// <summary>
-        /// Get the list of active partners.
+        /// Get/Set the list of active partners.
         /// </summary>
         public ObservableCollection<Partner> PartnersList
         {
@@ -639,17 +636,23 @@ namespace DataExtractor.UI
 
         private double? _partnersListHeight = null;
 
+        /// <summary>
+        /// Get the height of the partners list.
+        /// </summary>
         public double? PartnersListHeight
         {
             get
             {
                 if (_activePartnersList == null || _activePartnersList.Count == 0)
-                    return Double.NaN;
+                    return 20;
                 else
                     return _partnersListHeight;
             }
         }
 
+        /// <summary>
+        /// Get the content of the partners list expand button.
+        /// </summary>
         public string PartnersListExpandButtonContent
         {
             get
@@ -694,7 +697,6 @@ namespace DataExtractor.UI
         /// The list of SQL tables.
         /// </summary>
         private ObservableCollection<SQLLayer> _sqlLayersList;
-        private ObservableCollection<SQLLayer> _sqlXMLLayersList;
 
         /// <summary>
         /// Get the list of SQL tables.
@@ -714,17 +716,23 @@ namespace DataExtractor.UI
 
         private double? _sqlLayersListHeight = null;
 
+        /// <summary>
+        /// Get the height of the SQL layers list.
+        /// </summary>
         public double? SQLLayersListHeight
         {
             get
             {
                 if (_sqlLayersList == null || _sqlLayersList.Count == 0)
-                    return Double.NaN;
+                    return 20;
                 else
                     return _sqlLayersListHeight;
             }
         }
 
+        /// <summary>
+        /// Get the content of the SQL layers list expand button.
+        /// </summary>
         public string SQLLayersListExpandButtonContent
         {
             get
@@ -769,8 +777,6 @@ namespace DataExtractor.UI
         /// The list of loaded GIS Map layers.
         /// </summary>
         private ObservableCollection<MapLayer> _mapLayersList;
-        private ObservableCollection<MapLayer> _openMapLayersList;
-        private List<string> _closedMapLayersList;
 
         /// <summary>
         /// Get the list of loaded GIS Map layers.
@@ -790,17 +796,23 @@ namespace DataExtractor.UI
 
         private double? _mapLayersListHeight = null;
 
+        /// <summary>
+        /// Get the height of the map layers list.
+        /// </summary>
         public double? MapLayersListHeight
         {
             get
             {
-                if (_openMapLayersList == null || _openMapLayersList.Count == 0)
-                    return Double.NaN;
+                if (_mapLayersList == null || _mapLayersList.Count == 0)
+                    return 20;
                 else
                     return _mapLayersListHeight;
             }
         }
 
+        /// <summary>
+        /// Get the content of the map layers list expand button.
+        /// </summary>
         public string MapLayersListExpandButtonContent
         {
             get
@@ -935,6 +947,9 @@ namespace DataExtractor.UI
 
         private string _partnerClause;
 
+        /// <summary>
+        /// Get/Set the where clause used to identify active partners.
+        /// </summary>
         public string PartnerClause
         {
             get
@@ -1032,6 +1047,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Set all of the form fields to their default values.
         /// </summary>
+        /// <returns></returns>
         public async Task ResetFormAsync(bool reset)
         {
             // Clear the partner selections first (to avoid selections being retained).
@@ -1124,10 +1140,10 @@ namespace DataExtractor.UI
             PartnersList = new ObservableCollection<Partner>(_activePartnersList.OrderBy(a => a.PartnerName));
 
             // Set the list of SQL tables.
-            SQLLayersList = _sqlXMLLayersList;
+            SQLLayersList = new ObservableCollection<SQLLayer>(_sqlXMLLayersList);
 
             // Set the list of open layers.
-            MapLayersList = _openMapLayersList;
+            MapLayersList = new ObservableCollection<MapLayer>(_openMapLayersList);
 
             // Hide progress update.
             _dockPane.ProgressUpdate(null, -1, -1);
@@ -1175,7 +1191,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Load the list of active partners.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>string: error message</returns>
         public async Task<string> LoadPartnersAsync()
         {
             if (_mapFunctions == null || _mapFunctions.MapName == null || MapView.Active.Map.Name != _mapFunctions.MapName)
@@ -1212,7 +1228,7 @@ namespace DataExtractor.UI
                 {
                     errMessage = errMessage + "'" + columnName + "', ";
                 }
-                return string.Format("The column(s) {0} could not be found in table {1}.", errMessage.Substring(0, errMessage.Length - 2), _partnerTable);
+                return string.Format("The column(s) {0} could not be found in table '{1}'.", errMessage.Substring(0, errMessage.Length - 2), _partnerTable);
             }
 
             // Set the default partner where clause
@@ -1226,7 +1242,7 @@ namespace DataExtractor.UI
 
             // Show a message if there are no active partners.
             if (_partners == null || _partners.Count == 0)
-                return string.Format("No active partners found in table {0}", _partnerTable);
+                return string.Format("No active partners found in table '{0}'", _partnerTable);
 
             // Loop through all of the active partners and add them
             // to the list.
@@ -1242,28 +1258,31 @@ namespace DataExtractor.UI
         /// <summary>
         /// Load the list of SQL layers.
         /// </summary>
-        /// <param name="message"></param>
-        /// <returns></returns>
+        /// <returns>string: error message</returns>
         public async Task<string> LoadSQLLayersAsync()
         {
             // Reset the list of SQL tables.
             _sqlXMLLayersList = [];
 
             // Load the SQL table variables from the XML profile.
+            bool sqlLayersloaded = false;
             try
             {
                 await Task.Run(() =>
                 {
-                if (!_toolConfig.GetSQLVariables())
-                    return;
+                    if (_toolConfig.GetSQLVariables())
+                        sqlLayersloaded = true;
                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Only report message if user was prompted for the XML
                 // file (i.e. the user interface has already loaded).
-                return "Error loading SQL variables from XML file.";
+                return "Error loading XML file. " + ex.Message;
             }
+
+            if (!sqlLayersloaded)
+                return "Error loading SQL variables from XML file.";
 
             // Get all of the SQL table details.
             _sqlLayers = _toolConfig.SQLLayers;
@@ -1285,31 +1304,34 @@ namespace DataExtractor.UI
         /// <summary>
         /// Load the list of open GIS layers.
         /// </summary>
-        /// <param name="message"></param>
-        /// <returns></returns>
+        /// <returns>string: error message</returns>
         public async Task<string> LoadMapLayersAsync()
         {
             // Reset the list of open layers.
             _openMapLayersList = [];
 
-            // Rest the list of closed layers.
+            // Reset the list of closed layers.
             _closedMapLayersList = [];
 
             // Load the map layer variables from the XML profile.
+            bool mapLayersloaded = false;
             try
             {
                 await Task.Run(() =>
                 {
-                    if (!_toolConfig.GetMapVariables())
-                        return;
+                    if (_toolConfig.GetMapVariables())
+                        mapLayersloaded = true;
                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Only report message if user was prompted for the XML
                 // file (i.e. the user interface has already loaded).
-                return "Error loading Map variables from XML file.";
+                return "Error loading XML file. " + ex.Message;
             }
+
+            if (!mapLayersloaded)
+                return "Error loading Map variables from XML file.";
 
             // Get all of the map layer details.
             _mapLayers = _toolConfig.MapLayers;
@@ -1349,7 +1371,7 @@ namespace DataExtractor.UI
             });
 
             // Show a message if there are no open map layers.
-            if (!_openMapLayersList.Any())
+            if (_openMapLayersList.Count == 0)
                 return "No map layers in active map.";
 
             // Warn the user of any closed map layers.
@@ -1359,7 +1381,7 @@ namespace DataExtractor.UI
                 string closedLayerWarning = "";
                 if (closedLayerCount == 1)
                 {
-                    closedLayerWarning = "Layer '" + _closedMapLayersList[0] + "' is not loaded.";
+                    closedLayerWarning = "Map layer '" + _closedMapLayersList[0] + "' is not loaded.";
                 }
                 else
                 {
@@ -1398,6 +1420,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Validate and run the extract.
         /// </summary>
+        /// <returns>bool</returns>
         private async Task<bool> ProcessExtractsAsync()
         {
             if (_mapFunctions == null || _mapFunctions.MapName == null)
@@ -1540,6 +1563,7 @@ namespace DataExtractor.UI
             if (PauseMap)
                 _mapFunctions.PauseDrawing(true);
 
+            // Loop through the selected partners, processing each one.
             foreach (Partner selectedPartner in SelectedPartners)
             {
                 // Stop if the user cancelled the process.
@@ -1557,7 +1581,7 @@ namespace DataExtractor.UI
                 FileFunctions.WriteLine(_logFile, "----------------------------------------------------------------------");
                 FileFunctions.WriteLine(_logFile, "Processing partner '" + partnerName + "' (" + partnerAbbr + ") ...");
 
-                // Loop through the partners, processing each one.
+                // Process the selected partner.
                 if (!await ProcessPartnerAsync(selectedPartner, selectionTypeNum, applyExclusionClause, useCentroids, defaultPath, partnerFolder, gdbName, arcGISFolder, csvFolder, txtFolder))
                     _extractErrors = true;
 
@@ -1627,6 +1651,20 @@ namespace DataExtractor.UI
             await _mapFunctions.ClearLayerSelectionAsync(_partnerTable);
         }
 
+        /// <summary>
+        /// Process the selected partner to extract any required SQL and map layers.
+        /// </summary>
+        /// <param name="partner"></param>
+        /// <param name="selectionTypeNum"></param>
+        /// <param name="applyExclusionClause"></param>
+        /// <param name="useCentroids"></param>
+        /// <param name="defaultPath"></param>
+        /// <param name="partnerFolder"></param>
+        /// <param name="gdbName"></param>
+        /// <param name="arcGISFolder"></param>
+        /// <param name="csvFolder"></param>
+        /// <param name="txtFolder"></param>
+        /// <returns>bool</returns>
         private async Task<bool> ProcessPartnerAsync(Partner partner, int selectionTypeNum, bool applyExclusionClause, bool useCentroids,
             string defaultPath, string partnerFolder, string gdbName, string arcGISFolder, string csvFolder, string txtFolder)
         {
@@ -1799,6 +1837,18 @@ namespace DataExtractor.UI
             return true;
         }
 
+        /// <summary>
+        /// Process the required SQL layers for the current partner.
+        /// </summary>
+        /// <param name="partner"></param>
+        /// <param name="sqlLayer"></param>
+        /// <param name="applyExclusionClause"></param>
+        /// <param name="outFolder"></param>
+        /// <param name="gdbName"></param>
+        /// <param name="arcGISFolder"></param>
+        /// <param name="csvFolder"></param>
+        /// <param name="txtFolder"></param>
+        /// <returns>bool</returns>
         private async Task<bool> ProcessSQLLayerAsync(Partner partner, SQLLayer sqlLayer, bool applyExclusionClause, string outFolder,
             string gdbName, string arcGISFolder, string csvFolder, string txtFolder)
         {
@@ -2037,6 +2087,20 @@ namespace DataExtractor.UI
             return true;
         }
 
+        /// <summary>
+        /// Create the SQL output for the current partner.
+        /// </summary>
+        /// <param name="outputTable"></param>
+        /// <param name="mapOutputFormat"></param>
+        /// <param name="outPath"></param>
+        /// <param name="isSpatial"></param>
+        /// <param name="inPoints"></param>
+        /// <param name="inPolys"></param>
+        /// <param name="inFlatTable"></param>
+        /// <param name="outPoints"></param>
+        /// <param name="outPolys"></param>
+        /// <param name="outFlat"></param>
+        /// <returns>bool</returns>
         private async Task<bool> CreateSQLOutput(string outputTable, string mapOutputFormat, string outPath, bool isSpatial,
             string inPoints, string inPolys, string inFlatTable, string outPoints, string outPolys, string outFlat)
         {
@@ -2157,6 +2221,18 @@ namespace DataExtractor.UI
             return true;
         }
 
+        /// <summary>
+        /// Create the SQL export for the current partner.
+        /// </summary>
+        /// <param name="outputTable"></param>
+        /// <param name="exportOutputFormat"></param>
+        /// <param name="outPath"></param>
+        /// <param name="isSpatial"></param>
+        /// <param name="inPoints"></param>
+        /// <param name="inPolys"></param>
+        /// <param name="inFlatTable"></param>
+        /// <param name="expFile"></param>
+        /// <returns>bool</returns>
         private async Task<bool> CreateSQLExport(string outputTable, string exportOutputFormat, string outPath,
             bool isSpatial, string inPoints, string inPolys, string inFlatTable, string expFile)
         {
@@ -2248,6 +2324,18 @@ namespace DataExtractor.UI
 
             return true;
         }
+
+        /// <summary>
+        /// Process the required map layers for the current partner.
+        /// </summary>
+        /// <param name="partner"></param>
+        /// <param name="mapLayer"></param>
+        /// <param name="outFolder"></param>
+        /// <param name="gdbName"></param>
+        /// <param name="arcGISFolder"></param>
+        /// <param name="csvFolder"></param>
+        /// <param name="txtFolder"></param>
+        /// <returns>bool</returns>
         private async Task<bool> ProcessMapLayerAsync(Partner partner, MapLayer mapLayer, string outFolder,
             string gdbName, string arcGISFolder, string csvFolder, string txtFolder)
         {
@@ -2490,6 +2578,16 @@ namespace DataExtractor.UI
             return true;
         }
 
+        /// <summary>
+        /// Create the map output for the current partner.
+        /// </summary>
+        /// <param name="layerName"></param>
+        /// <param name="outputTable"></param>
+        /// <param name="mapOutputFormat"></param>
+        /// <param name="outPath"></param>
+        /// <param name="gdbName"></param>
+        /// <param name="outFile"></param>
+        /// <returns>bool</returns>
         private async Task<bool> CreateMapOutput(string layerName, string outputTable, string mapOutputFormat,
             string outPath, string gdbName, string outFile)
         {
@@ -2547,6 +2645,15 @@ namespace DataExtractor.UI
             return true;
         }
 
+        /// <summary>
+        /// Create the map export for the current partner.
+        /// </summary>
+        /// <param name="outputTable"></param>
+        /// <param name="exportOutputFormat"></param>
+        /// <param name="outPath"></param>
+        /// <param name="expFile"></param>
+        /// <param name="outputColumns"></param>
+        /// <returns>bool</returns>
         private async Task<bool> CreateMapExport(string outputTable, string exportOutputFormat, string outPath,
             string expFile, string outputColumns)
         {
@@ -2645,7 +2752,7 @@ namespace DataExtractor.UI
         /// <param name="groupClause"></param>
         /// <param name="orderClause"></param>
         /// <param name="userID"></param>
-        /// <returns></returns>
+        /// <returns>bool</returns>
         internal async Task<bool> PerformSubsetSelectionAsync(bool isSpatial, bool isSplit, string schema, string tableName,
                                   string columnNames, string whereClause, string groupClause, string orderClause, string userID,
                                   bool checkOutputSize)
@@ -2817,7 +2924,7 @@ namespace DataExtractor.UI
         /// <param name="schema"></param>
         /// <param name="tableName"></param>
         /// <param name="userID"></param>
-        /// <returns></returns>
+        /// <returns>bool</returns>
         internal async Task<bool> ClearSpatialTableAsync(string schema, string tableName, string userID)
         {
             // Set up the SQL command.
@@ -2855,7 +2962,7 @@ namespace DataExtractor.UI
         /// <param name="schema"></param>
         /// <param name="tableName"></param>
         /// <param name="userID"></param>
-        /// <returns></returns>
+        /// <returns>bool</returns>
         internal async Task<bool> ClearSubsetTablesAsync(string schema, string tableName, string userID)
         {
             // Set up the SQL command.
@@ -2912,22 +3019,6 @@ namespace DataExtractor.UI
         }
 
         /// <summary>
-        /// Process each of the selected map layers.
-        /// </summary>
-        /// <param name="selectedLayer"></param>
-        /// <param name="reference"></param>
-        /// <param name="siteName"></param>
-        /// <param name="shortRef"></param>
-        /// <param name="subref"></param>
-        /// <param name="radius"></param>
-        /// <param name="areaMeasureUnit"></param>
-        /// <param name="keepSelectedLayers"></param>
-        /// <param name="addSelectedLayersOption"></param>
-        /// <param name="overwriteLabelOption"></param>
-        /// <param name="combinedSitesTableOption"></param>
-        /// <returns></returns>
-
-        /// <summary>
         /// Trigger the required VB macro to post-process the outputs for the
         /// current layer.
         /// </summary>
@@ -2935,7 +3026,7 @@ namespace DataExtractor.UI
         /// <param name="macroParm"></param>
         /// <param name="outPath"></param>
         /// <param name="outFile"></param>
-        /// <returns></returns>
+        /// <returns>bool</returns>
         public bool StartProcess(string macroName, string macroParm, string outPath, string outFile)
         {
             using Process scriptProc = new();
@@ -2981,8 +3072,6 @@ namespace DataExtractor.UI
         /// Create PartnersList Expand button command.
         /// </summary>
         /// <value></value>
-        /// <returns></returns>
-        /// <remarks></remarks>
         public ICommand PartnersListExpandCommand
         {
             get
@@ -3000,7 +3089,6 @@ namespace DataExtractor.UI
         /// Handles event when PartnersListExpand button is pressed.
         /// </summary>
         /// <param name="param"></param>
-        /// <remarks></remarks>
         private void PartnersListExpandCommandClick(object param)
         {
             if (_partnersListHeight == null)
@@ -3063,8 +3151,6 @@ namespace DataExtractor.UI
         /// Create MapLayersList Expand button command.
         /// </summary>
         /// <value></value>
-        /// <returns></returns>
-        /// <remarks></remarks>
         public ICommand MapLayersListExpandCommand
         {
             get
@@ -3082,7 +3168,6 @@ namespace DataExtractor.UI
         /// Handles event when MapLayersListExpand button is pressed.
         /// </summary>
         /// <param name="param"></param>
-        /// <remarks></remarks>
         private void MapLayersListExpandCommandClick(object param)
         {
             if (_mapLayersListHeight == null)
@@ -3094,7 +3179,7 @@ namespace DataExtractor.UI
             OnPropertyChanged(nameof(MapLayersListExpandButtonContent));
         }
 
-        #endregion PartnersListExpand Command
+        #endregion MapLayersListExpand Command
 
         #region SQL
 
@@ -3137,7 +3222,7 @@ namespace DataExtractor.UI
         /// <param name="includeWildcard"></param>
         /// <param name="excludeWildcard"></param>
         /// <param name="includeFullName"></param>
-        /// <returns></returns>
+        /// <returns>list: filtered table list</returns>
         internal static List<string> FilterTableNames(List<string> inputNames, string schema, string includeWildcard, string excludeWildcard,
                               bool includeFullName = false)
         {
@@ -3176,7 +3261,7 @@ namespace DataExtractor.UI
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="columnsText"></param>
-        /// <returns></returns>
+        /// <returns>string: spatial column</returns>
         internal async Task<string> IsSQLTableSpatialAsync(string tableName, string columnsText)
         {
             string[] geometryFields = ["SP_GEOMETRY", "Shape"]; // Expand as required.
@@ -3357,7 +3442,7 @@ namespace DataExtractor.UI
     #region SQLLayer Class
 
     /// <summary>
-    /// Map layers to extract.
+    /// SQL layers to extract.
     /// </summary>
     public class SQLLayer : INotifyPropertyChanged
     {

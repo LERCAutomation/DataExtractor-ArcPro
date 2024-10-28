@@ -26,7 +26,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -62,8 +61,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Set the global variables.
         /// </summary>
-        /// <param name="xmlFilesList"></param>
-        /// <param name="defaultXMLFile"></param>
+        /// <param name="dockPane"></param>
         public PaneHeader1ViewModel(DockpaneMainViewModel dockPane)
         {
             // Set the dockpane view model object.
@@ -187,9 +185,6 @@ namespace DataExtractor.UI
         /// <summary>
         /// Create the SelectXMLPath button command.
         /// </summary>
-        /// <value></value>
-        /// <returns></returns>
-        /// <remarks></remarks>
         public ICommand SelectXMLPathCommand
         {
             get
@@ -208,7 +203,6 @@ namespace DataExtractor.UI
         /// Handles the event when the SelectXMLPath button is clicked.
         /// </summary>
         /// <param name="param"></param>
-        /// <remarks></remarks>
         private void SelectXMLPathCommandClick(object param)
         {
             // Load the selected config file.
@@ -219,8 +213,6 @@ namespace DataExtractor.UI
         /// Can the SelectXMLPath button be pressed?
         /// </summary>
         /// <value></value>
-        /// <returns></returns>
-        /// <remarks></remarks>
         public bool CanSelectXMLPath
         {
             get
@@ -266,8 +258,6 @@ namespace DataExtractor.UI
         /// Can the user select an XML profile?
         /// </summary>
         /// <value></value>
-        /// <returns></returns>
-        /// <remarks></remarks>
         public bool CanSelectXMLProfile
         {
             get
@@ -286,8 +276,6 @@ namespace DataExtractor.UI
         /// Create the Open XML button command.
         /// </summary>
         /// <value></value>
-        /// <returns></returns>
-        /// <remarks></remarks>
         public ICommand LoadProfileCommand
         {
             get
@@ -306,7 +294,6 @@ namespace DataExtractor.UI
         /// Handles the event when the Open XML button is clicked.
         /// </summary>
         /// <param name="param"></param>
-        /// <remarks></remarks>
         private async void LoadProfileCommandClick(object param)
         {
             // Skip if no profile selected (shouldn't be possible).
@@ -346,8 +333,6 @@ namespace DataExtractor.UI
         /// Can the Load Profile button be pressed (has a profile been selected)?
         /// </summary>
         /// <value></value>
-        /// <returns></returns>
-        /// <remarks></remarks>
         public bool CanLoadProfile
         {
             get
@@ -576,6 +561,7 @@ namespace DataExtractor.UI
         /// Load the selected XML profile.
         /// </summary>
         /// <param name="xmlConfigPath"></param>
+        /// <param name="msgErrors"></param>
         public void LoadXMLProfile(string xmlConfigPath, bool msgErrors)
         {
             // Load the selected XML config file.

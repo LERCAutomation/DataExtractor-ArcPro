@@ -51,6 +51,8 @@ namespace DataExtractor
         /// Load the XML profile and read the variables.
         /// </summary>
         /// <param name="xmlFile"></param>
+        /// <param name="toolName"></param>
+        /// <param name="msgErrors"></param>
         public DataExtractorConfig(string xmlFile, string toolName, bool msgErrors)
         {
             _toolName = toolName;
@@ -580,8 +582,6 @@ namespace DataExtractor
                 throw new("Could not locate the item 'SQLTables' in the XML profile");
             }
 
-            bool nodeGroupFound = false;
-
             // Reset the SQL layers list.
             _sqlLayers = [];
 
@@ -605,7 +605,6 @@ namespace DataExtractor
                             string nodeTable = nodeName.Substring(nodeName.IndexOf('-') + 1).Trim();
                             layer.NodeGroup = nodeGroup;
                             layer.NodeTable = nodeTable;
-                            nodeGroupFound = true;
                         }
                         catch
                         {
@@ -687,11 +686,6 @@ namespace DataExtractor
                 }
             }
 
-            if (nodeGroupFound)
-                _sqlNodeGroupWidth = "Auto";
-            else
-                _sqlNodeGroupWidth = "0";
-
             // All mandatory variables were loaded successfully.
             return true;
         }
@@ -718,8 +712,6 @@ namespace DataExtractor
                 throw new("Could not locate the item 'MapTables' in the XML profile");
             }
 
-            bool nodeGroupFound = false;
-
             // Reset the map layers list.
             _mapLayers = [];
 
@@ -733,18 +725,18 @@ namespace DataExtractor
                     {
                         string nodeName = node.Name;
 
+                        // Replace any underscores with spaces for better display.
+                        nodeName = nodeName.Replace("_", " ");
+
                         // Create a new layer for this node.
                         MapLayer layer = new(nodeName);
 
                         try
                         {
-                            nodeName = nodeName.Replace("_", " "); // Replace any underscores with spaces for better display.
-
                             string nodeGroup = nodeName.Substring(0, nodeName.IndexOf('-')).Trim();
                             string nodeLayer = nodeName.Substring(nodeName.IndexOf('-') + 1).Trim();
                             layer.NodeGroup = nodeGroup;
                             layer.NodeLayer = nodeLayer;
-                            nodeGroupFound = true;
                         }
                         catch
                         {
@@ -851,11 +843,6 @@ namespace DataExtractor
                 }
             }
 
-            if (nodeGroupFound)
-                _mapNodeGroupWidth = "Auto";
-            else
-                _mapNodeGroupWidth = "0";
-
             // All mandatory variables were loaded successfully.
             return true;
         }
@@ -887,26 +874,6 @@ namespace DataExtractor
             get
             {
                 return _xmlLoaded;
-            }
-        }
-
-        private string _sqlNodeGroupWidth;
-
-        public string SQLNodeGroupWidth
-        {
-            get
-            {
-                return _sqlNodeGroupWidth;
-            }
-        }
-
-        private string _mapNodeGroupWidth;
-
-        public string MapNodeGroupWidth
-        {
-            get
-            {
-                return _mapNodeGroupWidth;
             }
         }
 
@@ -1150,6 +1117,7 @@ namespace DataExtractor
         {
             get { return _defaultSelectType; }
         }
+
         private string _exclusionClause;
 
         public string ExclusionClause

@@ -3,8 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:local="clr-namespace:DataExtractor.UI"
              xmlns:controls="clr-namespace:ArcGIS.Desktop.Framework.Controls;assembly=ArcGIS.Desktop.Framework"
+             xmlns:local="clr-namespace:DataExtractor.UI"
              d:DataContext="{d:DesignInstance Type=local:PaneHeader2ViewModel}"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="300">
@@ -67,7 +67,7 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding PartnerName}" >
+                            <GridViewColumn DisplayMemberBinding="{Binding PartnerName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
@@ -261,7 +261,7 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeName}" >
+                            <GridViewColumn DisplayMemberBinding="{Binding NodeName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
@@ -380,8 +380,7 @@
                        Margin="2,0,0,4"
                        Padding="0"
                        VerticalAlignment="Center"
-                       Visibility="{Binding Path=ApplyExclusionClauseVisibility}"
-                       />
+                       Visibility="{Binding Path=ApplyExclusionClauseVisibility}" />
 
                 <CheckBox Name="CheckBoxUseCentroids"
                           Grid.Row="0"
@@ -400,8 +399,7 @@
                        Margin="2,4,0,4"
                        Padding="0"
                        VerticalAlignment="Center"
-                       Visibility="{Binding Path=UseCentroidsVisibility}"
-                       />
+                       Visibility="{Binding Path=UseCentroidsVisibility}" />
 
                 <CheckBox Name="CheckBoxUploadToServer"
                           Grid.Row="1"
@@ -420,8 +418,7 @@
                        Margin="2,4,0,4"
                        Padding="0"
                        VerticalAlignment="Center"
-                       Visibility="{Binding Path=UploadToServerVisibility}"
-                       />
+                       Visibility="{Binding Path=UploadToServerVisibility}" />
 
                 <CheckBox Name="CheckBoxClearLogFile"
                           Grid.Row="2"
@@ -468,7 +465,6 @@
                 Content="{Binding Path=Message}"
                 CanClose="False"
                 Visibility="{Binding Path=HasMessage}" />
-
         </Grid>
     </DockPanel>
 </UserControl>

@@ -217,14 +217,14 @@ namespace DataExtractor.UI
             OnPropertyChanged(nameof(RunButtonEnabled));
         }
 
-    #endregion Controls Enabled
+        #endregion Controls Enabled
 
-    #region Properties
+        #region Properties
 
-    /// <summary>
-    /// ID of the DockPane.
-    /// </summary>
-    private const string _dockPaneID = "DataExtractor_UI_DockpaneMain";
+        /// <summary>
+        /// ID of the DockPane.
+        /// </summary>
+        private const string _dockPaneID = "DataExtractor_UI_DockpaneMain";
 
         public static string DockPaneID
         {

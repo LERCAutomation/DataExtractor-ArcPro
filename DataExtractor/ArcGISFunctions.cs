@@ -23,16 +23,12 @@ using ArcGIS.Core.CIM;
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Data.DDL;
 using ArcGIS.Core.Data.Exceptions;
-using ArcGIS.Core.Internal.CIM;
 using ArcGIS.Desktop.Catalog;
 using ArcGIS.Desktop.Core;
-using ArcGIS.Desktop.Core.Events;
 using ArcGIS.Desktop.Core.Geoprocessing;
 using ArcGIS.Desktop.Editing;
 using ArcGIS.Desktop.Editing.Attributes;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
-using ArcGIS.Desktop.Internal.Catalog.Wizards;
-using ArcGIS.Desktop.Internal.Core.Geoprocessing;
 using ArcGIS.Desktop.Mapping;
 using DataExtractor.UI;
 using System;
@@ -40,8 +36,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using QueryFilter = ArcGIS.Core.Data.QueryFilter;
 
 namespace DataTools
@@ -1325,19 +1319,6 @@ namespace DataTools
                     // Create a cursor of the sorted features.
                     using RowCursor rowCursor = featureClass.Search(queryFilter, false);
 
-                    //// Create a SortDescription for the key field.
-                    //ArcGIS.Core.Data.SortDescription sortDescription = new(partnerField)
-                    //{
-                    //    CaseSensitivity = CaseSensitivity.Insensitive,
-                    //    SortOrder = ArcGIS.Core.Data.SortOrder.Ascending
-                    //};
-
-                    //// Create a TableSortDescription.
-                    //TableSortDescription tableSortDescription = new([sortDescription]);
-
-                    //// Create a cursor of the sorted features.
-                    //using RowCursor rowCursor = featureClass.Sort(tableSortDescription);
-
                     // Loop through the feature class/table using the cursor.
                     while (rowCursor.MoveNext())
                     {
@@ -1679,7 +1660,7 @@ namespace DataTools
         /// <param name="labelRed"></param>
         /// <param name="labelGreen"></param>
         /// <param name="labelBlue"></param>
-        /// <param name="labelOverlap"></param>
+        /// <param name="allowOverlap"></param>
         /// <param name="displayLabels"></param>
         /// <returns>bool</returns>
         public async Task<bool> LabelLayerAsync(string layerName, string labelColumn, string labelFont = "Arial", double labelSize = 10, string labelStyle = "Normal",
@@ -2318,7 +2299,6 @@ namespace DataTools
                     // Write the header to the output file.
                     FileFunctions.WriteEmptyTextFile(outFile, header);
                 }
-
             }
             catch
             {
