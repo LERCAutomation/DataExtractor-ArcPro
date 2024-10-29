@@ -72,28 +72,55 @@ namespace DataExtractor.UI
         /// <param name="e"></param>
         private void ListViewPartners_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (ListViewPartners.SelectedItem is Partner partner)
+            // Get the original element that was double-clicked on
+            // and search from child to parent until you find either
+            // a ListViewItem or the top of the tree.
+            DependencyObject originalSource = (DependencyObject)e.OriginalSource;
+            while ((originalSource != null) && originalSource is not System.Windows.Controls.ListViewItem)
             {
-                string notes = (string.IsNullOrEmpty(partner.Notes.Trim()) ? string.Empty : "\r\n\r\nNotes : " + partner.Notes);
+                originalSource = VisualTreeHelper.GetParent(originalSource);
+            }
 
-                // Display the selected partner's details.
-                string strText = string.Format("{0} ({1})\r\nGIS Format : {2}\r\nExport Format : {3}\r\n\r\nSQL Table : {4}\r\nSQL Files : {5}\r\n\r\nMap Files : {6}{7}",
-                    partner.PartnerName, partner.ShortName, partner.GISFormat, partner.ExportFormat, partner.SQLTable, partner.SQLFiles.Replace(" ", "").Replace(",", ", "), partner.MapFiles.Replace(" ", "").Replace(",", ", "), notes);
-                MessageBox.Show(strText, "Partner Details", MessageBoxButton.OK);
+            // If it didn’t find a ListViewItem anywhere in the hierarchy
+            // then it’s because the user didn’t click on one. Therefore
+            // if the variable isn’t null, run the code.
+            if (originalSource != null)
+            {
+                if (ListViewPartners.SelectedItem is Partner partner)
+                {
+                    string notes = (string.IsNullOrEmpty(partner.Notes.Trim()) ? string.Empty : "\r\n\r\nNotes : " + partner.Notes);
+
+                    // Display the selected partner's details.
+                    string strText = string.Format("{0} ({1})\r\nGIS Format : {2}\r\nExport Format : {3}\r\n\r\nSQL Table : {4}\r\nSQL Files : {5}\r\n\r\nMap Files : {6}{7}",
+                        partner.PartnerName, partner.ShortName, partner.GISFormat, partner.ExportFormat, partner.SQLTable, partner.SQLFiles.Replace(" ", "").Replace(",", ", "), partner.MapFiles.Replace(" ", "").Replace(",", ", "), notes);
+                    MessageBox.Show(strText, "Partner Details", MessageBoxButton.OK);
+                }
             }
         }
 
+        /// <summary>
+        /// Override <Ctrl>A behavious to make sure all list items are
+        /// selected, not just the ones that are visible.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ListViewPartners_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (e.Key == Key.A && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
+            if ((e.Key == Key.A) && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
             {
-                foreach (System.Windows.Forms.ListViewItem item in ListViewPartners.Items)
+                foreach (Partner partner in ListViewPartners.Items)
                 {
-                    item.Selected = true;
+                    partner.IsSelected = true;
                 }
                 e.Handled = true;
             }
         }
+
+        /// <summary>
+        /// Ensure any removed SQL layers are actually unselected.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ListViewSQLLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Get the list of removed items.
@@ -121,21 +148,59 @@ namespace DataExtractor.UI
         /// <param name="e"></param>
         private void ListViewSQLLayers_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (ListViewSQLLayers.SelectedItem is SQLLayer sqlLayer)
+            // Get the original element that was double-clicked on
+            // and search from child to parent until you find either
+            // a ListViewItem or the top of the tree.
+            DependencyObject originalSource = (DependencyObject)e.OriginalSource;
+            while ((originalSource != null) && originalSource is not System.Windows.Controls.ListViewItem)
             {
-                string outputType = (string.IsNullOrEmpty(sqlLayer.OutputType) ? string.Empty : "\r\nOutput Type : " + sqlLayer.OutputType);
-                string macroName = (string.IsNullOrEmpty(sqlLayer.MacroName) ? string.Empty : "\r\n\r\nMacro Name : " + sqlLayer.MacroName);
-                string macroParms = (string.IsNullOrEmpty(sqlLayer.MacroParms) ? string.Empty : "\r\n\r\nMacro Parms : " + sqlLayer.MacroParms);
-                string whereClause = (string.IsNullOrEmpty(sqlLayer.WhereClause) ? string.Empty : "\r\n\r\nWhere Clause : " + sqlLayer.WhereClause);
-                string orderBy = (string.IsNullOrEmpty(sqlLayer.OrderColumns) ? string.Empty : "\r\n\r\nOrder By : " + sqlLayer.OrderColumns);
+                originalSource = VisualTreeHelper.GetParent(originalSource);
+            }
 
-                // Display the selected SQL layer's details.
-                string strText = string.Format("{0}\r\nOutput Name : {1}{2}{3}{4}{5}{6}",
-                    sqlLayer.NodeName, sqlLayer.OutputName, outputType, whereClause, orderBy, macroName, macroParms);
-                MessageBox.Show(strText, "SQL Layer Details", MessageBoxButton.OK);
+            // If it didn’t find a ListViewItem anywhere in the hierarchy
+            // then it’s because the user didn’t click on one. Therefore
+            // if the variable isn’t null, run the code.
+            if (originalSource != null)
+            {
+                if (ListViewSQLLayers.SelectedItem is SQLLayer sqlLayer)
+                {
+                    string outputType = (string.IsNullOrEmpty(sqlLayer.OutputType) ? string.Empty : "\r\nOutput Type : " + sqlLayer.OutputType);
+                    string macroName = (string.IsNullOrEmpty(sqlLayer.MacroName) ? string.Empty : "\r\n\r\nMacro Name : " + sqlLayer.MacroName);
+                    string macroParms = (string.IsNullOrEmpty(sqlLayer.MacroParms) ? string.Empty : "\r\n\r\nMacro Parms : " + sqlLayer.MacroParms);
+                    string whereClause = (string.IsNullOrEmpty(sqlLayer.WhereClause) ? string.Empty : "\r\n\r\nWhere Clause : " + sqlLayer.WhereClause);
+                    string orderBy = (string.IsNullOrEmpty(sqlLayer.OrderColumns) ? string.Empty : "\r\n\r\nOrder By : " + sqlLayer.OrderColumns);
+
+                    // Display the selected SQL layer's details.
+                    string strText = string.Format("{0}\r\nOutput Name : {1}{2}{3}{4}{5}{6}",
+                        sqlLayer.NodeName, sqlLayer.OutputName, outputType, whereClause, orderBy, macroName, macroParms);
+                    MessageBox.Show(strText, "SQL Layer Details", MessageBoxButton.OK);
+                }
             }
         }
 
+        /// <summary>
+        /// Override <Ctrl>A behavious to make sure all list items are
+        /// selected, not just the ones that are visible.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ListViewSQLLayers_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if ((e.Key == Key.A) && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
+            {
+                foreach (SQLLayer sqlLayer in ListViewSQLLayers.Items)
+                {
+                    sqlLayer.IsSelected = true;
+                }
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// Ensure any removed map layers are actually unselected.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ListViewMapLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Get the list of removed items.
@@ -163,18 +228,51 @@ namespace DataExtractor.UI
         /// <param name="e"></param>
         private void ListViewMapLayers_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (ListViewMapLayers.SelectedItem is MapLayer mapLayer)
+            // Get the original element that was double-clicked on
+            // and search from child to parent until you find either
+            // a ListViewItem or the top of the tree.
+            DependencyObject originalSource = (DependencyObject)e.OriginalSource;
+            while ((originalSource != null) && originalSource is not System.Windows.Controls.ListViewItem)
             {
-                string outputType = (string.IsNullOrEmpty(mapLayer.OutputType) ? string.Empty : "\r\nOutput Type : " + mapLayer.OutputType);
-                string macroName = (string.IsNullOrEmpty(mapLayer.MacroName) ? string.Empty : "\r\n\r\nMacro Name : " + mapLayer.MacroName);
-                string macroParms = (string.IsNullOrEmpty(mapLayer.MacroParms) ? string.Empty : "\r\n\r\nMacro Parms : " + mapLayer.MacroParms);
-                string whereClause = (string.IsNullOrEmpty(mapLayer.WhereClause) ? string.Empty : "\r\n\r\nWhere Clause : " + mapLayer.WhereClause);
-                string orderBy = (string.IsNullOrEmpty(mapLayer.OrderColumns) ? string.Empty : "\r\n\r\nOrder By : " + mapLayer.OrderColumns);
+                originalSource = VisualTreeHelper.GetParent(originalSource);
+            }
 
-                // Display the selected map layer's details.
-                string strText = string.Format("{0}\r\nLayer Name : {1}\r\nOutput Name : {2}{3}{4}{5}{6}{7}",
-                    mapLayer.NodeName, mapLayer.LayerName, mapLayer.OutputName, outputType, whereClause, orderBy, macroName, macroParms);
-                MessageBox.Show(strText, "Map Layer Details", MessageBoxButton.OK);
+            // If it didn’t find a ListViewItem anywhere in the hierarchy
+            // then it’s because the user didn’t click on one. Therefore
+            // if the variable isn’t null, run the code.
+            if (originalSource != null)
+            {
+                if (ListViewMapLayers.SelectedItem is MapLayer mapLayer)
+                {
+                    string outputType = (string.IsNullOrEmpty(mapLayer.OutputType) ? string.Empty : "\r\nOutput Type : " + mapLayer.OutputType);
+                    string macroName = (string.IsNullOrEmpty(mapLayer.MacroName) ? string.Empty : "\r\n\r\nMacro Name : " + mapLayer.MacroName);
+                    string macroParms = (string.IsNullOrEmpty(mapLayer.MacroParms) ? string.Empty : "\r\n\r\nMacro Parms : " + mapLayer.MacroParms);
+                    string whereClause = (string.IsNullOrEmpty(mapLayer.WhereClause) ? string.Empty : "\r\n\r\nWhere Clause : " + mapLayer.WhereClause);
+                    string orderBy = (string.IsNullOrEmpty(mapLayer.OrderColumns) ? string.Empty : "\r\n\r\nOrder By : " + mapLayer.OrderColumns);
+
+                    // Display the selected map layer's details.
+                    string strText = string.Format("{0}\r\nLayer Name : {1}\r\nOutput Name : {2}{3}{4}{5}{6}{7}",
+                        mapLayer.NodeName, mapLayer.LayerName, mapLayer.OutputName, outputType, whereClause, orderBy, macroName, macroParms);
+                    MessageBox.Show(strText, "Map Layer Details", MessageBoxButton.OK);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Override <Ctrl>A behavious to make sure all list items are
+        /// selected, not just the ones that are visible.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ListViewMapLayers_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if ((e.Key == Key.A) && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
+            {
+                foreach (MapLayer mapLayer in ListViewMapLayers.Items)
+                {
+                    mapLayer.IsSelected = true;
+                }
+                e.Handled = true;
             }
         }
 

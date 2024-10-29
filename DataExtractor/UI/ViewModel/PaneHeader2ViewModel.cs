@@ -1960,9 +1960,9 @@ namespace DataExtractor.UI
                 outPath = outFolder + @"\" + arcGISFolder;
 
             // Set the map output names depending on the output format.
-            string outPoints;
-            string outPolys;
-            string outFlat;
+            string outPoints = outputTable;
+            string outPolys = outputTable;
+            string outFlat = outputTable;
             switch (mapOutputFormat)
             {
                 case "GDB":
@@ -1991,6 +1991,7 @@ namespace DataExtractor.UI
                     break;
 
                 case "":
+                    break;
 
                 default:
                     FileFunctions.WriteLine(_logFile, "Error: Unknown output format '" + mapOutputFormat + "'.");
@@ -2021,7 +2022,7 @@ namespace DataExtractor.UI
             outPath = outFolder;
 
             // Set the export output name depending on the output format.
-            string expFile;
+            string expFile = outputTable;
             switch (exportOutputFormat)
             {
                 case "CSV":
@@ -2037,6 +2038,7 @@ namespace DataExtractor.UI
                     break;
 
                 case "":
+                    break;
 
                 default:
                     FileFunctions.WriteLine(_logFile, "Error: Unknown export format '" + exportOutputFormat + "'.");
@@ -2464,7 +2466,7 @@ namespace DataExtractor.UI
                 outPath = outFolder + @"\" + arcGISFolder;
 
             // Set the map output names depending on the output format.
-            string outFile;
+            string outFile = outputTable;
             switch (mapOutputFormat)
             {
                 case "GDB":
@@ -2482,6 +2484,7 @@ namespace DataExtractor.UI
                     break;
 
                 case "":
+                    break;
 
                 default:
                     FileFunctions.WriteLine(_logFile, "Error: Unknown output format '" + mapOutputFormat + "'.");
@@ -2523,7 +2526,7 @@ namespace DataExtractor.UI
             string expPath = outFolder;
 
             // Set the default export file name.
-            string expFile;
+            string expFile = outputTable;
 
             // Set the export output name depending on the output format.
             switch (exportOutputFormat)
@@ -2540,7 +2543,8 @@ namespace DataExtractor.UI
                     expFile = outputTable + ".txt";
                     break;
 
-                //case "":
+                case "":
+                    break;
 
                 default:
                     FileFunctions.WriteLine(_logFile, "Error: Unknown export format '" + exportOutputFormat + "'.");
