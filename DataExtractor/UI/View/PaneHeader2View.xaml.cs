@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using MessageBox = ArcGIS.Desktop.Framework.Dialogs.MessageBox;
@@ -82,6 +83,17 @@ namespace DataExtractor.UI
             }
         }
 
+        private void ListViewPartners_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.A && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
+            {
+                foreach (System.Windows.Forms.ListViewItem item in ListViewPartners.Items)
+                {
+                    item.Selected = true;
+                }
+                e.Handled = true;
+            }
+        }
         private void ListViewSQLLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Get the list of removed items.
@@ -137,7 +149,7 @@ namespace DataExtractor.UI
 
                 // Get the list of currently selected items.
                 var listView = sender as System.Windows.Controls.ListView;
-                var selectedItems = listView.SelectedItems.OfType<SQLLayer>().ToList();
+                var selectedItems = listView.SelectedItems.OfType<MapLayer>().ToList();
 
                 if (selectedItems.Count == 1)
                     listView.Items.OfType<MapLayer>().ToList().Where(s => selectedItems.All(s2 => s2.NodeName != s.NodeName)).ToList().ForEach(p => p.IsSelected = false);

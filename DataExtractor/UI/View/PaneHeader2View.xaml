@@ -54,6 +54,7 @@
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
                           ItemsSource="{Binding PartnersList}"
+                          KeyDown="ListViewPartners_KeyDown"
                           MouseDoubleClick="ListViewPartners_MouseDoubleClick"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           SizeChanged="ListViewPartners_SizeChanged"

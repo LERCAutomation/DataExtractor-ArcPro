@@ -22,6 +22,7 @@
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Data.Exceptions;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
+using ArcGIS.Desktop.Mapping;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -156,33 +157,26 @@ namespace DataTools
             {
                 try
                 {
-                    // Try and get all of the feature class definitions.
-                    IReadOnlyList<FeatureClassDefinition> fcDefinitions = _geodatabase.GetDefinitions<FeatureClassDefinition>();
+                    // Open the table.
+                    using Table table = _geodatabase.OpenDataset<Table>("Spatial_Objects");
 
-                    foreach (var definition in fcDefinitions)
+                    // Create a row cursor.
+                    RowCursor rowCursor;
+
+                    // Create a cursor on the table.
+                    rowCursor = table.Search(null);
+
+                    // Loop through the feature class/table using the cursor.
+                    while (rowCursor.MoveNext())
                     {
-                        // Get the name of the feature class and add it to the list.
-                        _tableNames.Add(definition.GetName());
-                    }
-                }
-                catch (Exception)
-                {
-                    // GetDefinitions throws an exception.
-                    throw;
-                }
-            });
+                        // Get the current row.
+                        using Row row = rowCursor.Current;
 
-            await QueuedTask.Run(() =>
-            {
-                try
-                {
-                    // Try and get all of the table definitions.
-                    IReadOnlyList<TableDefinition> tabDefinitions = _geodatabase.GetDefinitions<TableDefinition>();
+                        // Get the name of the table/view.
+                        string tableViewName = Convert.ToString(row["ObjectName"]);
 
-                    foreach (var definition in tabDefinitions)
-                    {
-                        // Get the name of the table and add it to the list.
-                        _tableNames.Add(definition.GetName());
+                        // Add the name of the table/view to the list.
+                        _tableNames.Add(tableViewName);
                     }
                 }
                 catch (Exception)

@@ -594,10 +594,12 @@ namespace DataExtractor
                     if (node.NodeType != XmlNodeType.Comment)
                     {
                         string nodeName = node.Name;
-                        nodeName = nodeName.Replace("_", " "); // Replace any underscores with spaces for better display.
 
                         // Create a new layer for this node.
                         SQLLayer layer = new(nodeName);
+
+                        // Replace any underscores with spaces for better display.
+                        nodeName = nodeName.Replace("_", " ");
 
                         try
                         {
@@ -725,11 +727,11 @@ namespace DataExtractor
                     {
                         string nodeName = node.Name;
 
-                        // Replace any underscores with spaces for better display.
-                        nodeName = nodeName.Replace("_", " ");
-
                         // Create a new layer for this node.
                         MapLayer layer = new(nodeName);
+
+                        // Replace any underscores with spaces for better display.
+                        nodeName = nodeName.Replace("_", " ");
 
                         try
                         {
