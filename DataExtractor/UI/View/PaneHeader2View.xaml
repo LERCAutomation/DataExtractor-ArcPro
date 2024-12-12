@@ -415,7 +415,7 @@
                           Visibility="{Binding Path=UploadToServerVisibility}"
                           IsChecked="{Binding UploadToServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Label Name="LabelUploadToServer"
-                       Content="Upload to server"
+                       Content="Upload to server?"
                        Grid.Row="1"
                        Grid.Column="2"
                        Margin="2,4,0,4"
