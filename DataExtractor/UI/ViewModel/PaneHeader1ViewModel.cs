@@ -322,7 +322,7 @@ namespace DataExtractor.UI
             }
 
             // Initialise the search pane.
-            if (await _dockPane.InitialiseExtractPaneAsync())
+            if (await _dockPane.InitialiseExtractPaneAsync(true))
             {
                 // Select the search pane.
                 _dockPane.SelectedPanelHeaderIndex = 1;

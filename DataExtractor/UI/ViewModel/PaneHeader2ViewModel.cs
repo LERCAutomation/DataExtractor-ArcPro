@@ -492,6 +492,22 @@ namespace DataExtractor.UI
             if (string.IsNullOrEmpty(_userID))
                 _userID = "Temp";
 
+            // Set the date variables.
+            DateTime dateNow = DateTime.Now;
+            _dateDD = dateNow.ToString("dd");
+            _dateMM = dateNow.ToString("MM");
+            _dateMMM = dateNow.ToString("MMM");
+            _dateMMMM = dateNow.ToString("MMMM");
+            _dateYY = dateNow.ToString("yy");
+            _dateQtr = (Math.Ceiling(dateNow.Month / 3.0 + 2) % 4) + 1;
+            _dateQQ = _dateQtr.ToString("00");
+            _dateYYYY = dateNow.ToString("yyyy");
+            _dateFFFF = StringFunctions.FinancialYear(dateNow);
+
+            // Replace any date variables in the log file path.
+            _logFilePath = _logFilePath.Replace("%dd%", _dateDD).Replace("%mm%", _dateMM).Replace("%mmm%", _dateMMM).Replace("%mmmm%", _dateMMMM);
+            _logFilePath = _logFilePath.Replace("%yy%", _dateYY).Replace("%qq%", _dateQQ).Replace("%yyyy%", _dateYYYY).Replace("%ffff%", _dateFFFF);
+
             // Set the destination log file path.
             _logFile = _logFilePath + @"\DataExtractor_" + _userID + ".log";
 
@@ -1169,6 +1185,20 @@ namespace DataExtractor.UI
                 return;
             }
 
+            // Inform the user no tables found in SQL Server.
+            if (_sqlFunctions.TableNames.Count == 0)
+            {
+                ShowMessage("No tables found in SQL Server", MessageType.Warning);
+                return;
+            }
+
+            // Inform the user no filtered tables found.
+            if (_sqlTableNames.Count == 0)
+            {
+                ShowMessage("No tables found matching wildcard criteria", MessageType.Warning);
+                return;
+            }
+
             // Show any message from loading the SQL layers list.
             if (sqlLayersTask.Result != null!)
             {
@@ -1338,7 +1368,7 @@ namespace DataExtractor.UI
 
             await Task.Run(() =>
             {
-                if (_mapFunctions == null || _mapFunctions.MapName == null || MapView.Active.Map.Name != _mapFunctions.MapName)
+                if (_mapFunctions == null || _mapFunctions.MapName == null || MapView.Active is null || MapView.Active.Map.Name != _mapFunctions.MapName)
                 {
                     // Create a new map functions object.
                     _mapFunctions = new();
@@ -1467,22 +1497,6 @@ namespace DataExtractor.UI
 
             // Will the partner table be uploaded to SQL server first?
             bool uploadToServer = UploadToServer;
-
-            // Set the date variables.
-            DateTime dateNow = DateTime.Now;
-            _dateDD = dateNow.ToString("dd");
-            _dateMM = dateNow.ToString("MM");
-            _dateMMM = dateNow.ToString("MMM");
-            _dateMMMM = dateNow.ToString("MMMM");
-            _dateYY = dateNow.ToString("yy");
-            _dateQtr = (Math.Ceiling(dateNow.Month / 3.0 + 2) % 4) + 1;
-            _dateQQ = _dateQtr.ToString("00");
-            _dateYYYY = dateNow.ToString("yyyy");
-            _dateFFFF = StringFunctions.FinancialYear(dateNow);
-
-            // Replace any date variables in the log file path.
-            string logFilePath = _logFilePath.Replace("%dd%", _dateDD).Replace("%mm%", _dateMM).Replace("%mmm%", _dateMMM).Replace("%mmmm%", _dateMMMM);
-            logFilePath = logFilePath.Replace("%yy%", _dateYY).Replace("%qq%", _dateQQ).Replace("%yyyy%", _dateYYYY).Replace("%ffff%", _dateFFFF);
 
             // Replace any date variables in the default path.
             string defaultPath = _defaultPath.Replace("%dd%", _dateDD).Replace("%mm%", _dateMM).Replace("%mmm%", _dateMMM).Replace("%mmmm%", _dateMMMM);
@@ -1721,72 +1735,38 @@ namespace DataExtractor.UI
             // Let's start the SQL layers.
             //------------------------------------------------------------------
 
-            // Set the SQL output table name.
-            string sqlOutputTable = sqlTable + "_" + _userID;
-
             // If at least one SQL table is selected).
             if (_selectedSQLLayers.Count > 0)
             {
-                // Check the partner SQL table is found on the server.
-                if (string.IsNullOrEmpty(sqlTable))
-                {
-                    FileFunctions.WriteLine(_logFile, "Skipping SQL outputs - table name is blank.");
-                    return true;
-                }
-
-                if (!_sqlTableNames.Contains(sqlTable))
-                {
-                    FileFunctions.WriteLine(_logFile, "Skipping SQL outputs - table '" + sqlTable + "' - not found.");
-                    return true;
-                }
-
                 // Trigger the spatial selection.
-                await PerformSpatialSelectionAsync(partner, _defaultSchema, selectionTypeNum, useCentroids);
-
-                // Check if the output feature class exists.
-                if (!await _sqlFunctions.FeatureClassExistsAsync(sqlOutputTable))
-                {
-                    FileFunctions.WriteLine(_logFile, "Procedure returned no records.");
-                    return false;
-                }
-
-                // Count the number of rows in the output feature count.
-                long tableCount = await _sqlFunctions.FeatureClassCountRowsAsync(sqlOutputTable);
+                long tableCount = await PerformSpatialSelectionAsync(partner, _defaultSchema, selectionTypeNum, useCentroids);
 
                 if (tableCount > 0)
                 {
                     FileFunctions.WriteLine(_logFile, string.Format("{0:n0}", tableCount) + " records selected.");
                     FileFunctions.WriteLine(_logFile, "");
+
+                    foreach (SQLLayer sqlLayer in _selectedSQLLayers)
+                    {
+                        _dockPane.ProgressUpdate("Processing '" + partnerName + "'...", _extractCnt, _extractTot);
+
+                        _extractCnt += 1;
+                        FileFunctions.WriteLine(_logFile, "Starting process " + _extractCnt + " of " + _extractTot + " ...");
+
+                        // Process the required outputs from the spatial selection.
+                        if (!await ProcessSQLLayerAsync(partner, sqlLayer, applyExclusionClause, outFolder, gdbName, arcGISFolder, csvFolder, txtFolder))
+                        {
+                            // Continue but flag the error.
+                            _extractErrors = true;
+                        }
+
+                        FileFunctions.WriteLine(_logFile, "Completed process " + _extractCnt + " of " + _extractTot + ".");
+                        FileFunctions.WriteLine(_logFile, "");
+                    }
                 }
-                else
+                else if (tableCount == 0)
                 {
                     FileFunctions.WriteLine(_logFile, "Procedure returned no records.");
-
-                    // Clean up the subsets tables in case any are left over.
-                    await ClearSubsetTablesAsync(_defaultSchema, sqlTable, _userID);
-
-                    // Clean up the sptial table after processing the partner.
-                    await ClearSpatialTableAsync(_defaultSchema, sqlTable, _userID);
-
-                    return false;
-                }
-
-                foreach (SQLLayer sqlLayer in _selectedSQLLayers)
-                {
-                    _dockPane.ProgressUpdate("Processing '" + partnerName + "'...", _extractCnt, _extractTot);
-
-                    _extractCnt += 1;
-                    FileFunctions.WriteLine(_logFile, "Starting process " + _extractCnt + " of " + _extractTot + " ...");
-
-                    // Process the required outputs from the spatial selection.
-                    if (!await ProcessSQLLayerAsync(partner, sqlLayer, applyExclusionClause, outFolder, gdbName, arcGISFolder, csvFolder, txtFolder))
-                    {
-                        // Continue but flag the error.
-                        _extractErrors = true;
-                    }
-
-                    FileFunctions.WriteLine(_logFile, "Completed process " + _extractCnt + " of " + _extractTot + ".");
-                    FileFunctions.WriteLine(_logFile, "");
                 }
 
                 // Clean up the subsets tables in case any are left over.
@@ -2727,14 +2707,30 @@ namespace DataExtractor.UI
         /// <param name="selectionTypeNum"></param>
         /// <param name="useCentroids"></param>
         /// <returns></returns>
-        internal async Task PerformSpatialSelectionAsync(Partner partner, string schema, int selectionTypeNum, bool useCentroids)
+        internal async Task<long> PerformSpatialSelectionAsync(Partner partner, string schema, int selectionTypeNum, bool useCentroids)
         {
             // Get the partner details.
             string partnerAbbr = partner.ShortName;
             string sqlTable = partner.SQLTable;
 
+            // Set the SQL output table name.
+            string sqlOutputTable = sqlTable + "_" + _userID;
+
             // Get the name of the stored procedure to execute selection in SQL Server.
             string storedProcedureName = _spatialStoredProcedure;
+
+            // Check the partner SQL table is found on the server.
+            if (string.IsNullOrEmpty(sqlTable))
+            {
+                FileFunctions.WriteLine(_logFile, "Skipping SQL outputs - table name is blank.");
+                return -1;
+            }
+
+            if (!_sqlTableNames.Contains(sqlTable))
+            {
+                FileFunctions.WriteLine(_logFile, "Skipping SQL outputs - table '" + sqlTable + "' - not found.");
+                return -1;
+            }
 
             // Set up the SQL command.
             StringBuilder sqlCmd = new();
@@ -2758,6 +2754,15 @@ namespace DataExtractor.UI
             await _sqlFunctions.ExecuteSQLOnGeodatabase(sqlCmd.ToString());
 
             FileFunctions.WriteLine(_logFile, "SQL spatial selection complete.");
+
+            // Check if the output feature class exists.
+            if (!await _sqlFunctions.FeatureClassExistsAsync(sqlOutputTable))
+                return 0;
+
+            // Count the number of rows in the output feature count.
+            long tableCount = await _sqlFunctions.FeatureClassCountRowsAsync(sqlOutputTable);
+
+            return tableCount;
         }
 
         /// <summary>
@@ -3213,16 +3218,17 @@ namespace DataExtractor.UI
             // Get the full list of feature classes and tables from SQL Server.
             await _sqlFunctions.GetTableNamesAsync();
 
-            // Get the list of tables returned from SQL Server.
-            List<string> tabList = _sqlFunctions.TableNames;
-
             // If no tables were found.
             if (_sqlFunctions.TableNames.Count == 0)
             {
                 // Clear the tables list.
                 _sqlTableNames = [];
+
                 return;
             }
+
+            // Get the list of tables returned from SQL Server.
+            List<string> tabList = _sqlFunctions.TableNames;
 
             // Get the include and exclude wildcard settings.
             string includeWC = _includeWildcard;

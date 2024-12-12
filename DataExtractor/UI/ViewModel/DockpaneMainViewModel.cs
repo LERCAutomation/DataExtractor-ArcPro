@@ -25,15 +25,18 @@ using ArcGIS.Desktop.Framework.Contracts;
 using ArcGIS.Desktop.Framework.Controls;
 using ArcGIS.Desktop.Mapping;
 using ArcGIS.Desktop.Mapping.Events;
+using DataTools;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
+//using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using MessageBox = ArcGIS.Desktop.Framework.Dialogs.MessageBox;
 
 namespace DataExtractor.UI
 {
@@ -93,7 +96,7 @@ namespace DataExtractor.UI
             if (_paneH1VM.XMLLoaded)
             {
                 // Initialise the extract pane.
-                if (!await InitialiseExtractPaneAsync())
+                if (!await InitialiseExtractPaneAsync(false))
                     return;
 
                 // Select the profile tab.
@@ -429,9 +432,42 @@ namespace DataExtractor.UI
         /// Initialise the extract pane.
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> InitialiseExtractPaneAsync()
+        public async Task<bool> InitialiseExtractPaneAsync(bool message)
         {
             _paneH2VM = new PaneHeader2ViewModel(_dockPane, _paneH1VM.ToolConfig);
+
+            string sdeFileName = _paneH1VM.ToolConfig.SDEFile;
+
+            // Check if the SDE file exists.
+            if (!FileFunctions.FileExists(sdeFileName))
+            {
+                if (message)
+                    MessageBox.Show("SDE connection file '" + sdeFileName + "' not found.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                _paneH2VM = null;
+                return false;
+            }
+
+            // Open the SQL Server geodatabase.
+            try
+            {
+                if (!await SQLServerFunctions.CheckSDEConnection(sdeFileName))
+                {
+                    if (message)
+                        MessageBox.Show("SDE connection file '" + sdeFileName + "' not valid.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                    _paneH2VM = null;
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                if (message)
+                    MessageBox.Show("SDE connection file '" + sdeFileName + "' not valid.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                _paneH2VM = null;
+                return false;
+            }
 
             // Load the form (don't wait for the response).
             //Task.Run(() => _paneH2VM.ResetFormAsync(false));

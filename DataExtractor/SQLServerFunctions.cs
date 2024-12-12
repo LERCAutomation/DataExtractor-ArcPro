@@ -22,7 +22,6 @@
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Data.Exceptions;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
-using ArcGIS.Desktop.Mapping;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -100,6 +99,7 @@ namespace DataTools
                 }
                 catch (Exception)
                 {
+                    // Unexpected error.
                     _sdeConnectionValid = false;
                 }
             });
@@ -128,11 +128,12 @@ namespace DataTools
                 catch (GeodatabaseNotFoundOrOpenedException)
                 {
                     // Geodatabase throws an exception.
-                    throw;
+                    return;
                 }
                 catch (Exception)
                 {
-                    throw;
+                    // Unexpected error.
+                    return;
                 }
             });
 
@@ -179,10 +180,15 @@ namespace DataTools
                         _tableNames.Add(tableViewName);
                     }
                 }
+                catch (GeodatabaseTableException)
+                {
+                    // OpenDataset throws an exception if the table doesn't exist.
+                    return;
+                }
                 catch (Exception)
                 {
-                    // GetDefinitions throws an exception.
-                    throw;
+                    // Unexpected error.
+                    return;
                 }
             });
 
@@ -222,7 +228,7 @@ namespace DataTools
                 catch
                 {
                     // GetDefinition throws an exception if the definition doesn't exist.
-                    throw;
+                    return;
                 }
             });
 
@@ -260,7 +266,7 @@ namespace DataTools
                 catch
                 {
                     // GetDefinition throws an exception if the definition doesn't exist.
-                    throw;
+                    return;
                 }
             });
 
@@ -304,7 +310,7 @@ namespace DataTools
             catch
             {
                 // GetDefinition throws an exception if the definition doesn't exist.
-                throw;
+                return null;
             }
 
             return fields;
@@ -356,7 +362,7 @@ namespace DataTools
                 catch (Exception)
                 {
                     // ExecuteStatement throws an exception.
-                    throw;
+                    return;
                 }
             }, TaskCreationOptions.LongRunning);
 
@@ -552,7 +558,7 @@ namespace DataTools
             catch (Exception)
             {
                 // logger.Error(exception.Message);
-                throw;
+                return false;
             }
 
             // Close the output file and dispose of the object.
