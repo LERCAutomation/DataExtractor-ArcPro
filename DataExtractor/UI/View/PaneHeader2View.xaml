@@ -53,13 +53,13 @@
                           Grid.Row="1"
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
-                          ItemsSource="{Binding PartnersList}"
+                          ItemsSource="{Binding Path=PartnersList}"
                           MouseDoubleClick="ListViewPartners_MouseDoubleClick"
                           PreviewKeyDown="ListViewPartners_KeyDown"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           SizeChanged="ListViewPartners_SizeChanged"
                           SelectionChanged="ListViewPartners_SelectionChanged"
-                          SelectedIndex="{Binding PartnersList_SelectedIndex}"
+                          SelectedIndex="{Binding Path=PartnersList_SelectedIndex, Mode=OneWayToSource}"
                           SelectionMode="Extended">
                     <ListView.View>
                         <GridView AllowsColumnReorder="False">
@@ -68,7 +68,7 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding PartnerName}">
+                            <GridViewColumn DisplayMemberBinding="{Binding Path=PartnerName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
@@ -79,7 +79,7 @@
                     </ListView.View>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
-                            <Setter Property="IsSelected" Value="{Binding IsSelected}" />
+                            <Setter Property="IsSelected" Value="{Binding Path=IsSelected}" />
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="true">
                                     <Setter Property="Background" Value="LightSkyBlue" />
@@ -123,7 +123,7 @@
             <Grid Name="GridSQLLayers" Grid.Row="1" Margin="0,4,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="{Binding SQLLayersListHeight}" />
+                    <RowDefinition Height="{Binding Path=SQLLayersListHeight}" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="8" />
@@ -153,13 +153,13 @@
                           Grid.Row="1"
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
-                          ItemsSource="{Binding SQLLayersList}"
+                          ItemsSource="{Binding Path=SQLLayersList}"
                           MouseDoubleClick="ListViewSQLLayers_MouseDoubleClick"
                           PreviewKeyDown="ListViewSQLLayers_KeyDown"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           SizeChanged="ListViewSQLLayers_SizeChanged"
                           SelectionChanged="ListViewSQLLayers_SelectionChanged"
-                          SelectedIndex="{Binding SQLLayersList_SelectedIndex}"
+                          SelectedIndex="{Binding Path=SQLLayersList_SelectedIndex, Mode=OneWayToSource}"
                           SelectionMode="Extended">
                     <ListView.View>
                         <GridView AllowsColumnReorder="False">
@@ -168,7 +168,7 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeName}">
+                            <GridViewColumn DisplayMemberBinding="{Binding Path=NodeName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
@@ -179,7 +179,7 @@
                     </ListView.View>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
-                            <Setter Property="IsSelected" Value="{Binding IsSelected}" />
+                            <Setter Property="IsSelected" Value="{Binding Path=IsSelected}" />
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="true">
                                     <Setter Property="Background" Value="LightSkyBlue" />
@@ -223,7 +223,7 @@
             <Grid Name="GridMapLayers" Grid.Row="2" Margin="0,4,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="{Binding MapLayersListHeight}" />
+                    <RowDefinition Height="{Binding Path=MapLayersListHeight}" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="8" />
@@ -249,13 +249,13 @@
                           Grid.Row="1"
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
-                          ItemsSource="{Binding MapLayersList}"
+                          ItemsSource="{Binding Path=MapLayersList}"
                           MouseDoubleClick="ListViewMapLayers_MouseDoubleClick"
                           PreviewKeyDown="ListViewMapLayers_KeyDown"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           SizeChanged="ListViewMapLayers_SizeChanged"
                           SelectionChanged="ListViewMapLayers_SelectionChanged"
-                          SelectedIndex="{Binding MapLayersList_SelectedIndex}"
+                          SelectedIndex="{Binding Path=MapLayersList_SelectedIndex, Mode=OneWayToSource}"
                           SelectionMode="Extended">
                     <ListView.View>
                         <GridView AllowsColumnReorder="False">
@@ -264,7 +264,7 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn DisplayMemberBinding="{Binding NodeName}">
+                            <GridViewColumn DisplayMemberBinding="{Binding Path=NodeName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
@@ -275,7 +275,7 @@
                     </ListView.View>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
-                            <Setter Property="IsSelected" Value="{Binding IsSelected}" />
+                            <Setter Property="IsSelected" Value="{Binding Path=IsSelected}" />
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="true">
                                     <Setter Property="Background" Value="LightSkyBlue" />
@@ -331,7 +331,7 @@
                        Foreground="Red"
                        VerticalAlignment="Top" />
                 <Label Name="LabelSelectionType"
-                    Content="Selection Type:"
+                    Content="SQL Selection Type:"
                     Grid.Column="1"
                     Margin="0,0,4,0"
                     Padding="0"
@@ -366,43 +366,43 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <CheckBox Name="CheckBoxApplyExclusionClause"
-                          Grid.Row="0"
-                          Grid.Column="1"
-                          Margin="0,0,4,4"
-                          Padding="0"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          ToolTip="Apply the additional exclusion clause?"
-                          Visibility="{Binding Path=ApplyExclusionClauseVisibility}"
-                          IsChecked="{Binding ApplyExclusionClause, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <Label Name="LabelApplyExclusionClause"
-                       Content="Apply Exclusion Clause?"
-                       Grid.Row="0"
-                       Grid.Column="2"
-                       Margin="2,0,0,4"
-                       Padding="0"
-                       VerticalAlignment="Center"
-                       Visibility="{Binding Path=ApplyExclusionClauseVisibility}" />
-
                 <CheckBox Name="CheckBoxUseCentroids"
                           Grid.Row="0"
-                          Grid.Column="5"
+                          Grid.Column="1"
                           Margin="0,4,4,4"
                           Padding="0"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
                           ToolTip="Select polygons by centroids?"
                           Visibility="{Binding Path=UseCentroidsVisibility}"
-                          IsChecked="{Binding UseCentroids, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                          IsChecked="{Binding Path=UseCentroids, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Label Name="LabelUseCentroids"
                        Content="Use Centroids?"
                        Grid.Row="0"
-                       Grid.Column="6"
+                       Grid.Column="2"
                        Margin="2,4,0,4"
                        Padding="0"
                        VerticalAlignment="Center"
                        Visibility="{Binding Path=UseCentroidsVisibility}" />
+
+                <CheckBox Name="CheckBoxApplyExclusionClause"
+                          Grid.Row="0"
+                          Grid.Column="5"
+                          Margin="0,4,4,4"
+                          Padding="0"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          ToolTip="Apply the additional exclusion clause?"
+                          Visibility="{Binding Path=ApplyExclusionClauseVisibility}"
+                          IsChecked="{Binding Path=ApplyExclusionClause, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Label Name="LabelApplyExclusionClause"
+                       Content="Apply Exclusion Clause?"
+                       Grid.Row="0"
+                       Grid.Column="6"
+                       Margin="2,4,4,4"
+                       Padding="0"
+                       VerticalAlignment="Center"
+                       Visibility="{Binding Path=ApplyExclusionClauseVisibility}" />
 
                 <CheckBox Name="CheckBoxUploadToServer"
                           Grid.Row="1"
@@ -413,7 +413,7 @@
                           VerticalAlignment="Center"
                           ToolTip="Upload the partner table to the server when the process starts?"
                           Visibility="{Binding Path=UploadToServerVisibility}"
-                          IsChecked="{Binding UploadToServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                          IsChecked="{Binding Path=UploadToServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Label Name="LabelUploadToServer"
                        Content="Upload to server"
                        Grid.Row="1"
@@ -431,7 +431,7 @@
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
                           ToolTip="Clear the log file before the process starts?"
-                          IsChecked="{Binding ClearLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                          IsChecked="{Binding Path=ClearLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Label Name="LabelClearLogFile"
                        Content="Clear log file?"
                        Grid.Row="2"
@@ -448,12 +448,12 @@
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
                           ToolTip="Open the log file when the process has complete?"
-                          IsChecked="{Binding OpenLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                          IsChecked="{Binding Path=OpenLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Label Name="LabelOpenLogFile"
                        Content="Open log file when run?"
                        Grid.Row="2"
                        Grid.Column="6"
-                       Margin="2,4,0,0"
+                       Margin="2,4,4,0"
                        Padding="0"
                        VerticalAlignment="Center" />
             </Grid>
@@ -466,6 +466,7 @@
                 Severity="High"
                 ShowHelp="False"
                 Content="{Binding Path=Message}"
+                ToolTip="{Binding Path=Message}"
                 CanClose="False"
                 Visibility="{Binding Path=HasMessage}" />
         </Grid>

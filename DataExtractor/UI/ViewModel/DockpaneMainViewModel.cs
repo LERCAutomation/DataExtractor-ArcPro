@@ -32,7 +32,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
-//using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -54,6 +53,8 @@ namespace DataExtractor.UI
 
         private bool _mapEventsSubscribed;
         private bool _projectClosedEventsSubscribed;
+
+        private MapView _activeMapView;
 
         #endregion Fields
 
@@ -390,14 +391,18 @@ namespace DataExtractor.UI
                 DockpaneVisibility = Visibility.Hidden;
 
                 // Clear the form lists.
-                _paneH2VM?.ClearFormLists();
+                //_paneH2VM?.ClearFormLists();
             }
             else
             {
                 DockpaneVisibility = Visibility.Visible;
 
                 // Reload the list of partners, SQL tables, and open GIS map layers (don't wait for the response).
-                _paneH2VM?.LoadListsAsync(true, false);
+                if (MapView.Active != _activeMapView)
+                    _paneH2VM?.LoadListsAsync(true, false);
+
+                // Save the active map view.
+                _activeMapView = MapView.Active;
             }
         }
 

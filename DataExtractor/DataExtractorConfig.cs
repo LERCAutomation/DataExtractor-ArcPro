@@ -254,6 +254,16 @@ namespace DataExtractor
                 throw new("Could not locate item 'DatabaseSchema' in the XML profile.");
             }
 
+            // The table used to list the spatial objects in the SQL Server database.
+            try
+            {
+                _objectsTable = _xmlDataExtractor["ObjectsTable"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'ObjectsTable' in the XML profile.");
+            }
+
             // The Include wildcard for table names to list all the species tables
             // in SQL Server that can be selected by the user to extract from.
             try
@@ -972,6 +982,16 @@ namespace DataExtractor
         public string DatabaseSchema
         {
             get { return _databaseSchema; }
+        }
+
+        private string _objectsTable;
+
+        public string ObjectsTable
+        {
+            get
+            {
+                return _objectsTable;
+            }
         }
 
         private string _includeWildcard;

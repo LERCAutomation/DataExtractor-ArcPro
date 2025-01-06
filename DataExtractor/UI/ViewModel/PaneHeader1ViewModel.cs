@@ -490,6 +490,7 @@ namespace DataExtractor.UI
                 {
                     // Set the list to just the default XML file
                     // and select it.
+                    xmlFilesList = [];
                     xmlFilesList.Add(defaultXML);
                     _availableXMLFiles = xmlFilesList;
                     _selectedXMLProfile = defaultXML;

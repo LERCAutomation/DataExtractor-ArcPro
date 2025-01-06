@@ -23,7 +23,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using MessageBox = ArcGIS.Desktop.Framework.Dialogs.MessageBox;
@@ -33,7 +32,7 @@ namespace DataExtractor.UI
     /// <summary>
     /// Interaction logic for PaneHeader2View.xaml
     /// </summary>
-    public partial class PaneHeader2View : System.Windows.Controls.UserControl
+    public partial class PaneHeader2View : UserControl
     {
         public PaneHeader2View()
         {
@@ -99,7 +98,7 @@ namespace DataExtractor.UI
         }
 
         /// <summary>
-        /// Override <Ctrl>A behavious to make sure all list items are
+        /// Override <Ctrl>A behaviour to make sure all list items are
         /// selected, not just the ones that are visible.
         /// </summary>
         /// <param name="sender"></param>
@@ -179,7 +178,7 @@ namespace DataExtractor.UI
         }
 
         /// <summary>
-        /// Override <Ctrl>A behavious to make sure all list items are
+        /// Override <Ctrl>A behaviour to make sure all list items are
         /// selected, not just the ones that are visible.
         /// </summary>
         /// <param name="sender"></param>
@@ -259,7 +258,7 @@ namespace DataExtractor.UI
         }
 
         /// <summary>
-        /// Override <Ctrl>A behavious to make sure all list items are
+        /// Override <Ctrl>A behaviour to make sure all list items are
         /// selected, not just the ones that are visible.
         /// </summary>
         /// <param name="sender"></param>

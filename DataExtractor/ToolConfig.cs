@@ -144,7 +144,7 @@ namespace DataTools
                 // If the tool XML file path is blank or doesn't exist.
                 else if (String.IsNullOrEmpty(xmlFile) || !FileFunctions.FileExists(xmlFile))
                 {
-                    _xmlLoaded = false;
+                    _selectCancelled = true;
                     return false;
                 }
 

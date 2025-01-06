@@ -20,11 +20,13 @@
 // along with with program.  If not, see <http://www.gnu.org/licenses/>.
 
 using ArcGIS.Core.Data;
+using ArcGIS.Core.Data.DDL;
 using ArcGIS.Core.Data.Exceptions;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DataTools
@@ -128,11 +130,13 @@ namespace DataTools
                 catch (GeodatabaseNotFoundOrOpenedException)
                 {
                     // Geodatabase throws an exception.
+                    //throw new("Error: Geodatabase not Found or opened. " + ex.Message);
                     return;
                 }
                 catch (Exception)
                 {
                     // Unexpected error.
+                    //throw new("Error: Unexpected error opening geodatabase. " + ex.Message);
                     return;
                 }
             });
@@ -144,22 +148,24 @@ namespace DataTools
         /// Get all of the feature class and table names from the geodatabase.
         /// </summary>
         /// <returns></returns>
-        public async Task GetTableNamesAsync()
+        public async Task<bool> GetTableNamesAsync(string objectsTable)
         {
             _tableNames = [];
+
+            bool success = false;
 
             // Open a connection to the geodatabase if not already open.
             if (!GeodatabaseOpen) await OpenGeodatabase();
 
             // If still not open.
-            if (!GeodatabaseOpen) return;
+            if (!GeodatabaseOpen) return false;
 
             await QueuedTask.Run(() =>
             {
                 try
                 {
                     // Open the table.
-                    using Table table = _geodatabase.OpenDataset<Table>("Spatial_Objects");
+                    using Table table = _geodatabase.OpenDataset<Table>(objectsTable);
 
                     // Create a row cursor.
                     RowCursor rowCursor;
@@ -179,20 +185,26 @@ namespace DataTools
                         // Add the name of the table/view to the list.
                         _tableNames.Add(tableViewName);
                     }
+
+                    success = true;
+
+                    rowCursor.Dispose();
                 }
                 catch (GeodatabaseTableException)
                 {
                     // OpenDataset throws an exception if the table doesn't exist.
+                    success = false;
                     return;
                 }
                 catch (Exception)
                 {
                     // Unexpected error.
+                    success = false;
                     return;
                 }
             });
 
-            return;
+            return success;
         }
 
         /// <summary>
@@ -328,6 +340,55 @@ namespace DataTools
                 return null;
 
             return await GetFieldNamesAsync(FileFunctions.GetDirectoryName(fullPath), FileFunctions.GetFileName(fullPath));
+        }
+
+        /// <summary>
+        /// Check if a field exists in a geodatbase.
+        /// </summary>
+        /// <param name="fullPath"></param>
+        /// <param name="fieldName"></param>
+        /// <returns>bool</returns>
+        public async Task<bool> FieldExistsAsync(string fullPath, string fieldName)
+        {
+            // Get the file name from the specified path.
+            string fileName = FileFunctions.GetFileName(fullPath);
+
+            // Open a connection to the geodatabase if not already open.
+            if (!GeodatabaseOpen) await OpenGeodatabase();
+
+            // If still not open.
+            if (!GeodatabaseOpen) return false;
+
+            bool fldFound = false;
+
+            await QueuedTask.Run(() =>
+            {
+                try
+                {
+                    // Get the table definition.
+                    using TableDefinition tableDefinition = _geodatabase.GetDefinition<TableDefinition>(fileName);
+
+                    if (tableDefinition == null)
+                        return;
+
+                    Field field = tableDefinition.GetFields().First(x => x.Name.Equals(fieldName) || x.AliasName.Equals(fieldName));
+
+                    if (field != null)
+                        fldFound = true;
+                }
+                catch (GeodatabaseNotFoundOrOpenedException)
+                {
+                    // Handle Exception.
+                    return;
+                }
+                catch (GeodatabaseTableException)
+                {
+                    // Handle Exception.
+                    return;
+                }
+            });
+
+            return fldFound;
         }
 
         #endregion Geodatabase
@@ -602,7 +663,7 @@ namespace DataTools
                     exists = true;
 
                     // Dispose of the feature class definition.
-                    //featureClassDefinition.Dispose();
+                    featureClassDefinition.Dispose();
                 }
                 catch
                 {
@@ -680,6 +741,7 @@ namespace DataTools
             // If still not open.
             if (!GeodatabaseOpen) return exists;
 
+            // Check to see if the table is a table.
             await QueuedTask.Run(() =>
             {
                 try
@@ -690,7 +752,7 @@ namespace DataTools
                     exists = true;
 
                     // Dispose of the table definition.
-                    //tableDefinition.Dispose();
+                    tableDefinition.Dispose();
                 }
                 catch
                 {
@@ -796,6 +858,53 @@ namespace DataTools
             }
 
             return rowLength;
+        }
+
+        /// <summary>
+        /// Check if a table exists in the database.
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <returns>bool</returns>
+        public async Task<bool> DeleteTableAsync(string tableName)
+        {
+            // Check there is an input table name.
+            if (String.IsNullOrEmpty(tableName))
+                return false;
+
+            bool success = false;
+
+            // Open a connection to the geodatabase if not already open.
+            if (!GeodatabaseOpen) await OpenGeodatabase();
+
+            // If still not open.
+            if (!GeodatabaseOpen) return success;
+
+            await QueuedTask.Run(() =>
+            {
+                try
+                {
+                    // Create a SchemaBuilder object
+                    SchemaBuilder schemaBuilder = new(_geodatabase);
+
+                    // Create a TableDefinition object.
+                    using TableDefinition tableDefinition = _geodatabase.GetDefinition<TableDefinition>(tableName);
+
+                    // Create a TableDescription object
+                    TableDescription tableDescription = new(tableDefinition);
+
+                    // Add the deletion for the table to the list of DDL tasks
+                    schemaBuilder.Delete(tableDescription);
+
+                    // Execute the DDL
+                    success = schemaBuilder.Build();
+                }
+                catch
+                {
+                    success = false;
+                }
+            });
+
+            return success;
         }
 
         #endregion Tables

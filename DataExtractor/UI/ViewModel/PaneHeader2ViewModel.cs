@@ -77,6 +77,7 @@ namespace DataExtractor.UI
         private string _txtFolder;
 
         private string _defaultSchema;
+        private string _objectsTable;
 
         // SQL table fields.
         private string _spatialStoredProcedure;
@@ -205,6 +206,7 @@ namespace DataExtractor.UI
             _txtFolder = _toolConfig.TXTFolder;
 
             _defaultSchema = _toolConfig.DatabaseSchema;
+            _objectsTable = _toolConfig.ObjectsTable;
 
             _includeWildcard = _toolConfig.IncludeWildcard;
             _excludeWildcard = _toolConfig.ExcludeWildcard;
@@ -269,7 +271,7 @@ namespace DataExtractor.UI
             get
             {
                 return ((_dockPane.ProcessStatus == null)
-                    && (_sqlLayersList != null));
+                    && (_mapLayersList != null));
             }
         }
 
@@ -487,6 +489,8 @@ namespace DataExtractor.UI
 
             // Replace any illegal characters in the user name string.
             _userID = StringFunctions.StripIllegals(Environment.UserName, "_", false);
+            // Replace hyphen with underscore.
+            _userID = _userID.Replace('-', '_');
 
             // User ID should be something at least.
             if (string.IsNullOrEmpty(_userID))
@@ -650,12 +654,12 @@ namespace DataExtractor.UI
             }
         }
 
-        private double? _partnersListHeight = null;
+        private double _partnersListHeight = Double.NaN;
 
         /// <summary>
         /// Get the height of the partners list.
         /// </summary>
-        public double? PartnersListHeight
+        public double PartnersListHeight
         {
             get
             {
@@ -673,7 +677,7 @@ namespace DataExtractor.UI
         {
             get
             {
-                if (_partnersListHeight == null)
+                if (!Double.IsFinite(_partnersListHeight))
                     return "-";
                 else
                     return "+";
@@ -730,12 +734,12 @@ namespace DataExtractor.UI
             }
         }
 
-        private double? _sqlLayersListHeight = null;
+        private double _sqlLayersListHeight = Double.NaN;
 
         /// <summary>
         /// Get the height of the SQL layers list.
         /// </summary>
-        public double? SQLLayersListHeight
+        public double SQLLayersListHeight
         {
             get
             {
@@ -753,7 +757,7 @@ namespace DataExtractor.UI
         {
             get
             {
-                if (_sqlLayersListHeight == null)
+                if (!Double.IsFinite(_sqlLayersListHeight))
                     return "-";
                 else
                     return "+";
@@ -810,12 +814,12 @@ namespace DataExtractor.UI
             }
         }
 
-        private double? _mapLayersListHeight = null;
+        private double _mapLayersListHeight = Double.NaN;
 
         /// <summary>
         /// Get the height of the map layers list.
         /// </summary>
-        public double? MapLayersListHeight
+        public double MapLayersListHeight
         {
             get
             {
@@ -833,7 +837,7 @@ namespace DataExtractor.UI
         {
             get
             {
-                if (_mapLayersListHeight == null)
+                if (!Double.IsFinite(_mapLayersListHeight))
                     return "-";
                 else
                     return "+";
@@ -1121,9 +1125,9 @@ namespace DataExtractor.UI
                 return;
 
             // Expand the lists (ready to be resized later).
-            _partnersListHeight = null;
-            _sqlLayersListHeight = null;
-            _mapLayersListHeight = null;
+            _partnersListHeight = Double.NaN;
+            _sqlLayersListHeight = Double.NaN;
+            _mapLayersListHeight = Double.NaN;
 
             _dockPane.FormListsLoading = true;
             if (reset)
@@ -1171,7 +1175,7 @@ namespace DataExtractor.UI
             UpdateFormControls();
             _dockPane.RefreshPanel1Buttons();
 
-            // Force list column widths to reset.
+            // Force list heights to reset.
             PartnersListExpandCommandClick(null);
             SQLLayersListExpandCommandClick(null);
             MapLayersListExpandCommandClick(null);
@@ -2759,7 +2763,7 @@ namespace DataExtractor.UI
             if (!await _sqlFunctions.FeatureClassExistsAsync(sqlOutputTable))
                 return 0;
 
-            // Count the number of rows in the output feature count.
+            // Count the number of rows in the output feature class.
             long tableCount = await _sqlFunctions.FeatureClassCountRowsAsync(sqlOutputTable);
 
             return tableCount;
@@ -3117,10 +3121,10 @@ namespace DataExtractor.UI
         /// <param name="param"></param>
         private void PartnersListExpandCommandClick(object param)
         {
-            if (_partnersListHeight == null)
+            if (!Double.IsFinite(_partnersListHeight))
                 _partnersListHeight = 162;
             else
-                _partnersListHeight = null;
+                _partnersListHeight = Double.NaN;
 
             OnPropertyChanged(nameof(PartnersListHeight));
             OnPropertyChanged(nameof(PartnersListExpandButtonContent));
@@ -3158,10 +3162,10 @@ namespace DataExtractor.UI
         /// <remarks></remarks>
         private void SQLLayersListExpandCommandClick(object param)
         {
-            if (_sqlLayersListHeight == null)
+            if (!Double.IsFinite(_sqlLayersListHeight))
                 _sqlLayersListHeight = 162;
             else
-                _sqlLayersListHeight = null;
+                _sqlLayersListHeight = Double.NaN;
 
             OnPropertyChanged(nameof(SQLLayersListHeight));
             OnPropertyChanged(nameof(SQLLayersListExpandButtonContent));
@@ -3196,10 +3200,10 @@ namespace DataExtractor.UI
         /// <param name="param"></param>
         private void MapLayersListExpandCommandClick(object param)
         {
-            if (_mapLayersListHeight == null)
+            if (!Double.IsFinite(_mapLayersListHeight))
                 _mapLayersListHeight = 162;
             else
-                _mapLayersListHeight = null;
+                _mapLayersListHeight = Double.NaN;
 
             OnPropertyChanged(nameof(MapLayersListHeight));
             OnPropertyChanged(nameof(MapLayersListExpandButtonContent));
@@ -3216,7 +3220,8 @@ namespace DataExtractor.UI
         public async Task GetSQLTableNamesAsync()
         {
             // Get the full list of feature classes and tables from SQL Server.
-            await _sqlFunctions.GetTableNamesAsync();
+            if (!await _sqlFunctions.GetTableNamesAsync(_defaultSchema + "." + _objectsTable))
+                ShowMessage("Error: Unable to get table names.", MessageType.Warning);
 
             // If no tables were found.
             if (_sqlFunctions.TableNames.Count == 0)
