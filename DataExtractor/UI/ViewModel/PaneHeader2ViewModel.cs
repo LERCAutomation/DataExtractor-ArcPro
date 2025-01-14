@@ -1,8 +1,8 @@
-﻿// The DataTools are a suite of ArcGIS Pro addins used to extract
+﻿// The DataTools are a suite of ArcGIS Pro addins used to extract, sync
 // and manage biodiversity information from ArcGIS Pro and SQL Server
 // based on pre-defined or user specified criteria.
 //
-// Copyright © 2024 Andy Foy Consulting.
+// Copyright © 2024-25 Andy Foy Consulting.
 //
 // This file is part of DataTools suite of programs.
 //
@@ -84,7 +84,6 @@ namespace DataExtractor.UI
 
         private string _subsetStoredProcedure;
         private string _clearSpatialStoredProcedure;
-        private string _clearSubsetStoredProcedure;
         private string _includeWildcard;
         private string _excludeWildcard;
 
@@ -196,7 +195,6 @@ namespace DataExtractor.UI
             _spatialStoredProcedure = _toolConfig.SpatialStoredProcedure;
             _subsetStoredProcedure = _toolConfig.SubsetStoredProcedure;
             _clearSpatialStoredProcedure = _toolConfig.ClearSpatialStoredProcedure;
-            _clearSubsetStoredProcedure = _toolConfig.ClearSubsetStoredProcedure;
 
             _defaultPath = _toolConfig.DefaultPath;
             _partnerFolder = _toolConfig.PartnerFolder;
@@ -619,7 +617,7 @@ namespace DataExtractor.UI
             // A selection type must be selected.
             if (string.IsNullOrEmpty(SelectionType))
             {
-                ShowMessage("Please select whether the combined sites table should be created.", MessageType.Warning);
+                ShowMessage("Please select the type of selection required.", MessageType.Warning);
                 return false;
             }
 
@@ -1100,6 +1098,18 @@ namespace DataExtractor.UI
             // Default selection type.
             if (_toolConfig.DefaultSelectType > 0)
                 SelectionType = _toolConfig.SelectTypeOptions[_toolConfig.DefaultSelectType - 1];
+
+            // Default apply exclusion clause.
+            if (_toolConfig.DefaultApplyExclusionClause == true)
+                ApplyExclusionClause = (bool)_toolConfig.DefaultApplyExclusionClause;
+
+            // Default use centroids.
+            if (_toolConfig.DefaultUseCentroids == true)
+                UseCentroids = (bool)_toolConfig.DefaultUseCentroids;
+
+            // Default upload to server.
+            if (_toolConfig.DefaultUploadToServer == true)
+                UploadToServer = (bool)_toolConfig.DefaultUploadToServer;
 
             // Log file.
             ClearLogFile = _toolConfig.DefaultClearLogFile;
@@ -1773,9 +1783,6 @@ namespace DataExtractor.UI
                     FileFunctions.WriteLine(_logFile, "Procedure returned no records.");
                 }
 
-                // Clean up the subsets tables in case any are left over.
-                await ClearSubsetTablesAsync(_defaultSchema, sqlTable, _userID);
-
                 // Clean up the sptial table after processing the partner.
                 await ClearSpatialTableAsync(_defaultSchema, sqlTable, _userID);
             }
@@ -1987,9 +1994,6 @@ namespace DataExtractor.UI
             {
                 if (!await CreateSQLOutput(outputTable, mapOutputFormat, outPath, gdbName, isSpatial, inPoints, inPolys, inFlatTable, outPoints, outPolys, outFlat))
                 {
-                    // Clean up before returning.
-                    await ClearSubsetTablesAsync(_defaultSchema, sqlTable, _userID);
-
                     return false;
                 }
             }
@@ -2027,9 +2031,6 @@ namespace DataExtractor.UI
                 default:
                     FileFunctions.WriteLine(_logFile, "Error: Unknown export format '" + exportOutputFormat + "'.");
 
-                    // Clean up before returning.
-                    await ClearSubsetTablesAsync(_defaultSchema, sqlTable, _userID);
-
                     return false;
             }
 
@@ -2038,9 +2039,6 @@ namespace DataExtractor.UI
             {
                 if (!await CreateSQLExport(outputTable, exportOutputFormat, outPath, isSpatial, inPoints, inPolys, inFlatTable, outPath + @"\" + expFile))
                 {
-                    // Clean up before returning.
-                    await ClearSubsetTablesAsync(_defaultSchema, sqlTable, _userID);
-
                     return false;
                 }
 
@@ -2053,16 +2051,10 @@ namespace DataExtractor.UI
                     {
                         FileFunctions.WriteLine(_logFile, "Error: Executing vbscript macro '" + macroName + "'.");
 
-                        // Clean up before returning.
-                        await ClearSubsetTablesAsync(_defaultSchema, sqlTable, _userID);
-
                         return false;
                     }
                 }
             }
-
-            // Clean up after processing the layer.
-            await ClearSubsetTablesAsync(_defaultSchema, sqlTable, _userID);
 
             return true;
         }
@@ -2755,7 +2747,7 @@ namespace DataExtractor.UI
             FileFunctions.WriteLine(_logFile, "Executing SQL spatial selection from '" + sqlTable + "' ...");
 
             // Execute the stored procedure.
-            await _sqlFunctions.ExecuteSQLOnGeodatabase(sqlCmd.ToString());
+            await _sqlFunctions.ExecuteSQLOnGeodatabaseAsync(sqlCmd.ToString());
 
             FileFunctions.WriteLine(_logFile, "SQL spatial selection complete.");
 
@@ -2764,7 +2756,7 @@ namespace DataExtractor.UI
                 return 0;
 
             // Count the number of rows in the output feature class.
-            long tableCount = await _sqlFunctions.FeatureClassCountRowsAsync(sqlOutputTable);
+            long tableCount = await _sqlFunctions.GetFeaturesCountAsync(sqlOutputTable);
 
             return tableCount;
         }
@@ -2790,7 +2782,7 @@ namespace DataExtractor.UI
             bool success;
 
             // Get the name of the stored procedure to execute selection in SQL Server.
-            string storedProcedureName = _subsetStoredProcedure;
+            string subsetStoredProcedureName = _subsetStoredProcedure;
 
             // Set up the SQL command.
             StringBuilder sqlCmd = new();
@@ -2800,7 +2792,7 @@ namespace DataExtractor.UI
                 whereClause = whereClause.Replace("'", "''");
 
             // Build the SQL command to execute the stored procedure.
-            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", storedProcedureName));
+            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", subsetStoredProcedureName));
             sqlCmd.Append(string.Format(" '{0}'", schema));
             sqlCmd.Append(string.Format(", '{0}'", tableName + "_" + userID));
             sqlCmd.Append(string.Format(", '{0}'", columnNames));
@@ -2827,7 +2819,7 @@ namespace DataExtractor.UI
                 FileFunctions.WriteLine(_logFile, "Performing selection ...");
 
                 // Execute the stored procedure.
-                await _sqlFunctions.ExecuteSQLOnGeodatabase(sqlCmd.ToString());
+                await _sqlFunctions.ExecuteSQLOnGeodatabaseAsync(sqlCmd.ToString());
 
                 // If the result is isSpatial it should be split into points and polys.
                 if (isSpatial)
@@ -2849,17 +2841,17 @@ namespace DataExtractor.UI
                     if (isSpatial)
                     {
                         // Count the number of rows in the point feature count.
-                        _pointCount = await _sqlFunctions.FeatureClassCountRowsAsync(pointFeatureClass);
+                        _pointCount = await _sqlFunctions.GetFeaturesCountAsync(pointFeatureClass);
 
                         // Save the maximum row count.
                         maxCount = _pointCount;
 
                         // Count the number of rows in the poly feature count.
-                        _polyCount = await _sqlFunctions.FeatureClassCountRowsAsync(polyFeatureClass);
+                        _polyCount = await _sqlFunctions.GetFeaturesCountAsync(polyFeatureClass);
 
                         // Update the maximum row count.
-                        if (_pointCount > maxCount)
-                            maxCount = _pointCount;
+                        if (_polyCount > maxCount)
+                            maxCount = _polyCount;
 
                         if (maxCount == 0)
                         {
@@ -2871,14 +2863,14 @@ namespace DataExtractor.UI
 
                         // Calculate the total row length for the table.
                         if (_pointCount > 0)
-                            rowLength = await _sqlFunctions.TableRowLength(pointFeatureClass);
+                            rowLength = await _sqlFunctions.GetTableRowLengthAsync(pointFeatureClass);
                         else if (_polyCount > 0)
-                            rowLength += await _sqlFunctions.TableRowLength(polyFeatureClass);
+                            rowLength += await _sqlFunctions.GetTableRowLengthAsync(polyFeatureClass);
                     }
                     else
                     {
                         // Count the number of rows in the table.
-                        _tableCount = await _sqlFunctions.TableCountRowsAsync(flatTable);
+                        _tableCount = await _sqlFunctions.GetTableRowLengthAsync(flatTable);
 
                         // Save the maximum row count.
                         maxCount = _tableCount;
@@ -2893,7 +2885,7 @@ namespace DataExtractor.UI
 
                         // Calculate the total row length for the table.
                         if (_tableCount > 0)
-                            rowLength = await _sqlFunctions.TableRowLength(flatTable);
+                            rowLength = await _sqlFunctions.GetTableRowLengthAsync(flatTable);
                     }
                 }
                 else
@@ -2962,10 +2954,10 @@ namespace DataExtractor.UI
 
             // Get the name of the stored procedure to clear the
             // spatial selection in SQL Server.
-            string clearSpatialSPName = _clearSpatialStoredProcedure;
+            string clearSpatialStoredProcedureName = _clearSpatialStoredProcedure;
 
             // Build the SQL command to execute the stored procedure.
-            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", clearSpatialSPName));
+            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", clearSpatialStoredProcedureName));
             sqlCmd.Append(string.Format(" '{0}'", schema));
             sqlCmd.Append(string.Format(", '{0}'", tableName));
             sqlCmd.Append(string.Format(", '{0}'", userID));
@@ -2975,49 +2967,11 @@ namespace DataExtractor.UI
                 //FileFunctions.WriteLine(_logFile, "Deleting spatial temporary table");
 
                 // Execute the stored procedure.
-                await _sqlFunctions.ExecuteSQLOnGeodatabase(sqlCmd.ToString());
+                await _sqlFunctions.ExecuteSQLOnGeodatabaseAsync(sqlCmd.ToString());
             }
             catch (Exception ex)
             {
                 FileFunctions.WriteLine(_logFile, "Error: Deleting the spatial temporary table: " + ex.Message);
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Clear the temporary SQL subset tables by running a stored procedure.
-        /// </summary>
-        /// <param name="schema"></param>
-        /// <param name="tableName"></param>
-        /// <param name="userID"></param>
-        /// <returns>bool</returns>
-        internal async Task<bool> ClearSubsetTablesAsync(string schema, string tableName, string userID)
-        {
-            // Set up the SQL command.
-            StringBuilder sqlCmd = new();
-
-            // Get the name of the stored procedure to clear the
-            // subset selections in SQL Server.
-            string clearSubsetSPName = _clearSubsetStoredProcedure;
-
-            // Build the SQL command to execute the stored procedure.
-            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", clearSubsetSPName));
-            sqlCmd.Append(string.Format(" '{0}'", schema));
-            sqlCmd.Append(string.Format(", '{0}'", tableName));
-            sqlCmd.Append(string.Format(", '{0}'", userID));
-
-            try
-            {
-                //FileFunctions.WriteLine(_logFile, "Deleting subset temporary tables");
-
-                // Execute the stored procedure.
-                await _sqlFunctions.ExecuteSQLOnGeodatabase(sqlCmd.ToString());
-            }
-            catch (Exception ex)
-            {
-                FileFunctions.WriteLine(_logFile, "Error: Deleting the subset temporary tables: " + ex.Message);
                 return false;
             }
 

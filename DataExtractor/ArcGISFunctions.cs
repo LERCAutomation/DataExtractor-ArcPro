@@ -1,8 +1,8 @@
-﻿// The DataTools are a suite of ArcGIS Pro addins used to extract
+﻿// The DataTools are a suite of ArcGIS Pro addins used to extract, sync
 // and manage biodiversity information from ArcGIS Pro and SQL Server
 // based on pre-defined or user specified criteria.
 //
-// Copyright © 2024 Andy Foy Consulting.
+// Copyright © 2024-25 Andy Foy Consulting.
 //
 // This file is part of DataTools suite of programs..
 //
@@ -29,6 +29,7 @@ using ArcGIS.Desktop.Core.Geoprocessing;
 using ArcGIS.Desktop.Editing;
 using ArcGIS.Desktop.Editing.Attributes;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
+using ArcGIS.Desktop.Internal.Layouts.Utilities;
 using ArcGIS.Desktop.Mapping;
 using DataExtractor.UI;
 using System;
@@ -94,7 +95,7 @@ namespace DataTools
         /// <summary>
         /// Get the active map view.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>MapView</returns>
         internal static MapView GetActiveMapView()
         {
             // Get the active map view.
@@ -155,6 +156,8 @@ namespace DataTools
         /// Add a layer to the active map.
         /// </summary>
         /// <param name="url"></param>
+        /// <param name="index"></param>
+        /// <param name="layerName"></param>
         /// <returns>bool</returns>
         public async Task<bool> AddLayerToMapAsync(string url, int index = 0, string layerName = "")
         {
@@ -168,7 +171,7 @@ namespace DataTools
                 {
                     Uri uri = new(url);
 
-                    // Check if the layer is already loaded (unlikely as the map is new)
+                    // Check if the layer is already loaded (unlikely as the map is new).
                     Layer findLayer = _activeMap.Layers.FirstOrDefault(t => t.Name == uri.Segments.Last());
 
                     // If the layer is not loaded, add it.
@@ -295,6 +298,7 @@ namespace DataTools
         /// Zoom to a layer for a given ratio or scale.
         /// </summary>
         /// <param name="layerName"></param>
+        /// <param name="selectedOnly"></param>
         /// <param name="ratio"></param>
         /// <param name="scale"></param>
         /// <returns>bool</returns>
@@ -521,13 +525,13 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     /// Get the feature class for the output feature layer.
-                    FeatureClass featureClass = outputFeaturelayer.GetFeatureClass();
+                    using FeatureClass featureClass = outputFeaturelayer.GetFeatureClass();
 
                     // Get the feature class defintion.
                     using FeatureClassDefinition featureClassDefinition = featureClass.GetDefinition();
 
                     // Get the key field from the feature class definition.
-                    ArcGIS.Core.Data.Field keyField = featureClassDefinition.GetFields()
+                    using ArcGIS.Core.Data.Field keyField = featureClassDefinition.GetFields()
                       .First(x => x.Name.Equals(keyFieldName, StringComparison.OrdinalIgnoreCase));
 
                     // Create a SortDescription for the key field.
@@ -583,7 +587,7 @@ namespace DataTools
             catch
             {
                 // Handle Exception.
-                return 0;
+                return -1;
             }
 
             return labelMax;
@@ -600,7 +604,8 @@ namespace DataTools
         /// <param name="radiusColumn"></param>
         /// <param name="radiusText"></param>
         /// <returns>bool</returns>
-        public async Task<bool> UpdateFeaturesAsync(string layerName, string siteColumn, string siteName, string orgColumn, string orgName, string radiusColumn, string radiusText)
+        public async Task<bool> UpdateFeaturesAsync(string layerName, string siteColumn, string siteName,
+            string orgColumn, string orgName, string radiusColumn, string radiusText)
         {
             // Check the input parameters.
             if (String.IsNullOrEmpty(layerName))
@@ -619,9 +624,9 @@ namespace DataTools
                 return false;
 
             // Get the feature layer.
-            FeatureLayer featurelayer = FindLayer(layerName);
+            FeatureLayer featureLayer = FindLayer(layerName);
 
-            if (featurelayer == null)
+            if (featureLayer == null)
                 return false;
 
             // Create an edit operation.
@@ -632,12 +637,12 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     // Get the oids for the selected features.
-                    var gsSelection = featurelayer.GetSelection();
+                    using Selection gsSelection = featureLayer.GetSelection();
                     IReadOnlyList<long> selectedOIDs = gsSelection.GetObjectIDs();
 
                     // Update the attributes of the selected features.
-                    var insp = new Inspector();
-                    insp.Load(featurelayer, selectedOIDs);
+                    Inspector insp = new();
+                    insp.Load(featureLayer, selectedOIDs);
 
                     if (!string.IsNullOrEmpty(siteColumn))
                     {
@@ -759,9 +764,9 @@ namespace DataTools
             try
             {
                 // Find the feature layerName by name if it exists. Only search existing layers.
-                FeatureLayer featurelayer = FindLayer(layerName);
+                FeatureLayer featureLayer = FindLayer(layerName);
 
-                if (featurelayer == null)
+                if (featureLayer == null)
                     return false;
 
                 // Create a query filter using the where clause.
@@ -773,7 +778,7 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     // Select the features matching the search clause.
-                    featurelayer.Select(queryFilter, selectionMethod);
+                    featureLayer.Select(queryFilter, selectionMethod);
                 });
             }
             catch
@@ -799,15 +804,15 @@ namespace DataTools
             try
             {
                 // Find the feature layerName by name if it exists. Only search existing layers.
-                FeatureLayer featurelayer = FindLayer(layerName);
+                FeatureLayer featureLayer = FindLayer(layerName);
 
-                if (featurelayer == null)
+                if (featureLayer == null)
                     return false;
 
                 await QueuedTask.Run(() =>
                 {
                     // Clear the feature selection.
-                    featurelayer.ClearSelection();
+                    featureLayer.ClearSelection();
                 });
             }
             catch
@@ -817,6 +822,38 @@ namespace DataTools
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Count the number of selected features in a feature layer.
+        /// </summary>
+        /// <param name="layerName"></param>
+        /// <returns>long</returns>
+        public long GetSelectedFeatureCount(string layerName)
+        {
+            // Check there is an input feature layer name.
+            if (String.IsNullOrEmpty(layerName))
+                return -1;
+
+            long selectedCount;
+            try
+            {
+                // Find the feature layerName by name if it exists. Only search existing layers.
+                FeatureLayer featureLayer = FindLayer(layerName);
+
+                if (featureLayer == null)
+                    return -1;
+
+                // Select the features matching the search clause.
+                selectedCount = featureLayer.SelectionCount;
+            }
+            catch
+            {
+                // Handle Exception.
+                return -1;
+            }
+
+            return selectedCount;
         }
 
         /// <summary>
@@ -833,9 +870,9 @@ namespace DataTools
             try
             {
                 // Find the feature layer by name if it exists. Only search existing layers.
-                FeatureLayer featurelayer = FindLayer(layerPath);
+                FeatureLayer featureLayer = FindLayer(layerPath);
 
-                if (featurelayer == null)
+                if (featureLayer == null)
                     return null;
 
                 IReadOnlyList<ArcGIS.Core.Data.Field> fields = null;
@@ -844,17 +881,15 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     // Get the underlying feature class as a table.
-                    ArcGIS.Core.Data.Table table = featurelayer.GetTable();
+                    using Table table = featureLayer.GetTable();
                     if (table != null)
                     {
                         // Get the table definition of the table.
-                        TableDefinition tableDef = table.GetDefinition();
+                        using TableDefinition tableDef = table.GetDefinition();
 
                         // Get the fields in the table.
                         fields = tableDef.GetFields();
                     }
-
-                    table.Dispose();
                 });
 
                 return fields;
@@ -891,17 +926,15 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     // Get the underlying table.
-                    ArcGIS.Core.Data.Table table = inputTable.GetTable();
+                    using Table table = inputTable.GetTable();
                     if (table != null)
                     {
                         // Get the table definition of the table.
-                        TableDefinition tableDef = table.GetDefinition();
+                        using TableDefinition tableDef = table.GetDefinition();
 
                         // Get the fields in the table.
                         fields = tableDef.GetFields();
                     }
-
-                    table.Dispose();
                 });
 
                 return fields;
@@ -918,7 +951,7 @@ namespace DataTools
         /// </summary>
         /// <param name="fields"></param>
         /// <param name="fieldName"></param>
-        /// <returns>IReadOnlyList<ArcGIS.Core.Data.Field></returns>
+        /// <returns>bool</returns>
         public static bool FieldExists(IReadOnlyList<ArcGIS.Core.Data.Field> fields, string fieldName)
         {
             bool fldFound = false;
@@ -959,9 +992,9 @@ namespace DataTools
             try
             {
                 // Find the feature layer by name if it exists. Only search existing layers.
-                FeatureLayer featurelayer = FindLayer(layerPath);
+                FeatureLayer featureLayer = FindLayer(layerPath);
 
-                if (featurelayer == null)
+                if (featureLayer == null)
                     return false;
 
                 bool fldFound = false;
@@ -969,11 +1002,11 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     // Get the underlying feature class as a table.
-                    ArcGIS.Core.Data.Table table = featurelayer.GetTable();
+                    using Table table = featureLayer.GetTable();
                     if (table != null)
                     {
                         // Get the table definition of the table.
-                        TableDefinition tableDef = table.GetDefinition();
+                        using TableDefinition tableDef = table.GetDefinition();
 
                         // Get the fields in the table.
                         IReadOnlyList<ArcGIS.Core.Data.Field> fields = tableDef.GetFields();
@@ -989,8 +1022,6 @@ namespace DataTools
                             }
                         }
                     }
-
-                    table.Dispose();
                 });
 
                 return fldFound;
@@ -1040,9 +1071,9 @@ namespace DataTools
             try
             {
                 // Find the feature layerName by name if it exists. Only search existing layers.
-                FeatureLayer featurelayer = FindLayer(layerName);
+                FeatureLayer featureLayer = FindLayer(layerName);
 
-                if (featurelayer == null)
+                if (featureLayer == null)
                     return false;
 
                 IReadOnlyList<ArcGIS.Core.Data.Field> fields = null;
@@ -1052,11 +1083,11 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     // Get the underlying feature class as a table.
-                    ArcGIS.Core.Data.Table table = featurelayer.GetTable();
+                    using Table table = featureLayer.GetTable();
                     if (table != null)
                     {
                         // Get the table definition of the table.
-                        TableDefinition tableDef = table.GetDefinition();
+                        using TableDefinition tableDef = table.GetDefinition();
 
                         // Get the fields in the table.
                         fields = tableDef.GetFields();
@@ -1096,7 +1127,7 @@ namespace DataTools
         /// Calculate the total row length for a feature class
         /// </summary>
         /// <param name="layerName"></param>
-        /// <returns>bool</returns>
+        /// <returns>int</returns>
         public async Task<int> GetFCRowLengthAsync(string layerName)
         {
             // Check there is an input feature layer name.
@@ -1106,9 +1137,9 @@ namespace DataTools
             try
             {
                 // Find the feature layerName by name if it exists. Only search existing layers.
-                FeatureLayer featurelayer = FindLayer(layerName);
+                FeatureLayer featureLayer = FindLayer(layerName);
 
-                if (featurelayer == null)
+                if (featureLayer == null)
                     return 0;
 
                 IReadOnlyList<ArcGIS.Core.Data.Field> fields = null;
@@ -1119,11 +1150,11 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     // Get the underlying feature class as a table.
-                    ArcGIS.Core.Data.Table table = featurelayer.GetTable();
+                    using Table table = featureLayer.GetTable();
                     if (table != null)
                     {
                         // Get the table definition of the table.
-                        TableDefinition tableDef = table.GetDefinition();
+                        using TableDefinition tableDef = table.GetDefinition();
 
                         // Get the fields in the table.
                         fields = tableDef.GetFields();
@@ -1159,7 +1190,7 @@ namespace DataTools
         /// </summary>
         /// <param name="layerName"></param>
         /// <param name="fieldList"></param>
-        /// <returns></returns>
+        /// <returns>bool</returns>
         public async Task<bool> KeepSelectedFieldsAsync(string layerName, List<string> fieldList)
         {
             // Check the input parameters.
@@ -1272,7 +1303,7 @@ namespace DataTools
         /// Get the full layer path name for a layer name in the map (i.e.
         /// to include any parent group names.
         /// </summary>
-        /// <param name="layer"></param>
+        /// <param name="layerName"></param>
         /// <returns>string</returns>
         public string GetLayerPath(string layerName)
         {
@@ -1445,11 +1476,6 @@ namespace DataTools
                             partnerList.Add(partner);
                         }
                     }
-
-                    // Dispose of the objects.
-                    featureClass.Dispose();
-                    featureClassDefinition.Dispose();
-                    rowCursor.Dispose();
                 });
             }
             catch
@@ -1726,18 +1752,45 @@ namespace DataTools
                 {
                     await QueuedTask.Run(() =>
                     {
-                        // Get the Layer Document from the lyrx file.
-                        LayerDocument lyrDocFromLyrxFile = new(layerFile);
+                        // Get the layer document from the lyrx file.
+                        LayerDocument lyrxLayerDocument = new(layerFile);
 
-                        CIMLayerDocument cimLyrDoc = lyrDocFromLyrxFile.GetCIMLayerDocument();
+                        // Get the CIM layer document from the lyrx layer document.
+                        CIMLayerDocument lyrxCIMLyrDoc = lyrxLayerDocument.GetCIMLayerDocument();
 
-                        // Get the renderer from the layer file.
+                        // Get the layer definition from the CIM layer document.
+                        CIMFeatureLayer lyrxLayerDefn = (CIMFeatureLayer)lyrxCIMLyrDoc.LayerDefinitions[0];
+
+                        // Get the renderer from the layer definition.
                         //CIMSimpleRenderer rendererFromLayerFile = ((CIMFeatureLayer)cimLyrDoc.LayerDefinitions[0]).Renderer as CIMSimpleRenderer;
-                        var rendererFromLayerFile = ((CIMFeatureLayer)cimLyrDoc.LayerDefinitions[0]).Renderer;
+                        CIMRenderer lryxRenderer = lyrxLayerDefn.Renderer;
 
                         // Apply the renderer to the feature layer.
-                        if (featureLayer.CanSetRenderer(rendererFromLayerFile))
-                            featureLayer.SetRenderer(rendererFromLayerFile);
+                        if (featureLayer.CanSetRenderer(lryxRenderer))
+                            featureLayer.SetRenderer(lryxRenderer);
+
+                        //Get the label classes from the lyrx layer definition - we need the first one.
+                        List<CIMLabelClass> lryxLabelClassesList = lyrxLayerDefn.LabelClasses.ToList();
+                        CIMLabelClass lyrxLabelClass = lryxLabelClassesList.FirstOrDefault();
+
+                        // Get the input layer definition.
+                        CIMFeatureLayer lyrDefn = featureLayer.GetDefinition() as CIMFeatureLayer;
+
+                        // Get the label classes from the input layer definition - we need the first one.
+                        List<CIMLabelClass> labelClassesList = lyrDefn.LabelClasses.ToList();
+                        CIMLabelClass labelClass = labelClassesList.FirstOrDefault();
+
+                        // Copy the lyrx label class to the input layer class.
+                        labelClass.CopyFrom(lyrxLabelClass);
+
+                        // Set the label definition back to the input feeature layer.
+                        featureLayer.SetDefinition(lyrDefn);
+
+                        // Get the lyrx label visibility.
+                        bool lyrxLabelVisible = lyrxLabelClass.Visibility;
+
+                        // Set the label visibilty.
+                        featureLayer.SetLabelVisibility(lyrxLabelVisible);
                     });
                 }
                 catch
@@ -1775,9 +1828,9 @@ namespace DataTools
                 return false;
 
             // Get the input feature layer.
-            FeatureLayer featurelayer = FindLayer(layerName);
+            FeatureLayer featureLayer = FindLayer(layerName);
 
-            if (featurelayer == null)
+            if (featureLayer == null)
                 return false;
 
             try
@@ -1789,7 +1842,7 @@ namespace DataTools
                     CIMTextSymbol textSymbol = SymbolFactory.Instance.ConstructTextSymbol(textColor, labelSize, labelFont, labelStyle);
 
                     // Get the layer definition.
-                    CIMFeatureLayer lyrDefn = featurelayer.GetDefinition() as CIMFeatureLayer;
+                    CIMFeatureLayer lyrDefn = featureLayer.GetDefinition() as CIMFeatureLayer;
 
                     // Get the label classes - we need the first one.
                     var listLabelClasses = lyrDefn.LabelClasses.ToList();
@@ -1810,10 +1863,10 @@ namespace DataTools
                         labelClass.StandardLabelPlacementProperties.AllowOverlappingLabels = allowOverlap;
 
                     // Set the label definition back to the layer.
-                    featurelayer.SetDefinition(lyrDefn);
+                    featureLayer.SetDefinition(lyrDefn);
 
                     // Set the label visibilty.
-                    featurelayer.SetLabelVisibility(displayLabels);
+                    featureLayer.SetLabelVisibility(displayLabels);
                 });
             }
             catch
@@ -1838,9 +1891,9 @@ namespace DataTools
                 return false;
 
             // Get the input feature layer.
-            FeatureLayer featurelayer = FindLayer(layerName);
+            FeatureLayer featureLayer = FindLayer(layerName);
 
-            if (featurelayer == null)
+            if (featureLayer == null)
                 return false;
 
             try
@@ -1848,7 +1901,7 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     // Set the label visibilty.
-                    featurelayer.SetLabelVisibility(displayLabels);
+                    featureLayer.SetLabelVisibility(displayLabels);
                 });
             }
             catch
@@ -1950,7 +2003,7 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     /// Get the feature class for the input feature layer.
-                    FeatureClass featureClass = inputFeaturelayer.GetFeatureClass();
+                    using FeatureClass featureClass = inputFeaturelayer.GetFeatureClass();
 
                     // Get the feature class defintion.
                     using FeatureClassDefinition featureClassDefinition = featureClass.GetDefinition();
@@ -1983,7 +2036,7 @@ namespace DataTools
                             if ((columnName.Substring(0, 1) != "\"") && (FieldExists(inputfields, columnName)))
                             {
                                 // Get the field from the feature class definition.
-                                ArcGIS.Core.Data.Field field = featureClassDefinition.GetFields()
+                                using ArcGIS.Core.Data.Field field = featureClassDefinition.GetFields()
                                   .First(x => x.Name.Equals(columnName, StringComparison.OrdinalIgnoreCase));
 
                                 // Create a SortDescription for the field.
@@ -2049,9 +2102,8 @@ namespace DataTools
                         txtFile.WriteLine(newRow);
                         intLineCount++;
                     }
+
                     // Dispose of the objects.
-                    featureClass.Dispose();
-                    featureClassDefinition.Dispose();
                     rowCursor.Dispose();
                     rowCursor = null;
                 });
@@ -2149,7 +2201,7 @@ namespace DataTools
             columns = columns[..^1];
 
             // Open output file.
-            StreamWriter txtFile = new(outFile, append);
+            using StreamWriter txtFile = new(outFile, append);
 
             // Write the header if required.
             if (!append && includeHeader)
@@ -2161,7 +2213,7 @@ namespace DataTools
                 await QueuedTask.Run(() =>
                 {
                     /// Get the underlying table for the input layer.
-                    ArcGIS.Core.Data.Table table = inputTable.GetTable();
+                    using Table table = inputTable.GetTable();
 
                     // Get the table defintion.
                     using TableDefinition tableDefinition = table.GetDefinition();
@@ -2194,7 +2246,7 @@ namespace DataTools
                             if ((columnName.Substring(0, 1) != "\"") && (FieldExists(inputfields, columnName)))
                             {
                                 // Get the field from the feature class definition.
-                                ArcGIS.Core.Data.Field field = tableDefinition.GetFields()
+                                using ArcGIS.Core.Data.Field field = tableDefinition.GetFields()
                                   .First(x => x.Name.Equals(columnName, StringComparison.OrdinalIgnoreCase));
 
                                 // Create a SortDescription for the field.
@@ -2257,9 +2309,8 @@ namespace DataTools
                         txtFile.WriteLine(newRow);
                         intLineCount++;
                     }
+
                     // Dispose of the objects.
-                    table.Dispose();
-                    tableDefinition.Dispose();
                     rowCursor.Dispose();
                     rowCursor = null;
                 });
@@ -2350,10 +2401,10 @@ namespace DataTools
             int ignoreField = -1;
 
             int intFieldCount;
-            IReadOnlyList<ArcGIS.Core.Data.Field> fields;
-
             try
             {
+                IReadOnlyList<ArcGIS.Core.Data.Field> fields;
+
                 if (isSpatial)
                 {
                     // Get the list of fields for the input table.
@@ -2378,7 +2429,7 @@ namespace DataTools
                     // Get the fieldName name.
                     fieldName = fields[i].Name;
 
-                    ArcGIS.Core.Data.Field field = fields[i];
+                    using ArcGIS.Core.Data.Field field = fields[i];
 
                     // Get the fieldName type.
                     FieldType fieldType = field.FieldType;
@@ -2481,6 +2532,7 @@ namespace DataTools
 
                         // Write the row string to the output file.
                         txtFile.WriteLine(rowStr);
+                        intLineCount++;
                     }
                     // Dispose of the objects.
                     rowCursor.Dispose();
@@ -2865,35 +2917,127 @@ namespace DataTools
         /// </summary>
         /// <param name="layer"></param>
         /// <param name="whereClause"></param>
-        /// <returns>bool</returns>
-        public static async Task<long> CountFeaturesAsync(FeatureLayer layer, string whereClause)
+        /// <param name="subfields"></param>
+        /// <param name="prefixClause"></param>
+        /// <param name="postfixClause"></param>
+        /// <returns>long</returns>
+        public static async Task<long> GetFeaturesCountAsync(FeatureLayer layer, string whereClause = null, string subfields = null, string prefixClause = null, string postfixClause = null)
         {
-            long featureCount = 0;
-
             // Check if there is an input layer name.
             if (layer == null)
-                return featureCount;
+                return -1;
 
+            long featureCount = 0;
             try
             {
                 // Create a query filter using the where clause.
                 QueryFilter queryFilter = new();
 
-                if (whereClause != null)
+                // Apply where clause.
+                if (!string.IsNullOrEmpty(whereClause))
                     queryFilter.WhereClause = whereClause;
 
-                featureCount = await QueuedTask.Run(() =>
+                // Apply subfields clause.
+                if (!string.IsNullOrEmpty(subfields))
+                    queryFilter.SubFields = subfields;
+
+                // Apply prefix clause.
+                if (!string.IsNullOrEmpty(prefixClause))
+                    queryFilter.PrefixClause = prefixClause;
+
+                // Apply postfix clause.
+                if (!string.IsNullOrEmpty(postfixClause))
+                    queryFilter.PostfixClause = postfixClause;
+
+                await QueuedTask.Run(() =>
                 {
                     /// Count the number of features matching the search clause.
-                    FeatureClass featureClass = layer.GetFeatureClass();
+                    using FeatureClass featureClass = layer.GetFeatureClass();
 
-                    return featureClass.GetCount(queryFilter);
+                    featureCount = featureClass.GetCount(queryFilter);
                 });
             }
             catch
             {
                 // Handle Exception.
-                return 0;
+                return -1;
+            }
+
+            return featureCount;
+        }
+
+        /// <summary>
+        /// Count the duplicate features in a layer using a search where clause.
+        /// </summary>
+        /// <param name="layer"></param>
+        /// <param name="keyField"></param>
+        /// <param name="whereClause"></param>
+        /// <returns>long</returns>
+        public static async Task<long> GetDuplicateFeaturesCountAsync(FeatureLayer layer, string keyField, string whereClause = null)
+        {
+            // Check if there is an input layer name.
+            if (layer == null)
+                return -1;
+
+            // Check if there is a input key field.
+            if (string.IsNullOrEmpty(keyField))
+                return -1;
+
+            long featureCount = 0;
+            try
+            {
+                // Create a query filter using the where clause.
+                QueryFilter queryFilter = new();
+
+                // Apply where clause.
+                if (!string.IsNullOrEmpty(whereClause))
+                    queryFilter.WhereClause = whereClause;
+
+                // Apply subfields clause.
+                if (!string.IsNullOrEmpty(keyField))
+                    queryFilter.SubFields = keyField;
+
+                List<string> keys = [];
+
+                await QueuedTask.Run(() =>
+                {
+                    /// Get the feature class for the layer.
+                    using FeatureClass featureClass = layer.GetFeatureClass();
+
+                    // Create a cursor of the features.
+                    using RowCursor rowCursor = featureClass.Search(queryFilter);
+
+                    // Loop through the feature class/table using the cursor.
+                    while (rowCursor.MoveNext())
+                    {
+                        // Get the current row.
+                        using Row record = rowCursor.Current;
+
+                        // Get the key value.
+                        string key = Convert.ToString(record[keyField]);
+                        key ??= "";
+
+                        // Add the key to the list of keys.
+                        keys.Add(key);
+                    }
+                    // Dispose of the objects.
+                    featureClass.Dispose();
+                    rowCursor.Dispose();
+
+                    // Get a list of any duplicate keys.
+                    List<string> duplicateKeys = keys.GroupBy(x => x)
+                      .Where(g => g.Count() > 1)
+                      .Select(y => y.Key)
+                      .ToList();
+
+                    // Return how many duplicate keys there are.
+                    featureCount = duplicateKeys.Count;
+                });
+            }
+            catch
+            {
+                // Handle Exception.
+                return -1;
             }
 
             return featureCount;
@@ -3398,7 +3542,7 @@ namespace DataTools
         /// Create a new file geodatabase.
         /// </summary>
         /// <param name="fullPath"></param>
-        /// <returns>bool</returns>
+        /// <returns>Geodatabase</returns>
         public static Geodatabase CreateFileGeodatabase(string fullPath)
         {
             // Check if there is an input full path.

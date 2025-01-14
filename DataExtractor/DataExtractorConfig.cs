@@ -1,8 +1,8 @@
-﻿// The DataTools are a suite of ArcGIS Pro addins used to extract
+﻿// The DataTools are a suite of ArcGIS Pro addins used to extract, sync
 // and manage biodiversity information from ArcGIS Pro and SQL Server
 // based on pre-defined or user specified criteria.
 //
-// Copyright © 2024 Andy Foy Consulting.
+// Copyright © 2024-25 Andy Foy Consulting.
 //
 // This file is part of DataTools suite of programs..
 //
@@ -172,16 +172,6 @@ namespace DataExtractor
             catch
             {
                 throw new("Could not locate item 'ClearSpatialStoredProcedure' in the XML profile.");
-            }
-
-            // The stored procedure to clear the subset selection in SQL Server.
-            try
-            {
-                _clearSubsetStoredProcedure = _xmlDataExtractor["ClearSubsetStoredProcedure"].InnerText;
-            }
-            catch
-            {
-                throw new("Could not locate item 'ClearSubsetStoredProcedure' in the XML profile.");
             }
 
             // The existing file location under which all partner sub-folders will be created.
@@ -926,13 +916,6 @@ namespace DataExtractor
         public string ClearSpatialStoredProcedure
         {
             get { return _clearSpatialStoredProcedure; }
-        }
-
-        private string _clearSubsetStoredProcedure;
-
-        public string ClearSubsetStoredProcedure
-        {
-            get { return _clearSubsetStoredProcedure; }
         }
 
         private string _defaultPath;

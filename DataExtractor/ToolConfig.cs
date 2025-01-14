@@ -1,8 +1,8 @@
-﻿// The DataTools are a suite of ArcGIS Pro addins used to extract
+﻿// The DataTools are a suite of ArcGIS Pro addins used to extract, sync
 // and manage biodiversity information from ArcGIS Pro and SQL Server
 // based on pre-defined or user specified criteria.
 //
-// Copyright © 2024 Andy Foy Consulting.
+// Copyright © 2024-25 Andy Foy Consulting.
 //
 // This file is part of DataTools suite of programs..
 //
@@ -324,7 +324,7 @@ namespace DataTools
         private static string GetConfigFilePath()
         {
             // Create folder dialog.
-            FolderBrowserDialog xmlFolder = new()
+            using FolderBrowserDialog xmlFolder = new()
             {
                 // Set the folder dialog title.
                 Description = string.Format("Select folder containing '{0}.xml' file ...", _toolName),
@@ -336,12 +336,10 @@ namespace DataTools
             if (xmlFolder.ShowDialog() == DialogResult.OK)
             {
                 // Return the selected path.
-                xmlFolder.Dispose();
                 return xmlFolder.SelectedPath;
             }
             else
             {
-                xmlFolder.Dispose();
                 return null;
             }
         }
