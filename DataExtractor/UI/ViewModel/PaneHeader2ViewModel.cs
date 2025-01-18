@@ -2376,14 +2376,6 @@ namespace DataExtractor.UI
             else
                 FileFunctions.WriteLine(_logFile, "No order by clause is specified.");
 
-            // Set the map output format.
-            string mapOutputFormat = gisFormat;
-            if ((outputType == "GDB") || (outputType == "SHP") || (outputType == "DBF"))
-            {
-                FileFunctions.WriteLine(_logFile, "Overriding the output type with '" + outputType + "' ...");
-                mapOutputFormat = outputType;
-            }
-
             FileFunctions.WriteLine(_logFile, "Executing spatial selection ...");
 
             // Get the full layer path (in case it's nested in one or more groups).
@@ -2432,9 +2424,22 @@ namespace DataExtractor.UI
 
             FileFunctions.WriteLine(_logFile, string.Format("{0:n0}", featureCount) + " features selected.");
 
-            // Override the output format if an export is required but no output.
-            if ((string.IsNullOrEmpty(gisFormat) && !string.IsNullOrEmpty(exportFormat)))
+            // Set the map output format.
+            string mapOutputFormat = gisFormat;
+            if ((outputType == "GDB") || (outputType == "SHP") || (outputType == "DBF"))
+            {
+                FileFunctions.WriteLine(_logFile, "Overriding the output type with '" + outputType + "' ...");
+                mapOutputFormat = outputType;
+            }
+
+            // Override the output format if an export is required but no output,
+            // and flag the output to be deleted later.
+            bool deleteOutput = false;
+            if ((string.IsNullOrEmpty(mapOutputFormat) && !string.IsNullOrEmpty(exportFormat)))
+            {
                 mapOutputFormat = "SHP";
+                deleteOutput = true;
+            }
 
             // Set the output path.
             string outPath = outFolder;
@@ -2466,10 +2471,6 @@ namespace DataExtractor.UI
                     FileFunctions.WriteLine(_logFile, "Error: Unknown output format '" + mapOutputFormat + "'.");
                     return false;
             }
-
-            bool deleteOutput = false;
-            if ((gisFormat != outputType) && !string.IsNullOrEmpty(exportFormat))
-                deleteOutput = true;
 
             // Output the map results if required.
             if (!string.IsNullOrEmpty(mapOutputFormat))
