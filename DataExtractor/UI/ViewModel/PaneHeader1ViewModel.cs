@@ -262,7 +262,9 @@ namespace DataExtractor.UI
         {
             get
             {
-                return (!string.IsNullOrEmpty(XMLFolder));
+                return ((!_dockPane.ExtractRunning)
+                    && (!_dockPane.FormListsLoading)
+                    && (!string.IsNullOrEmpty(XMLFolder)));
             }
         }
 

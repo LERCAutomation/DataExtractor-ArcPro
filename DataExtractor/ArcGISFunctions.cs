@@ -1200,9 +1200,6 @@ namespace DataTools
             if (fieldList == null || fieldList.Count == 0)
                 return false;
 
-            // Add a FID field so that it isn't tried to be removed.
-            //fieldList.Add("FID");
-
             // Get the list of fields for the input table.
             IReadOnlyList<ArcGIS.Core.Data.Field> inputfields = await GetFCFieldsAsync(layerName);
 
@@ -1211,20 +1208,22 @@ namespace DataTools
                 return false;
 
             // Get the list of field names for the input table that
-            // aren't required fields (e.g. excluding FID and Shape).
-            List<string> inputFieldNames = inputfields.Where(x => !x.IsRequired).Select(y => y.Name).ToList();
+            // aren't mandatory fields (i.e. excluding FID and Shape).
+            List<string> optionalFieldNames = inputfields.Where(x => !x.IsRequired).Select(y => y.Name).ToList();
 
-            // Get the list of fields that do exist in the layer.
-            List<string> existingFields = await GetExistingFieldsAsync(layerName, fieldList);
+            // Get the list of fields to keep that do exist in the layer.
+            List<string> keepFieldNames = await GetExistingFieldsAsync(layerName, fieldList);
 
-            // Get the list of layer fields that aren't in the field list.
-            var remainingFields = inputFieldNames.Except(existingFields).ToList();
+            // Get the list of fields that are in the layer but aren't
+            // in the list of fields to keep.
+            var deleteFieldNames = optionalFieldNames.Except(keepFieldNames).ToList();
 
-            if (remainingFields == null || remainingFields.Count == 0)
+            // If there are no fields to delete then return.
+            if (deleteFieldNames == null || deleteFieldNames.Count == 0)
                 return true;
 
             // Make a value array of strings to be passed to the tool.
-            var parameters = Geoprocessing.MakeValueArray(layerName, remainingFields);
+            var parameters = Geoprocessing.MakeValueArray(layerName, deleteFieldNames);
 
             // Make a value array of the environments to be passed to the tool.
             var environments = Geoprocessing.MakeEnvironmentArray(overwriteoutput: true);

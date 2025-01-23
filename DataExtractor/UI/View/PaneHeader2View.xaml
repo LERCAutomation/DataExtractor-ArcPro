@@ -53,6 +53,7 @@
                           Grid.Row="1"
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
+                          IsEnabled="{Binding Path=PartnersListEnabled}"
                           ItemsSource="{Binding Path=PartnersList}"
                           MouseDoubleClick="ListViewPartners_MouseDoubleClick"
                           PreviewKeyDown="ListViewPartners_KeyDown"
@@ -112,7 +113,7 @@
                         IsCancel="False"
                         IsDefault="False"
                         Focusable="False"
-                        IsEnabled="true"
+                        IsEnabled="{Binding Path=PartnersListEnabled}"
                         Visibility="{Binding Path=PartnersListExpandButtonVisibility}"
                         IsTabStop="False"
                         Style="{DynamicResource Esri_SimpleButton}"
@@ -153,6 +154,7 @@
                           Grid.Row="1"
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
+                          IsEnabled="{Binding Path=SQLLayersListEnabled}"
                           ItemsSource="{Binding Path=SQLLayersList}"
                           MouseDoubleClick="ListViewSQLLayers_MouseDoubleClick"
                           PreviewKeyDown="ListViewSQLLayers_KeyDown"
@@ -212,7 +214,7 @@
                         IsCancel="False"
                         IsDefault="False"
                         Focusable="False"
-                        IsEnabled="True"
+                        IsEnabled="{Binding Path=SQLLayersListEnabled}"
                         Visibility="{Binding Path=SQLLayersListExpandButtonVisibility}"
                         IsTabStop="False"
                         Style="{DynamicResource Esri_SimpleButton}"
@@ -249,6 +251,7 @@
                           Grid.Row="1"
                           Grid.Column="1"
                           HorizontalContentAlignment="Stretch"
+                          IsEnabled="{Binding Path=MapLayersListEnabled}"
                           ItemsSource="{Binding Path=MapLayersList}"
                           MouseDoubleClick="ListViewMapLayers_MouseDoubleClick"
                           PreviewKeyDown="ListViewMapLayers_KeyDown"
@@ -308,7 +311,7 @@
                         IsCancel="False"
                         IsDefault="False"
                         Focusable="False"
-                        IsEnabled="True"
+                        IsEnabled="{Binding Path=MapLayersListEnabled}"
                         Visibility="{Binding Path=MapLayersListExpandButtonVisibility}"
                         IsTabStop="False"
                         Style="{DynamicResource Esri_SimpleButton}"
@@ -376,7 +379,8 @@
                           Style="{DynamicResource Esri_CheckboxToggleSwitch}"
                           ToolTip="Select polygons by centroids?"
                           Visibility="{Binding Path=UseCentroidsVisibility}"
-                          IsChecked="{Binding Path=UseCentroids, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                          IsChecked="{Binding Path=UseCentroids, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          IsEnabled="{Binding Path=OptionsEnabled}" />
                 <Label Name="LabelUseCentroids"
                        Content="Use Centroids?"
                        Grid.Row="0"
@@ -397,7 +401,8 @@
                           Style="{DynamicResource Esri_CheckboxToggleSwitch}"
                           ToolTip="Apply the additional exclusion clause?"
                           Visibility="{Binding Path=ApplyExclusionClauseVisibility}"
-                          IsChecked="{Binding Path=ApplyExclusionClause, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                          IsChecked="{Binding Path=ApplyExclusionClause, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          IsEnabled="{Binding Path=OptionsEnabled}" />
                 <Label Name="LabelApplyExclusionClause"
                        Content="Apply Exclusion Clause?"
                        Grid.Row="0"
@@ -418,7 +423,8 @@
                           Style="{DynamicResource Esri_CheckboxToggleSwitch}"
                           ToolTip="Upload the partner table to the server when the process starts?"
                           Visibility="{Binding Path=UploadToServerVisibility}"
-                          IsChecked="{Binding Path=UploadToServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                          IsChecked="{Binding Path=UploadToServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          IsEnabled="{Binding Path=OptionsEnabled}" />
                 <Label Name="LabelUploadToServer"
                        Content="Upload to server?"
                        Grid.Row="1"
@@ -438,7 +444,8 @@
                           VerticalAlignment="Center"
                           Style="{DynamicResource Esri_CheckboxToggleSwitch}"
                           ToolTip="Clear the log file before the process starts?"
-                          IsChecked="{Binding Path=ClearLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                          IsChecked="{Binding Path=ClearLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          IsEnabled="{Binding Path=OptionsEnabled}" />
                 <Label Name="LabelClearLogFile"
                        Content="Clear log file?"
                        Grid.Row="2"
@@ -457,7 +464,8 @@
                           VerticalAlignment="Center"
                           Style="{DynamicResource Esri_CheckboxToggleSwitch}"
                           ToolTip="Open the log file when the process is complete?"
-                          IsChecked="{Binding Path=OpenLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                          IsChecked="{Binding Path=OpenLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          IsEnabled="{Binding Path=OptionsEnabled}" />
                 <Label Name="LabelOpenLogFile"
                        Content="Open log file?"
                        Grid.Row="2"

@@ -286,6 +286,17 @@ namespace DataExtractor.UI
         }
 
         /// <summary>
+        /// Are the options enabled?
+        /// </summary>
+        public bool OptionsEnabled
+        {
+            get
+            {
+                return (_dockPane.ProcessStatus == null);
+            }
+        }
+
+        /// <summary>
         /// Can the run button be pressed?
         /// </summary>
         public bool RunButtonEnabled
@@ -550,6 +561,9 @@ namespace DataExtractor.UI
             // If userid is temp.
             if (_userID == "Temp")
                 FileFunctions.WriteLine(_logFile, "User ID not found. User ID used will be 'Temp'.");
+
+            // Set process status to blank to mimick process is running.
+            _dockPane.ProcessStatus = "";
 
             // Update the fields and buttons in the form.
             UpdateFormControls();
@@ -1056,8 +1070,10 @@ namespace DataExtractor.UI
             OnPropertyChanged(nameof(SQLLayersList));
             OnPropertyChanged(nameof(SQLLayersListEnabled));
             OnPropertyChanged(nameof(MapLayersList));
+            OnPropertyChanged(nameof(MapLayersListEnabled));
             OnPropertyChanged(nameof(SelectionTypeList));
             OnPropertyChanged(nameof(SelectionTypeListEnabled));
+            OnPropertyChanged(nameof(OptionsEnabled));
             OnPropertyChanged(nameof(Message));
             OnPropertyChanged(nameof(HasMessage));
         }
@@ -1778,9 +1794,12 @@ namespace DataExtractor.UI
                         FileFunctions.WriteLine(_logFile, "");
                     }
                 }
-                else if (tableCount == 0)
+                else
                 {
-                    FileFunctions.WriteLine(_logFile, "Procedure returned no records.");
+                    if (tableCount == 0)
+                        FileFunctions.WriteLine(_logFile, "Procedure returned no records.");
+
+                    FileFunctions.WriteLine(_logFile, "");
                 }
 
                 // Clean up the sptial table after processing the partner.
@@ -1923,14 +1942,14 @@ namespace DataExtractor.UI
 
             // Set the map output format.
             string mapOutputFormat = gisFormat;
-            if ((outputType == "GDB") || (outputType == "SHP") || (outputType == "DBF"))
+            if (outputType is "GDB" or "SHP" or "DBF")
             {
                 FileFunctions.WriteLine(_logFile, "Overriding the output type with '" + outputType + "' ...");
                 mapOutputFormat = outputType;
             }
 
             bool checkOutputSize = false;
-            if ((mapOutputFormat == "SHP") || (mapOutputFormat == "DBF"))
+            if (mapOutputFormat is "SHP" or "DBF")
                 checkOutputSize = true;
 
             // Run the stored procedure to perform the sub-selection.
@@ -2000,7 +2019,7 @@ namespace DataExtractor.UI
 
             // Set the export output format.
             string exportOutputFormat = exportFormat;
-            if ((outputType == "CSV") || (outputType == "TXT"))
+            if (outputType is "CSV" or "TXT")
             {
                 FileFunctions.WriteLine(_logFile, "Overriding the export type with '" + outputType + "' ...");
                 exportOutputFormat = outputType;
@@ -2426,20 +2445,15 @@ namespace DataExtractor.UI
 
             // Set the map output format.
             string mapOutputFormat = gisFormat;
-            if ((outputType == "GDB") || (outputType == "SHP") || (outputType == "DBF"))
+            if (outputType is "GDB" or "SHP" or "DBF")
             {
                 FileFunctions.WriteLine(_logFile, "Overriding the output type with '" + outputType + "' ...");
                 mapOutputFormat = outputType;
             }
 
-            // Override the output format if an export is required but no output,
-            // and flag the output to be deleted later.
-            bool deleteOutput = false;
+            // Override the output format if an export is required but no output.
             if ((string.IsNullOrEmpty(mapOutputFormat) && !string.IsNullOrEmpty(exportFormat)))
-            {
                 mapOutputFormat = "SHP";
-                deleteOutput = true;
-            }
 
             // Set the output path.
             string outPath = outFolder;
@@ -2472,6 +2486,12 @@ namespace DataExtractor.UI
                     return false;
             }
 
+            // Flag the output to be deleted later if the export format is set
+            // to override the output format.
+            bool deleteOutput = false;
+            if (exportFormat is "CSV" or "TXT")
+                deleteOutput = true;
+
             // Output the map results if required.
             if (!string.IsNullOrEmpty(mapOutputFormat))
             {
@@ -2493,7 +2513,7 @@ namespace DataExtractor.UI
 
             // Set the export output format.
             string exportOutputFormat = exportFormat;
-            if ((outputType == "CSV") || (outputType == "TXT"))
+            if (outputType is "CSV" or "TXT")
             {
                 FileFunctions.WriteLine(_logFile, "Overriding the export type with '" + outputType + "' ...");
                 exportOutputFormat = outputType;
@@ -2754,7 +2774,10 @@ namespace DataExtractor.UI
 
             // Check if the output feature class exists.
             if (!await _sqlFunctions.FeatureClassExistsAsync(sqlOutputTable))
-                return 0;
+            {
+                FileFunctions.WriteLine(_logFile, "SQL output table '" + sqlOutputTable + "' - not found.");
+                return -1;
+            }
 
             // Count the number of rows in the output feature class.
             long tableCount = await _sqlFunctions.GetFeaturesCountAsync(sqlOutputTable);
