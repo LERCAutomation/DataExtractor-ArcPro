@@ -124,14 +124,72 @@ namespace DataExtractor
                 throw new("Could not locate item 'LogFilePath' in the XML profile.");
             }
 
-            // The location of the SDE file that specifies which SQL Server database to connect to.
+            // The connection string for ADO connection.
             try
             {
-                _sdeFile = _xmlDataExtractor["SDEFile"].InnerText;
+                _dbConnectionString = _xmlDataExtractor["DbConnectionString"].InnerText;
             }
             catch
             {
-                throw new("Could not locate item 'SDEFile' in the XML profile.");
+                throw new("Could not locate item 'DbConnectionString' in the XML profile.");
+            }
+
+            // The timeout (seconds) for the maximum number of seconds that the stored procedures are allowed to run.
+            try
+            {
+                rawText = _xmlDataExtractor["DbTimeoutSeconds"].InnerText;
+                bool blResult = int.TryParse(rawText, out int i);
+                if (blResult)
+                    _dbTimeoutSeconds = i;
+                else
+                {
+                    throw new("The entry for 'DbTimeoutSeconds' in the XML profile is not an integer.");
+                }
+            }
+            catch
+            {
+                // This is the default value.
+                _dbTimeoutSeconds = 60;
+            }
+
+            // The existing file location where the SDE file will be found/saved.
+            try
+            {
+                _sdeFilePath = _xmlDataExtractor["SDEFilePath"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'SDEFilePath' in the XML profile.");
+            }
+
+            // The name of the SDE file that specifies which SQL Server database to connect to.
+            try
+            {
+                _sdeFileName = _xmlDataExtractor["SDEFileName"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'SDEFileName' in the XML profile.");
+            }
+
+            // The SQL Server database instance to connect to.
+            try
+            {
+                _dbInstance = _xmlDataExtractor["DbInstance"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'DbInstance' in the XML profile.");
+            }
+
+            // The name of the SQL Server database to connect to.
+            try
+            {
+                _dbName = _xmlDataExtractor["DbName"].InnerText;
+            }
+            catch
+            {
+                throw new("Could not locate item 'DbName' in the XML profile.");
             }
 
             // The schema used in the SQL Server database.
@@ -890,11 +948,46 @@ namespace DataExtractor
             get { return _logFilePath; }
         }
 
-        private string _sdeFile;
+        private string _dbConnectionString;
 
-        public string SDEFile
+        public string DbConnectionString
         {
-            get { return _sdeFile; }
+            get { return _dbConnectionString; }
+        }
+
+        private int _dbTimeoutSeconds;
+
+        public int DbTimeoutSeconds
+        {
+            get { return _dbTimeoutSeconds; }
+        }
+
+        private string _sdeFilePath;
+
+        public string SDEFilePath
+        {
+            get { return _sdeFilePath; }
+        }
+
+        private string _sdeFileName;
+
+        public string SDEFileName
+        {
+            get { return _sdeFileName; }
+        }
+
+        private string _dbInstance;
+
+        public string DbInstance
+        {
+            get { return _dbInstance; }
+        }
+
+        private string _dbName;
+
+        public string DbName
+        {
+            get { return _dbName; }
         }
 
         private string _spatialStoredProcedure;

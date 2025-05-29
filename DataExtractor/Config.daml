@@ -5,13 +5,13 @@
 		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
 
-	<AddInInfo id="{2ad6fcf5-1ab0-41b3-a4aa-ace372bc7139}" version="1.0.6" desktopVersion="3.3.52636">
+	<AddInInfo id="{2ad6fcf5-1ab0-41b3-a4aa-ace372bc7139}" version="1.0.8" desktopVersion="3.4">
 		<Name>DataExtractor</Name>
 		<Description>DataExtractor is an ArcGIS .Net tool and associated SQL scripts to extract data from SQL Server and ArcGIS map layers for pre-defined spatial areas. The output files can be created as ESRI Geodatabase tables (gdb), ESRI shapefile (.shp) and/or Comma Separated Value (.csv) files.</Description>
 		<Image>Images\AddinDesktop32.png</Image>
 		<Author>Andy Foy, andy@andyfoyconsulting.co.uk</Author>
 		<Company>Andy Foy Consulting</Company>
-		<Date>23/01/2025 11:52:00 AM</Date>
+		<Date>16/05/2025 15:03:00 AM</Date>
 		<Subject>Framework, Geodatabase</Subject>
 		<!-- Note subject can be one or more of these topics:
                     Content, Framework, Editing, Geodatabase, Geometry, Geoprocessing, Layouts, Map Authoring, Map Exploration -->

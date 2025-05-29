@@ -22,9 +22,12 @@
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Data.DDL;
 using ArcGIS.Core.Data.Exceptions;
+using ArcGIS.Desktop.Core.Geoprocessing;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,14 +39,18 @@ namespace DataTools
         #region Fields
 
         private readonly string _sdeFileName;
+        private readonly string _sqlConnectionString;
+        private readonly int _dbTimeoutSeconds;
 
         #endregion Fields
 
         #region Constructor
 
-        public SQLServerFunctions(string sdeFileName)
+        public SQLServerFunctions(string sdeFileName, string dbConnectionString, int dbTimeoutSeconds)
         {
             _sdeFileName = sdeFileName;
+            _sqlConnectionString = dbConnectionString;
+            _dbTimeoutSeconds = dbTimeoutSeconds;
 
             // Open a connection to the geodatabase (don't wait it will be checked later).
             OpenGeodatabaseAsync();
@@ -69,7 +76,92 @@ namespace DataTools
 
         #endregion Properties
 
+        #region Connection
+
+        public static string SetSDEConnectionString(string dbInstance, string dbName)
+        {
+            // Check there is a database instance name.
+            if (String.IsNullOrEmpty(dbInstance))
+                return null;
+
+            // Check there is a database name.
+            if (String.IsNullOrEmpty(dbName))
+                return null;
+
+            // Set the SQL Server connection string.
+            string sqlConnectionString = $"Data Source={dbInstance};Initial Catalog={dbName};Integrated Security=True;";
+
+            // Return the SQL Server connection string.
+            return sqlConnectionString;
+        }
+
+        #endregion Connection
+
         #region Geodatabase
+
+        /// <summary>
+        /// Create a SQL Server .sde database connection using Windows Authentication.
+        /// </summary>
+        /// <param name="out_folder_path">Output folder where the .sde file will be saved.</param>
+        /// <param name="out_name">Name of the .sde connection file to create (e.g. "MyConnection.sde").</param>
+        /// <param name="instance">SQL Server instance.</param>
+        /// <param name="database">Target database name.</param>
+        /// <returns>bool</returns>
+        public static async Task<bool> CreateSDEConnectionAsync(
+            string out_folder_path,
+            string out_name,
+            string instance,
+            string database)
+        {
+            // Check there is an output folder path.
+            if (String.IsNullOrEmpty(out_folder_path))
+                return false;
+
+            // Check there is an output database connnection file name.
+            if (String.IsNullOrEmpty(out_name))
+                return false;
+
+            // Check there is a database server or instance name.
+            if (String.IsNullOrEmpty(instance))
+                return false;
+
+            // Check there is a database name.
+            if (String.IsNullOrEmpty(database))
+                return false;
+
+            // Make a value array of strings to be passed to the tool.
+            var parameters = Geoprocessing.MakeValueArray(out_folder_path, out_name, "SQL_SERVER", instance, "OPERATING_SYSTEM_AUTH", "", "", "SAVE_USERNAME", database);
+
+            // Make a value array of the environments to be passed to the tool.
+            var environments = Geoprocessing.MakeEnvironmentArray(overwriteoutput: true);
+
+            // Set the geprocessing flags.
+            GPExecuteToolFlags executeFlags = GPExecuteToolFlags.GPThread; //| GPExecuteToolFlags.RefreshProjectItems;
+
+            //Geoprocessing.OpenToolDialog("management.CreateDatabaseConnection", parameters);  // Useful for debugging.
+
+            // Execute the tool.
+            try
+            {
+                IGPResult gp_result = await Geoprocessing.ExecuteToolAsync("management.CreateDatabaseConnection", parameters, environments, null, null, executeFlags);
+
+                if (gp_result.IsFailed)
+                {
+                    Geoprocessing.ShowMessageBox(gp_result.Messages, "GP Messages", GPMessageBoxStyle.Error);
+
+                    var messages = gp_result.Messages;
+                    var errMessages = gp_result.ErrorMessages;
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                // Handle Exception.
+                return false;
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Open a SQL Server database using a .sde connection file to check
@@ -77,7 +169,7 @@ namespace DataTools
         /// </summary>
         /// <param name="sdeFileName"></param>
         /// <returns>bool</returns>
-        public static async Task<bool> CheckSDEConnection(string sdeFileName)
+        public static async Task<bool> CheckSDEConnectionAsync(string sdeFileName)
         {
             bool _sdeConnectionValid = false;
 
@@ -367,7 +459,9 @@ namespace DataTools
                     if (tableDefinition == null)
                         return;
 
-                    using Field field = tableDefinition.GetFields().First(x => x.Name.Equals(fieldName) || x.AliasName.Equals(fieldName));
+                    using Field field = tableDefinition.GetFields()
+                        .First(x => x.Name.Equals(fieldName, StringComparison.OrdinalIgnoreCase) ||
+                                    (x.AliasName != null && x.AliasName.Equals(fieldName, StringComparison.OrdinalIgnoreCase)));
 
                     if (field != null)
                         fldFound = true;
@@ -403,6 +497,8 @@ namespace DataTools
             if (String.IsNullOrEmpty(sqlStatement))
                 return false;
 
+            bool success = true;
+
             // Open a connection to the geodatabase if not already open.
             if (!GeodatabaseOpen) await OpenGeodatabaseAsync();
 
@@ -419,11 +515,54 @@ namespace DataTools
                 catch (Exception)
                 {
                     // ExecuteStatement throws an exception.
-                    return;
+                    success = false;
                 }
             }, TaskCreationOptions.LongRunning);
 
-            return true;
+            return success;
+        }
+
+        /// <summary>
+        /// Execute a stored procedure on the underlying database management system.
+        /// </summary>
+        /// <param name="storedProcedureName"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public async Task<bool> ExecuteStoredProcedureAsync(string storedProcedureName, Dictionary<string, object> parameters)
+        {
+            try
+            {
+                // Using the SQL Server connection string.
+                using var conn = new SqlConnection(_sqlConnectionString);
+
+                // Open a connection to the SQL Server database asynchronously.
+                await conn.OpenAsync();
+
+                // Using the SQL command to execute the stored procedure.
+                using var cmd = new SqlCommand(storedProcedureName, conn);
+
+                // Set the command type to stored procedure.
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                // Set the timeout (in seconds).
+                cmd.CommandTimeout = _dbTimeoutSeconds;
+
+                // Add the parameters to the command.
+                foreach (var param in parameters)
+                {
+                    string paramName = param.Key.StartsWith("@") ? param.Key : "@" + param.Key;
+                    cmd.Parameters.AddWithValue(paramName, param.Value ?? DBNull.Value);
+                }
+
+                // Execute the command asynchronously.
+                await cmd.ExecuteNonQueryAsync();
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         #endregion Execute SQL

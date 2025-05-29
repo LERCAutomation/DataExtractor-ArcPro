@@ -31,7 +31,6 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -62,7 +61,7 @@ namespace DataExtractor.UI
 
         private readonly DockpaneMainViewModel _dockPane;
 
-        private string _sdeFileName;
+        private string _sdeFile;
 
         private bool _extractErrors;
 
@@ -77,6 +76,7 @@ namespace DataExtractor.UI
         private string _txtFolder;
 
         private string _defaultSchema;
+        private string _targetSchema;
         private string _objectsTable;
 
         // SQL table fields.
@@ -180,14 +180,8 @@ namespace DataExtractor.UI
         /// </summary>
         private void InitializeComponent()
         {
-            // Set the SDE file name.
-            _sdeFileName = _toolConfig.SDEFile;
-
             // Create a new map functions object.
             _mapFunctions = new();
-
-            // Create a new SQL functions object.
-            _sqlFunctions = new(_sdeFileName);
 
             // Get the relevant config file settings.
             _logFilePath = _toolConfig.LogFilePath;
@@ -204,6 +198,7 @@ namespace DataExtractor.UI
             _txtFolder = _toolConfig.TXTFolder;
 
             _defaultSchema = _toolConfig.DatabaseSchema;
+            _targetSchema = _defaultSchema;
             _objectsTable = _toolConfig.ObjectsTable;
 
             _includeWildcard = _toolConfig.IncludeWildcard;
@@ -495,15 +490,6 @@ namespace DataExtractor.UI
 
             // Clear any messages.
             ClearMessage();
-
-            // Replace any illegal characters in the user name string.
-            _userID = StringFunctions.StripIllegals(Environment.UserName, "_", false);
-            // Replace hyphen with underscore.
-            _userID = _userID.Replace('-', '_');
-
-            // User ID should be something at least.
-            if (string.IsNullOrEmpty(_userID))
-                _userID = "Temp";
 
             // Set the date variables.
             DateTime dateNow = DateTime.Now;
@@ -1078,6 +1064,80 @@ namespace DataExtractor.UI
             OnPropertyChanged(nameof(HasMessage));
         }
 
+        public async Task<bool> EstablishSDEConnectionAsync(bool message)
+        {
+            // Get the SDE file properties.
+            string sdeFilePath = _toolConfig.SDEFilePath;
+            string sdeFileName = _toolConfig.SDEFileName;
+            string dbInstance = _toolConfig.DbInstance;
+            string dbName = _toolConfig.DbName;
+
+            // Replace any illegal characters.
+            string userID = StringFunctions.StripIllegals(Environment.UserName, "_", false);
+            string serverName = StringFunctions.StripIllegals(dbInstance, "_", false);
+            string databaseName = StringFunctions.StripIllegals(dbName, "_", false);
+
+            // Replace hyphens with underscore.
+            userID = userID.Replace('-', '_');
+            serverName = serverName.Replace('-', '_');
+            databaseName = databaseName.Replace('-', '_');
+
+            // User ID should be something at least.
+            _userID = userID;
+            if (string.IsNullOrEmpty(_userID))
+                _userID = "Temp";
+
+            // If the SDE file name is not set then set the name and target schema
+            // (otherwise the target schema will be the default schema).
+            if (string.IsNullOrEmpty(sdeFileName))
+            {
+                sdeFileName = serverName + "_" + databaseName + "_" + _userID + ".sde";
+                _targetSchema = _userID;
+            }
+
+            // Set the SDE file name.
+            _sdeFile = sdeFilePath + @"\" + sdeFileName;
+
+            // Check if the SDE file exists.
+            if (!FileFunctions.FileExists(_sdeFile))
+            {
+                // Create the SDE file.
+                if (!await SQLServerFunctions.CreateSDEConnectionAsync(sdeFilePath, sdeFileName, dbInstance, dbName))
+                {
+                    if (message)
+                        MessageBox.Show("SDE connection file '" + _sdeFile + "' not created.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                    return false;
+                }
+            }
+
+            // Open the SQL Server geodatabase.
+            try
+            {
+                if (!await SQLServerFunctions.CheckSDEConnectionAsync(_sdeFile))
+                {
+                    if (message)
+                        MessageBox.Show("SDE connection file '" + _sdeFile + "' not valid.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                if (message)
+                    MessageBox.Show("SDE connection file '" + _sdeFile + "' not valid.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                return false;
+            }
+
+            // Create a new SQL functions object.
+            string dbConnectionString = _toolConfig.DbConnectionString;
+            int dbTimeoutSeconds = _toolConfig.DbTimeoutSeconds;
+            _sqlFunctions = new(_sdeFile, dbConnectionString, dbTimeoutSeconds);
+
+            return true;
+        }
+
         /// <summary>
         /// Set all of the form fields to their default values.
         /// </summary>
@@ -1134,8 +1194,8 @@ namespace DataExtractor.UI
             // Pause map.
             PauseMap = _toolConfig.PauseMap;
 
-            // Reload the list of partners, SQL tables, and open GIS map layers.
-            await LoadListsAsync(reset, true);
+            // Reload the list of partners, SQL tables, and open GIS map layers (don't wait for the response).
+            LoadListsAsync(reset, true);
         }
 
         /// <summary>
@@ -1591,7 +1651,7 @@ namespace DataExtractor.UI
                     // Get the full layer path (in case it's nested in one or more groups).
                     string partnerLayerPath = _mapFunctions.GetLayerPath(_partnerTable);
 
-                    if (!await ArcGISFunctions.CopyFeaturesAsync(partnerLayerPath, _sdeFileName + @"\" + _defaultSchema + "." + _partnerTable, false))
+                    if (!await ArcGISFunctions.CopyFeaturesAsync(partnerLayerPath, _sdeFile + @"\" + _targetSchema + "." + _partnerTable, false))
                     {
                         FileFunctions.WriteLine(_logFile, "Error: Uploading partner table.");
                         _extractErrors = true;
@@ -1794,16 +1854,23 @@ namespace DataExtractor.UI
                         FileFunctions.WriteLine(_logFile, "");
                     }
                 }
+                else if (tableCount == 0)
+                {
+                    FileFunctions.WriteLine(_logFile, "Procedure returned no records.");
+                }
                 else
                 {
-                    if (tableCount == 0)
-                        FileFunctions.WriteLine(_logFile, "Procedure returned no records.");
-
-                    FileFunctions.WriteLine(_logFile, "");
+                    return false;
                 }
 
+                FileFunctions.WriteLine(_logFile, "");
+
                 // Clean up the sptial table after processing the partner.
-                await ClearSpatialTableAsync(_defaultSchema, sqlTable, _userID);
+                if (!await ClearSpatialTableAsync(_defaultSchema, sqlTable, _userID))
+                {
+                    // Continue but flag the error.
+                    _extractErrors = true;
+                }
             }
 
             //------------------------------------------------------------------
@@ -1896,9 +1963,9 @@ namespace DataExtractor.UI
             string polyFeatureClass = _defaultSchema + "." + sqlTable + "_" + _userID + "_poly";
             string flatTable = _defaultSchema + "." + sqlTable + "_" + _userID + "_flat";
 
-            string inPoints = _sdeFileName + @"\" + pointFeatureClass;
-            string inPolys = _sdeFileName + @"\" + polyFeatureClass;
-            string inFlatTable = _sdeFileName + @"\" + flatTable;
+            string inPoints = _sdeFile + @"\" + pointFeatureClass;
+            string inPolys = _sdeFile + @"\" + polyFeatureClass;
+            string inFlatTable = _sdeFile + @"\" + flatTable;
 
             FileFunctions.WriteLine(_logFile, "Processing output '" + nodeName + "' ...");
 
@@ -1956,9 +2023,7 @@ namespace DataExtractor.UI
             // This will split the output into points and polygons if spatial.
             if (!await PerformSubsetSelectionAsync(isSpatial, isSplit, _defaultSchema, sqlTable,
                 outputColumns, whereClause, null, orderClause, _userID, checkOutputSize))
-            {
                 return false;
-            }
 
             // Override the output format if a non-spatial shapefile.
             if ((!isSpatial) && (mapOutputFormat == "SHP"))
@@ -2451,8 +2516,13 @@ namespace DataExtractor.UI
                 mapOutputFormat = outputType;
             }
 
-            // Override the output format if an export is required but no output.
-            if ((string.IsNullOrEmpty(mapOutputFormat) && !string.IsNullOrEmpty(exportFormat)))
+            // Flag the output to be deleted later if only an export is required.
+            bool deleteOutput = false;
+            if (((string.IsNullOrEmpty(mapOutputFormat)) && ((exportFormat is "CSV" or "TXT")) || (outputType is "CSV" or "TXT")))
+                deleteOutput = true;
+
+            // Set the output format if an export is required but no output.
+            if ((string.IsNullOrEmpty(mapOutputFormat)) && ((exportFormat is "CSV" or "TXT") || (outputType is "CSV" or "TXT")))
                 mapOutputFormat = "SHP";
 
             // Set the output path.
@@ -2485,12 +2555,6 @@ namespace DataExtractor.UI
                     FileFunctions.WriteLine(_logFile, "Error: Unknown output format '" + mapOutputFormat + "'.");
                     return false;
             }
-
-            // Flag the output to be deleted later if the export format is set
-            // to override the output format.
-            bool deleteOutput = false;
-            if (exportFormat is "CSV" or "TXT")
-                deleteOutput = true;
 
             // Output the map results if required.
             if (!string.IsNullOrEmpty(mapOutputFormat))
@@ -2719,24 +2783,24 @@ namespace DataExtractor.UI
         /// <summary>
         /// Perform the spatial selection via a stored procedure.
         /// </summary>
-        /// <param name="partner"></param>
-        /// <param name="schema"></param>
-        /// <param name="selectionTypeNum"></param>
-        /// <param name="useCentroids"></param>
-        /// <returns></returns>
+        /// <param name="partner">The partner object providing SQL table and abbreviation info.</param>
+        /// <param name="schema">The target schema name (e.g., 'dbo').</param>
+        /// <param name="selectionTypeNum">An integer representing the selection type.</param>
+        /// <param name="useCentroids">Whether to use centroids in the spatial query.</param>
+        /// <returns>Returns the number of selected features, or -1 if failed.</returns>
         internal async Task<long> PerformSpatialSelectionAsync(Partner partner, string schema, int selectionTypeNum, bool useCentroids)
         {
-            // Get the partner details.
+            // Get the partner abbreviation and source table name.
             string partnerAbbr = partner.ShortName;
             string sqlTable = partner.SQLTable;
 
-            // Set the SQL output table name.
-            string sqlOutputTable = sqlTable + "_" + _userID;
+            // Define the name of the output table created by the procedure.
+            string sqlOutputTable = schema + "." + sqlTable + "_" + _userID;
 
-            // Get the name of the stored procedure to execute selection in SQL Server.
+            // Get the stored procedure name for spatial selection.
             string storedProcedureName = _spatialStoredProcedure;
 
-            // Check the partner SQL table is found on the server.
+            // Validate the partner table.
             if (string.IsNullOrEmpty(sqlTable))
             {
                 FileFunctions.WriteLine(_logFile, "Skipping SQL outputs - table name is blank.");
@@ -2745,186 +2809,162 @@ namespace DataExtractor.UI
 
             if (!_sqlTableNames.Contains(sqlTable))
             {
-                FileFunctions.WriteLine(_logFile, "Skipping SQL outputs - table '" + sqlTable + "' - not found.");
+                FileFunctions.WriteLine(_logFile, $"Skipping SQL outputs - table '{sqlTable}' - not found.");
                 return -1;
             }
 
-            // Set up the SQL command.
-            StringBuilder sqlCmd = new();
+            FileFunctions.WriteLine(_logFile, $"Executing SQL spatial selection from '{sqlTable}' ...");
 
-            // Build the SQL command to execute the stored procedure.
-            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", storedProcedureName));
-            sqlCmd.Append(string.Format(" '{0}'", schema));
-            sqlCmd.Append(string.Format(", '{0}'", _partnerTable));
-            sqlCmd.Append(string.Format(", '{0}'", _shortColumn));
-            sqlCmd.Append(string.Format(", '{0}'", partnerAbbr));
-            sqlCmd.Append(string.Format(", '{0}'", _tagsColumn));
-            sqlCmd.Append(string.Format(", '{0}'", _spatialColumn));
-            sqlCmd.Append(string.Format(", {0}", selectionTypeNum));
-            sqlCmd.Append(string.Format(", '{0}'", sqlTable));
-            sqlCmd.Append(string.Format(", '{0}'", _userID));
-            sqlCmd.Append(string.Format(", {0}", useCentroids ? "1" : "0"));
+            // Build the stored procedure parameters.
+            var parameters = new Dictionary<string, object>
+            {
+                ["Schema"] = schema,
+                ["PartnerTable"] = _partnerTable,
+                ["PartnerColumn"] = _shortColumn,
+                ["Partner"] = partnerAbbr,
+                ["TagsColumn"] = _tagsColumn,
+                ["PartnerSpatialColumn"] = _spatialColumn,
+                ["SelectType"] = selectionTypeNum,
+                ["SpeciesTable"] = sqlTable,
+                ["UserId"] = _userID,
+                ["UseCentroids"] = useCentroids ? 1 : 0
+            };
 
-            FileFunctions.WriteLine(_logFile, "Executing SQL spatial selection from '" + sqlTable + "' ...");
+            FileFunctions.WriteLine(_logFile, "SQL spatial selection starting ...");
 
-            // Execute the stored procedure.
-            await _sqlFunctions.ExecuteSQLOnGeodatabaseAsync(sqlCmd.ToString());
+            // Run the procedure using ADO.NET.
+            if (!await _sqlFunctions.ExecuteStoredProcedureAsync(storedProcedureName, parameters))
+            {
+                FileFunctions.WriteLine(_logFile, "Error executing stored procedure '" + storedProcedureName + "'.");
+                return -1;
+            }
 
             FileFunctions.WriteLine(_logFile, "SQL spatial selection complete.");
 
-            // Check if the output feature class exists.
+            // Check that the output feature class exists.
             if (!await _sqlFunctions.FeatureClassExistsAsync(sqlOutputTable))
             {
-                FileFunctions.WriteLine(_logFile, "SQL output table '" + sqlOutputTable + "' - not found.");
+                FileFunctions.WriteLine(_logFile, $"SQL output table '{sqlOutputTable}' - not found.");
                 return -1;
             }
 
-            // Count the number of rows in the output feature class.
-            long tableCount = await _sqlFunctions.GetFeaturesCountAsync(sqlOutputTable);
-
-            return tableCount;
+            // Return the count of selected features.
+            return await _sqlFunctions.GetFeaturesCountAsync(sqlOutputTable);
         }
 
         /// <summary>
-        /// Perform the subset selection by running the query via a
-        /// stored procedure.
+        /// Perform the subset selection by executing a stored procedure in SQL Server.
         /// </summary>
-        /// <param name="isSpatial"></param>
-        /// <param name="isSplit"></param>
-        /// <param name="schema"></param>
-        /// <param name="tableName"></param>
-        /// <param name="columnNames"></param>
-        /// <param name="whereClause"></param>
-        /// <param name="groupClause"></param>
-        /// <param name="orderClause"></param>
-        /// <param name="userID"></param>
-        /// <returns>bool</returns>
+        /// <param name="isSpatial">True if the result is spatial (feature class).</param>
+        /// <param name="isSplit">True if results are split into point/poly layers.</param>
+        /// <param name="schema">The schema of the output table.</param>
+        /// <param name="tableName">The base name of the SQL table.</param>
+        /// <param name="columnNames">The list of columns to include in the selection.</param>
+        /// <param name="whereClause">The WHERE clause for filtering.</param>
+        /// <param name="groupClause">The GROUP BY clause.</param>
+        /// <param name="orderClause">The ORDER BY clause.</param>
+        /// <param name="userID">The user ID to append to output tables.</param>
+        /// <param name="checkOutputSize">Whether to validate maximum data size.</param>
+        /// <returns>True if selection succeeds; false if failed or oversized.</returns>
         internal async Task<bool> PerformSubsetSelectionAsync(bool isSpatial, bool isSplit, string schema, string tableName,
-                                  string columnNames, string whereClause, string groupClause, string orderClause, string userID,
-                                  bool checkOutputSize)
+            string columnNames, string whereClause, string groupClause, string orderClause, string userID, bool checkOutputSize)
         {
-            bool success;
+            // Get the stored procedure name to perform the subset selection.
+            string storedProcedureName = _subsetStoredProcedure;
 
-            // Get the name of the stored procedure to execute selection in SQL Server.
-            string subsetStoredProcedureName = _subsetStoredProcedure;
+            string targetTable = tableName + "_" + userID;
 
-            // Set up the SQL command.
-            StringBuilder sqlCmd = new();
+            // Escape single quotes in where clause to avoid SQL errors.
+            whereClause ??= "";
+            //whereClause = whereClause.Replace("'", "''");
 
-            // Double-up single quotes so they parse in SQL command correctly.
-            if (whereClause != null && whereClause.Contains('\''))
-                whereClause = whereClause.Replace("'", "''");
+            // Prepare parameters for the stored procedure.
+            var parameters = new Dictionary<string, object>
+            {
+                ["Schema"] = schema,
+                ["InputTable"] = targetTable,
+                ["ColumnNames"] = columnNames,
+                ["WhereClause"] = whereClause,
+                ["GroupByClause"] = groupClause ?? "",
+                ["OrderByClause"] = orderClause ?? "",
+                ["Split"] = isSplit ? 1 : 0
+            };
 
-            // Build the SQL command to execute the stored procedure.
-            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", subsetStoredProcedureName));
-            sqlCmd.Append(string.Format(" '{0}'", schema));
-            sqlCmd.Append(string.Format(", '{0}'", tableName + "_" + userID));
-            sqlCmd.Append(string.Format(", '{0}'", columnNames));
-            sqlCmd.Append(string.Format(", '{0}'", whereClause));
-            sqlCmd.Append(string.Format(", '{0}'", groupClause));
-            sqlCmd.Append(string.Format(", '{0}'", orderClause));
-            sqlCmd.Append(string.Format(", {0}", isSplit ? "1" : "0"));
-
-            // Reset the counters.
-            _pointCount = 0;
-            _polyCount = 0;
-            _tableCount = 0;
-
-            long maxCount;
+            // Initialize result counters.
+            _pointCount = _polyCount = _tableCount = 0;
+            long maxCount = 0;
             long rowLength = 0;
 
-            // Set the SQL output file names.
-            string pointFeatureClass = schema + "." + tableName + "_" + userID + "_point";
-            string polyFeatureClass = schema + "." + tableName + "_" + userID + "_poly";
-            string flatTable = schema + "." + tableName + "_" + userID + "_flat";
+            // Construct output table names.
+            string pointFC = $"{schema}.{targetTable}_point";
+            string polyFC = $"{schema}.{targetTable}_poly";
+            string flatTable = $"{schema}.{targetTable}_flat";
 
-            try
+            FileFunctions.WriteLine(_logFile, "Performing selection ...");
+
+            // Execute the stored procedure.
+            if (!await _sqlFunctions.ExecuteStoredProcedureAsync(storedProcedureName, parameters))
             {
-                FileFunctions.WriteLine(_logFile, "Performing selection ...");
-
-                // Execute the stored procedure.
-                await _sqlFunctions.ExecuteSQLOnGeodatabaseAsync(sqlCmd.ToString());
-
-                // If the result is isSpatial it should be split into points and polys.
-                if (isSpatial)
-                {
-                    // Check if the point or polygon feature class exists.
-                    success = await _sqlFunctions.FeatureClassExistsAsync(pointFeatureClass);
-                    if (!success)
-                        success = await _sqlFunctions.FeatureClassExistsAsync(polyFeatureClass);
-                }
-                else
-                {
-                    // Check if the table exists.
-                    success = await _sqlFunctions.TableExistsAsync(flatTable);
-                }
-
-                // If the result table(s) exist.
-                if (success)
-                {
-                    if (isSpatial)
-                    {
-                        // Count the number of rows in the point feature count.
-                        _pointCount = await _sqlFunctions.GetFeaturesCountAsync(pointFeatureClass);
-
-                        // Save the maximum row count.
-                        maxCount = _pointCount;
-
-                        // Count the number of rows in the poly feature count.
-                        _polyCount = await _sqlFunctions.GetFeaturesCountAsync(polyFeatureClass);
-
-                        // Update the maximum row count.
-                        if (_polyCount > maxCount)
-                            maxCount = _polyCount;
-
-                        if (maxCount == 0)
-                        {
-                            FileFunctions.WriteLine(_logFile, "No records returned.");
-                            return true;
-                        }
-
-                        FileFunctions.WriteLine(_logFile, string.Format("{0:n0}", _pointCount) + " points to extract, " + string.Format("{0:n0}", _polyCount) + " polygons to extract.");
-
-                        // Calculate the total row length for the table.
-                        if (_pointCount > 0)
-                            rowLength = await _sqlFunctions.GetTableRowLengthAsync(pointFeatureClass);
-                        else if (_polyCount > 0)
-                            rowLength += await _sqlFunctions.GetTableRowLengthAsync(polyFeatureClass);
-                    }
-                    else
-                    {
-                        // Count the number of rows in the table.
-                        _tableCount = await _sqlFunctions.GetTableRowLengthAsync(flatTable);
-
-                        // Save the maximum row count.
-                        maxCount = _tableCount;
-                        if (maxCount == 0)
-                        {
-                            FileFunctions.WriteLine(_logFile, "No records returned.");
-                            return true;
-                        }
-
-                        FileFunctions.WriteLine(_logFile, string.Format("{0:n0}", _tableCount) + " records to extract");
-                        FileFunctions.WriteLine(_logFile, "Data is not spatial");
-
-                        // Calculate the total row length for the table.
-                        if (_tableCount > 0)
-                            rowLength = await _sqlFunctions.GetTableRowLengthAsync(flatTable);
-                    }
-                }
-                else
-                {
-                    FileFunctions.WriteLine(_logFile, "No records to extract.");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                FileFunctions.WriteLine(_logFile, "Error: Executing the stored procedure: " + ex.Message);
+                FileFunctions.WriteLine(_logFile, "Error executing stored procedure '" + storedProcedureName + "'.");
                 return false;
             }
 
-            // Return if no need to check output row/file size.
+            // Check if any output tables were created.
+            bool success = isSpatial
+                ? await _sqlFunctions.FeatureClassExistsAsync(pointFC) || await _sqlFunctions.FeatureClassExistsAsync(polyFC)
+                : await _sqlFunctions.TableExistsAsync(flatTable);
+
+            if (!success)
+            {
+                FileFunctions.WriteLine(_logFile, "No records to extract.");
+                return true;
+            }
+
+            // If output is spatial, count records in point and polygon results.
+            if (isSpatial)
+            {
+                // Count the number of rows in the point feature count.
+                _pointCount = await _sqlFunctions.GetFeaturesCountAsync(pointFC);
+
+                // Count the number of rows in the polygon feature count.
+                _polyCount = await _sqlFunctions.GetFeaturesCountAsync(polyFC);
+
+                // Set the maximum row count.
+                maxCount = Math.Max(_pointCount, _polyCount);
+
+                if (maxCount == 0)
+                {
+                    FileFunctions.WriteLine(_logFile, "No records returned.");
+                    return true;
+                }
+
+                FileFunctions.WriteLine(_logFile, $"{_pointCount:n0} points to extract, {_polyCount:n0} polygons to extract.");
+
+                // Calculate the total row length for the table.
+                rowLength = _pointCount > 0
+                    ? await _sqlFunctions.GetTableRowLengthAsync(pointFC)
+                    : await _sqlFunctions.GetTableRowLengthAsync(polyFC);
+            }
+            else
+            {
+                // If output is non-spatial, count rows in flat table.
+                _tableCount = await _sqlFunctions.GetTableRowLengthAsync(flatTable);
+                maxCount = _tableCount;
+
+                if (maxCount == 0)
+                {
+                    FileFunctions.WriteLine(_logFile, "No records returned.");
+                    return true;
+                }
+
+                FileFunctions.WriteLine(_logFile, $"{_tableCount:n0} records to extract");
+                FileFunctions.WriteLine(_logFile, "Data is not spatial");
+
+                // Calculate the total row length for the table.
+                rowLength = _tableCount > 0 ? await _sqlFunctions.GetTableRowLengthAsync(flatTable) : 0;
+            }
+
+            // Skip further checks if size validation is not required.
             if (!checkOutputSize)
                 return true;
 
@@ -2935,27 +2975,23 @@ namespace DataExtractor.UI
                 return false;
             }
 
-            // Display the maximum data size.
-            long maxDataSize;
-            maxDataSize = ((rowLength * maxCount) / 1024) + 1;
-            string strDataSizeKb = string.Format("{0:n0}", maxDataSize);
-            string strDataSizeMb = string.Format("{0:n2}", (double)maxDataSize / 1024);
-            string strDataSizeGb = string.Format("{0:n2}", (double)maxDataSize / (1024 * 1024));
+            // Calculate estimated data size.
+            long maxDataSize = ((rowLength * maxCount) / 1024) + 1;
 
-            if (maxDataSize > (1024 * 1024))
-            {
-                FileFunctions.WriteLine(_logFile, string.Format("Maximum data size = {0} Kb ({1} Gb).", strDataSizeKb, strDataSizeGb));
-            }
+            // Log the estimated size in appropriate units.
+            string strDataSizeKb = $"{maxDataSize:n0}";
+            string strDataSizeMb = $"{(double)maxDataSize / 1024:n2}";
+            string strDataSizeGb = $"{(double)maxDataSize / (1024 * 1024):n2}";
+
+            if (maxDataSize > 1024 * 1024)
+                FileFunctions.WriteLine(_logFile, $"Maximum data size = {strDataSizeKb} Kb ({strDataSizeGb} Gb).");
+            else if (maxDataSize > 1024)
+                FileFunctions.WriteLine(_logFile, $"Maximum data size = {strDataSizeKb} Kb ({strDataSizeMb} Mb).");
             else
-            {
-                if (maxDataSize > 1024)
-                    FileFunctions.WriteLine(_logFile, string.Format("Maximum data size = {0} Kb ({1} Mb).", strDataSizeKb, strDataSizeMb));
-                else
-                    FileFunctions.WriteLine(_logFile, string.Format("Maximum data size = {0} Kb.", strDataSizeKb));
-            }
+                FileFunctions.WriteLine(_logFile, $"Maximum data size = {strDataSizeKb} Kb.");
 
             // Check if the maximum data size will be exceeded.
-            if (maxDataSize > (2 * 1024 * 1024))
+            if (maxDataSize > 2 * 1024 * 1024)
             {
                 FileFunctions.WriteLine(_logFile, "Error: Maximum data size exceeds 2 Gb.");
                 return false;
@@ -2967,35 +3003,27 @@ namespace DataExtractor.UI
         /// <summary>
         /// Clear the temporary SQL spatial table by running a stored procedure.
         /// </summary>
-        /// <param name="schema"></param>
-        /// <param name="tableName"></param>
-        /// <param name="userID"></param>
-        /// <returns>bool</returns>
+        /// <param name="schema">Schema where the table resides (e.g., 'dbo').</param>
+        /// <param name="tableName">Base name of the spatial table to clear.</param>
+        /// <param name="userID">User ID appended to the table name.</param>
+        /// <returns>True if successful; false if an error occurs.</returns>
         internal async Task<bool> ClearSpatialTableAsync(string schema, string tableName, string userID)
         {
-            // Set up the SQL command.
-            StringBuilder sqlCmd = new();
+            // Get the stored procedure used to clear spatial tables.
+            string storedProcedureName = _clearSpatialStoredProcedure;
 
-            // Get the name of the stored procedure to clear the
-            // spatial selection in SQL Server.
-            string clearSpatialStoredProcedureName = _clearSpatialStoredProcedure;
-
-            // Build the SQL command to execute the stored procedure.
-            sqlCmd = sqlCmd.Append(string.Format("EXECUTE {0}", clearSpatialStoredProcedureName));
-            sqlCmd.Append(string.Format(" '{0}'", schema));
-            sqlCmd.Append(string.Format(", '{0}'", tableName));
-            sqlCmd.Append(string.Format(", '{0}'", userID));
-
-            try
+            // Build parameter dictionary for the procedure.
+            var parameters = new Dictionary<string, object>
             {
-                //FileFunctions.WriteLine(_logFile, "Deleting spatial temporary table");
+                ["Schema"] = schema,
+                ["SpeciesTable"] = tableName,
+                ["Userid"] = userID
+            };
 
-                // Execute the stored procedure.
-                await _sqlFunctions.ExecuteSQLOnGeodatabaseAsync(sqlCmd.ToString());
-            }
-            catch (Exception ex)
+            // Execute the procedure via ADO.NET.
+            if (!await _sqlFunctions.ExecuteStoredProcedureAsync(storedProcedureName, parameters))
             {
-                FileFunctions.WriteLine(_logFile, "Error: Deleting the spatial temporary table: " + ex.Message);
+                FileFunctions.WriteLine(_logFile, "Error executing stored procedure '" + storedProcedureName + "'.");
                 return false;
             }
 

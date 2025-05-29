@@ -1,16 +1,18 @@
 ﻿<UserControl x:Class="DataExtractor.UI.PaneHeader2View"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:controls="clr-namespace:ArcGIS.Desktop.Framework.Controls;assembly=ArcGIS.Desktop.Framework"
-             xmlns:local="clr-namespace:DataExtractor.UI"
-             d:DataContext="{d:DesignInstance Type=local:PaneHeader2ViewModel}"
-             mc:Ignorable="d"
-             d:DesignHeight="600" d:DesignWidth="300">
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ArcGIS.Desktop.Framework.Controls;assembly=ArcGIS.Desktop.Framework"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:DataExtractor.UI"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DataContext="{d:DesignInstance Type=local:PaneHeader2ViewModel}"
+    d:DesignHeight="600"
+    d:DesignWidth="300"
+    mc:Ignorable="d">
 
-    <DockPanel MinWidth="270"
-               Margin="6,6,6,6">
+    <DockPanel
+        MinWidth="270"
+        Margin="6,6,6,6">
 
         <Grid DockPanel.Dock="Top">
             <Grid.RowDefinitions>
@@ -24,7 +26,10 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid Name="GridPartners" Grid.Row="0" Margin="0,0,0,4">
+            <Grid
+                Name="GridPartners"
+                Grid.Row="0"
+                Margin="0,0,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="{Binding PartnersListHeight}" />
@@ -34,34 +39,35 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Name="AsterixPartners"
-                       Content="*"
-                       Grid.Row="0"
-                       Grid.Column="0"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelPartners"
-                       Content="Active Partners:"
-                       Grid.Row="0"
-                       Grid.Column="1"
-                       Margin="0,0,0,2"
-                       Padding="0"
-                       VerticalAlignment="Center" />
-                <ListView Name="ListViewPartners"
-                          Grid.Row="1"
-                          Grid.Column="1"
-                          HorizontalContentAlignment="Stretch"
-                          IsEnabled="{Binding Path=PartnersListEnabled}"
-                          ItemsSource="{Binding Path=PartnersList}"
-                          MouseDoubleClick="ListViewPartners_MouseDoubleClick"
-                          PreviewKeyDown="ListViewPartners_KeyDown"
-                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          SizeChanged="ListViewPartners_SizeChanged"
-                          SelectionChanged="ListViewPartners_SelectionChanged"
-                          SelectedIndex="{Binding Path=PartnersList_SelectedIndex, Mode=OneWayToSource}"
-                          SelectionMode="Extended">
+                <Label Content="*"
+                    Name="AsterixPartners"
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="0,0,0,0"
+                    Padding="0"
+                    VerticalAlignment="Top"
+                    Foreground="Red" />
+                <Label Content="Active Partners:"
+                    Name="LabelPartners"
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="0,0,0,2"
+                    Padding="0"
+                    VerticalAlignment="Center" />
+                <ListView ItemsSource="{Binding Path=PartnersList}"
+                    Name="ListViewPartners"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    HorizontalContentAlignment="Stretch"
+                    IsEnabled="{Binding Path=PartnersListEnabled}"
+                    MouseDoubleClick="ListViewPartners_MouseDoubleClick"
+                    PreviewKeyDown="ListViewPartners_KeyDown"
+                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                    SelectedIndex="{Binding Path=PartnersList_SelectedIndex,
+                                            Mode=OneWayToSource}"
+                    SelectionChanged="ListViewPartners_SelectionChanged"
+                    SelectionMode="Extended"
+                    SizeChanged="ListViewPartners_SizeChanged">
                     <ListView.View>
                         <GridView AllowsColumnReorder="False">
                             <GridView.ColumnHeaderContainerStyle>
@@ -72,7 +78,9 @@
                             <GridViewColumn DisplayMemberBinding="{Binding Path=PartnerName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
+                                        <TextBlock Text="{Binding}"
+                                            Width="Auto"
+                                            HorizontalAlignment="Stretch" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -97,31 +105,34 @@
                     </ListView.ItemContainerStyle>
                 </ListView>
 
-                <Button Name="ButtonPartnersListExpand"
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        Margin="0,0,0,0"
-                        Padding="0"
-                        MinWidth="0"
-                        MinHeight="0"
-                        Width="18"
-                        Height="18"
-                        VerticalAlignment="Bottom"
-                        HorizontalAlignment="Right"
-                        BorderBrush="LightBlue"
-                        Command="{Binding Path=PartnersListExpandCommand}"
-                        IsCancel="False"
-                        IsDefault="False"
-                        Focusable="False"
-                        IsEnabled="{Binding Path=PartnersListEnabled}"
-                        Visibility="{Binding Path=PartnersListExpandButtonVisibility}"
-                        IsTabStop="False"
-                        Style="{DynamicResource Esri_SimpleButton}"
-                        Content="{Binding Path=PartnersListExpandButtonContent}"
-                        ToolTip="Expand/Collapse the partners list" />
+                <Button Content="{Binding Path=PartnersListExpandButtonContent}"
+                    Name="ButtonPartnersListExpand"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Width="18"
+                    Height="18"
+                    MinWidth="0"
+                    MinHeight="0"
+                    Margin="0,0,0,0"
+                    Padding="0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    BorderBrush="LightBlue"
+                    Command="{Binding Path=PartnersListExpandCommand}"
+                    Focusable="False"
+                    IsCancel="False"
+                    IsDefault="False"
+                    IsEnabled="{Binding Path=PartnersListEnabled}"
+                    IsTabStop="False"
+                    Style="{DynamicResource Esri_SimpleButton}"
+                    ToolTip="Expand/Collapse the partners list"
+                    Visibility="{Binding Path=PartnersListExpandButtonVisibility}" />
             </Grid>
 
-            <Grid Name="GridSQLLayers" Grid.Row="1" Margin="0,4,0,4">
+            <Grid
+                Name="GridSQLLayers"
+                Grid.Row="1"
+                Margin="0,4,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="{Binding Path=SQLLayersListHeight}" />
@@ -131,38 +142,40 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Name="AsterixSQLLayers"
-                       Content="*"
-                       Grid.Row="0"
-                       Grid.Column="0"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelSQLLayers"
-                       Content="SQL Layers:"
-                       Grid.Row="0"
-                       Grid.Column="1"
-                       Margin="0,0,0,2"
-                       Padding="0"
-                       VerticalAlignment="Center" />
-                <Label Name="LabelSQLLayersMax"
-                       Grid.Row="0"
-                       Grid.Column="1"
-                       Visibility="Hidden" />
-                <ListView Name="ListViewSQLLayers"
-                          Grid.Row="1"
-                          Grid.Column="1"
-                          HorizontalContentAlignment="Stretch"
-                          IsEnabled="{Binding Path=SQLLayersListEnabled}"
-                          ItemsSource="{Binding Path=SQLLayersList}"
-                          MouseDoubleClick="ListViewSQLLayers_MouseDoubleClick"
-                          PreviewKeyDown="ListViewSQLLayers_KeyDown"
-                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          SizeChanged="ListViewSQLLayers_SizeChanged"
-                          SelectionChanged="ListViewSQLLayers_SelectionChanged"
-                          SelectedIndex="{Binding Path=SQLLayersList_SelectedIndex, Mode=OneWayToSource}"
-                          SelectionMode="Extended">
+                <Label Content="*"
+                    Name="AsterixSQLLayers"
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="0,0,0,0"
+                    Padding="0"
+                    VerticalAlignment="Top"
+                    Foreground="Red" />
+                <Label Content="SQL Layers:"
+                    Name="LabelSQLLayers"
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="0,0,0,2"
+                    Padding="0"
+                    VerticalAlignment="Center" />
+                <Label
+                    Name="LabelSQLLayersMax"
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Visibility="Hidden" />
+                <ListView ItemsSource="{Binding Path=SQLLayersList}"
+                    Name="ListViewSQLLayers"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    HorizontalContentAlignment="Stretch"
+                    IsEnabled="{Binding Path=SQLLayersListEnabled}"
+                    MouseDoubleClick="ListViewSQLLayers_MouseDoubleClick"
+                    PreviewKeyDown="ListViewSQLLayers_KeyDown"
+                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                    SelectedIndex="{Binding Path=SQLLayersList_SelectedIndex,
+                                            Mode=OneWayToSource}"
+                    SelectionChanged="ListViewSQLLayers_SelectionChanged"
+                    SelectionMode="Extended"
+                    SizeChanged="ListViewSQLLayers_SizeChanged">
                     <ListView.View>
                         <GridView AllowsColumnReorder="False">
                             <GridView.ColumnHeaderContainerStyle>
@@ -173,7 +186,9 @@
                             <GridViewColumn DisplayMemberBinding="{Binding Path=NodeName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
+                                        <TextBlock Text="{Binding}"
+                                            Width="Auto"
+                                            HorizontalAlignment="Stretch" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -198,31 +213,34 @@
                     </ListView.ItemContainerStyle>
                 </ListView>
 
-                <Button Name="ButtonSQLLayersListExpand"
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        Margin="0,0,0,0"
-                        Padding="0"
-                        MinWidth="0"
-                        MinHeight="0"
-                        Width="18"
-                        Height="18"
-                        VerticalAlignment="Bottom"
-                        HorizontalAlignment="Right"
-                        BorderBrush="LightBlue"
-                        Command="{Binding Path=SQLLayersListExpandCommand}"
-                        IsCancel="False"
-                        IsDefault="False"
-                        Focusable="False"
-                        IsEnabled="{Binding Path=SQLLayersListEnabled}"
-                        Visibility="{Binding Path=SQLLayersListExpandButtonVisibility}"
-                        IsTabStop="False"
-                        Style="{DynamicResource Esri_SimpleButton}"
-                        Content="{Binding Path=SQLLayersListExpandButtonContent}"
-                        ToolTip="Expand/Collapse the SQL layers list" />
+                <Button Content="{Binding Path=SQLLayersListExpandButtonContent}"
+                    Name="ButtonSQLLayersListExpand"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Width="18"
+                    Height="18"
+                    MinWidth="0"
+                    MinHeight="0"
+                    Margin="0,0,0,0"
+                    Padding="0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    BorderBrush="LightBlue"
+                    Command="{Binding Path=SQLLayersListExpandCommand}"
+                    Focusable="False"
+                    IsCancel="False"
+                    IsDefault="False"
+                    IsEnabled="{Binding Path=SQLLayersListEnabled}"
+                    IsTabStop="False"
+                    Style="{DynamicResource Esri_SimpleButton}"
+                    ToolTip="Expand/Collapse the SQL layers list"
+                    Visibility="{Binding Path=SQLLayersListExpandButtonVisibility}" />
             </Grid>
 
-            <Grid Name="GridMapLayers" Grid.Row="2" Margin="0,4,0,4">
+            <Grid
+                Name="GridMapLayers"
+                Grid.Row="2"
+                Margin="0,4,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="{Binding Path=MapLayersListHeight}" />
@@ -232,34 +250,35 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Name="AsterixMapLayers"
-                       Content="*"
-                       Grid.Row="0"
-                       Grid.Column="0"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelMapLayers"
-                       Content="Map Layers:"
-                       Grid.Row="0"
-                       Grid.Column="1"
-                       Margin="0,0,0,2"
-                       Padding="0"
-                       VerticalAlignment="Center" />
-                <ListView Name="ListViewMapLayers"
-                          Grid.Row="1"
-                          Grid.Column="1"
-                          HorizontalContentAlignment="Stretch"
-                          IsEnabled="{Binding Path=MapLayersListEnabled}"
-                          ItemsSource="{Binding Path=MapLayersList}"
-                          MouseDoubleClick="ListViewMapLayers_MouseDoubleClick"
-                          PreviewKeyDown="ListViewMapLayers_KeyDown"
-                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          SizeChanged="ListViewMapLayers_SizeChanged"
-                          SelectionChanged="ListViewMapLayers_SelectionChanged"
-                          SelectedIndex="{Binding Path=MapLayersList_SelectedIndex, Mode=OneWayToSource}"
-                          SelectionMode="Extended">
+                <Label Content="*"
+                    Name="AsterixMapLayers"
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="0,0,0,0"
+                    Padding="0"
+                    VerticalAlignment="Top"
+                    Foreground="Red" />
+                <Label Content="Map Layers:"
+                    Name="LabelMapLayers"
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="0,0,0,2"
+                    Padding="0"
+                    VerticalAlignment="Center" />
+                <ListView ItemsSource="{Binding Path=MapLayersList}"
+                    Name="ListViewMapLayers"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    HorizontalContentAlignment="Stretch"
+                    IsEnabled="{Binding Path=MapLayersListEnabled}"
+                    MouseDoubleClick="ListViewMapLayers_MouseDoubleClick"
+                    PreviewKeyDown="ListViewMapLayers_KeyDown"
+                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                    SelectedIndex="{Binding Path=MapLayersList_SelectedIndex,
+                                            Mode=OneWayToSource}"
+                    SelectionChanged="ListViewMapLayers_SelectionChanged"
+                    SelectionMode="Extended"
+                    SizeChanged="ListViewMapLayers_SizeChanged">
                     <ListView.View>
                         <GridView AllowsColumnReorder="False">
                             <GridView.ColumnHeaderContainerStyle>
@@ -270,7 +289,9 @@
                             <GridViewColumn DisplayMemberBinding="{Binding Path=NodeName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Stretch" Text="{Binding}" Width="Auto" />
+                                        <TextBlock Text="{Binding}"
+                                            Width="Auto"
+                                            HorizontalAlignment="Stretch" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -295,64 +316,69 @@
                     </ListView.ItemContainerStyle>
                 </ListView>
 
-                <Button Name="ButtonMapLayersListExpand"
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        Margin="0,0,0,0"
-                        Padding="0"
-                        MinWidth="0"
-                        MinHeight="0"
-                        Width="18"
-                        Height="18"
-                        VerticalAlignment="Bottom"
-                        HorizontalAlignment="Right"
-                        BorderBrush="LightBlue"
-                        Command="{Binding Path=MapLayersListExpandCommand}"
-                        IsCancel="False"
-                        IsDefault="False"
-                        Focusable="False"
-                        IsEnabled="{Binding Path=MapLayersListEnabled}"
-                        Visibility="{Binding Path=MapLayersListExpandButtonVisibility}"
-                        IsTabStop="False"
-                        Style="{DynamicResource Esri_SimpleButton}"
-                        Content="{Binding Path=MapLayersListExpandButtonContent}"
-                        ToolTip="Expand/Collapse the Map layers list" />
+                <Button Content="{Binding Path=MapLayersListExpandButtonContent}"
+                    Name="ButtonMapLayersListExpand"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Width="18"
+                    Height="18"
+                    MinWidth="0"
+                    MinHeight="0"
+                    Margin="0,0,0,0"
+                    Padding="0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    BorderBrush="LightBlue"
+                    Command="{Binding Path=MapLayersListExpandCommand}"
+                    Focusable="False"
+                    IsCancel="False"
+                    IsDefault="False"
+                    IsEnabled="{Binding Path=MapLayersListEnabled}"
+                    IsTabStop="False"
+                    Style="{DynamicResource Esri_SimpleButton}"
+                    ToolTip="Expand/Collapse the Map layers list"
+                    Visibility="{Binding Path=MapLayersListExpandButtonVisibility}" />
             </Grid>
 
-            <Grid Name="GridSelectionType" Grid.Row="3" Margin="0,4,0,4" HorizontalAlignment="Stretch">
+            <Grid
+                Name="GridSelectionType"
+                Grid.Row="3"
+                Margin="0,4,0,4"
+                HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="8" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width ="*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Name="AsterixSelectionType"
-                       Content="*"
-                       Grid.Column="0"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       Foreground="Red"
-                       VerticalAlignment="Top" />
-                <Label Name="LabelSelectionType"
-                    Content="SQL Selection Type:"
+                <Label Content="*"
+                    Name="AsterixSelectionType"
+                    Grid.Column="0"
+                    Margin="0,0,0,0"
+                    Padding="0"
+                    VerticalAlignment="Top"
+                    Foreground="Red" />
+                <Label Content="SQL Selection Type:"
+                    Name="LabelSelectionType"
                     Grid.Column="1"
                     Margin="0,0,4,0"
                     Padding="0"
                     VerticalAlignment="Center" />
-                <ComboBox Name="ComboBoxSelectionType"
-                        Grid.Column="2"
-                        Margin="0,0,0,0"
-                        IsEditable="False"
-                        IsReadOnly="True"
-                        ToolTip="Select type of selection"
-                        IsEnabled="{Binding Path=SelectionTypeListEnabled}"
-                        ItemsSource="{Binding Path=SelectionTypeList,
-                                            Mode=OneWay,
-                                            UpdateSourceTrigger=PropertyChanged}"
-                        SelectedValue="{Binding Path=SelectionType}" />
+                <ComboBox ItemsSource="{Binding Path=SelectionTypeList, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                    Name="ComboBoxSelectionType"
+                    Grid.Column="2"
+                    Margin="0,0,0,0"
+                    IsEditable="False"
+                    IsEnabled="{Binding Path=SelectionTypeListEnabled}"
+                    IsReadOnly="True"
+                    SelectedValue="{Binding Path=SelectionType}"
+                    ToolTip="Select type of selection" />
             </Grid>
 
-            <Grid Name="GridOptions" Grid.Row="4" Margin="0,4,0,4">
+            <Grid
+                Name="GridOptions"
+                Grid.Row="4"
+                Margin="0,4,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -369,123 +395,137 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <CheckBox Name="CheckBoxUseCentroids"
-                          Grid.Row="0"
-                          Grid.Column="1"
-                          Margin="0,4,0,4"
-                          Padding="0"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          Style="{DynamicResource Esri_CheckboxToggleSwitch}"
-                          ToolTip="Select polygons by centroids?"
-                          Visibility="{Binding Path=UseCentroidsVisibility}"
-                          IsChecked="{Binding Path=UseCentroids, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          IsEnabled="{Binding Path=OptionsEnabled}" />
-                <Label Name="LabelUseCentroids"
-                       Content="Use Centroids?"
-                       Grid.Row="0"
-                       Grid.Column="2"
-                       Margin="0,4,0,4"
-                       Padding="0"
-                       ToolTip="Select polygons by centroids?"
-                       VerticalAlignment="Center"
-                       Visibility="{Binding Path=UseCentroidsVisibility}" />
+                <CheckBox
+                    Name="CheckBoxUseCentroids"
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="0,4,0,4"
+                    Padding="0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    IsChecked="{Binding Path=UseCentroids,
+                                        Mode=TwoWay,
+                                        UpdateSourceTrigger=PropertyChanged}"
+                    IsEnabled="{Binding Path=OptionsEnabled}"
+                    Style="{DynamicResource Esri_CheckboxToggleSwitch}"
+                    ToolTip="Select polygons by centroids?"
+                    Visibility="{Binding Path=UseCentroidsVisibility}" />
+                <Label Content="Use Centroids?"
+                    Name="LabelUseCentroids"
+                    Grid.Row="0"
+                    Grid.Column="2"
+                    Margin="0,4,0,4"
+                    Padding="0"
+                    VerticalAlignment="Center"
+                    ToolTip="Select polygons by centroids?"
+                    Visibility="{Binding Path=UseCentroidsVisibility}" />
 
-                <CheckBox Name="CheckBoxApplyExclusionClause"
-                          Grid.Row="0"
-                          Grid.Column="5"
-                          Margin="0,4,0,4"
-                          Padding="0"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          Style="{DynamicResource Esri_CheckboxToggleSwitch}"
-                          ToolTip="Apply the additional exclusion clause?"
-                          Visibility="{Binding Path=ApplyExclusionClauseVisibility}"
-                          IsChecked="{Binding Path=ApplyExclusionClause, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          IsEnabled="{Binding Path=OptionsEnabled}" />
-                <Label Name="LabelApplyExclusionClause"
-                       Content="Apply Exclusion Clause?"
-                       Grid.Row="0"
-                       Grid.Column="6"
-                       Margin="0,4,4,4"
-                       Padding="0"
-                       ToolTip="Apply the additional exclusion clause?"
-                       VerticalAlignment="Center"
-                       Visibility="{Binding Path=ApplyExclusionClauseVisibility}" />
+                <CheckBox
+                    Name="CheckBoxApplyExclusionClause"
+                    Grid.Row="0"
+                    Grid.Column="5"
+                    Margin="0,4,0,4"
+                    Padding="0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    IsChecked="{Binding Path=ApplyExclusionClause,
+                                        Mode=TwoWay,
+                                        UpdateSourceTrigger=PropertyChanged}"
+                    IsEnabled="{Binding Path=OptionsEnabled}"
+                    Style="{DynamicResource Esri_CheckboxToggleSwitch}"
+                    ToolTip="Apply the additional exclusion clause?"
+                    Visibility="{Binding Path=ApplyExclusionClauseVisibility}" />
+                <Label Content="Apply Exclusion Clause?"
+                    Name="LabelApplyExclusionClause"
+                    Grid.Row="0"
+                    Grid.Column="6"
+                    Margin="0,4,4,4"
+                    Padding="0"
+                    VerticalAlignment="Center"
+                    ToolTip="Apply the additional exclusion clause?"
+                    Visibility="{Binding Path=ApplyExclusionClauseVisibility}" />
 
-                <CheckBox Name="CheckBoxUploadToServer"
-                          Grid.Row="1"
-                          Grid.Column="1"
-                          Margin="0,4,0,4"
-                          Padding="0"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          Style="{DynamicResource Esri_CheckboxToggleSwitch}"
-                          ToolTip="Upload the partner table to the server when the process starts?"
-                          Visibility="{Binding Path=UploadToServerVisibility}"
-                          IsChecked="{Binding Path=UploadToServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          IsEnabled="{Binding Path=OptionsEnabled}" />
-                <Label Name="LabelUploadToServer"
-                       Content="Upload to server?"
-                       Grid.Row="1"
-                       Grid.Column="2"
-                       Margin="0,4,0,4"
-                       Padding="0"
-                       ToolTip="Upload the partner table to the server when the process starts?"
-                       VerticalAlignment="Center"
-                       Visibility="{Binding Path=UploadToServerVisibility}" />
+                <CheckBox
+                    Name="CheckBoxUploadToServer"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Margin="0,4,0,4"
+                    Padding="0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    IsChecked="{Binding Path=UploadToServer,
+                                        Mode=TwoWay,
+                                        UpdateSourceTrigger=PropertyChanged}"
+                    IsEnabled="{Binding Path=OptionsEnabled}"
+                    Style="{DynamicResource Esri_CheckboxToggleSwitch}"
+                    ToolTip="Upload the partner table to the server when the process starts?"
+                    Visibility="{Binding Path=UploadToServerVisibility}" />
+                <Label Content="Upload to server?"
+                    Name="LabelUploadToServer"
+                    Grid.Row="1"
+                    Grid.Column="2"
+                    Margin="0,4,0,4"
+                    Padding="0"
+                    VerticalAlignment="Center"
+                    ToolTip="Upload the partner table to the server when the process starts?"
+                    Visibility="{Binding Path=UploadToServerVisibility}" />
 
-                <CheckBox Name="CheckBoxClearLogFile"
-                          Grid.Row="2"
-                          Grid.Column="1"
-                          Margin="0,4,0,0"
-                          Padding="0"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          Style="{DynamicResource Esri_CheckboxToggleSwitch}"
-                          ToolTip="Clear the log file before the process starts?"
-                          IsChecked="{Binding Path=ClearLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          IsEnabled="{Binding Path=OptionsEnabled}" />
-                <Label Name="LabelClearLogFile"
-                       Content="Clear log file?"
-                       Grid.Row="2"
-                       Grid.Column="2"
-                       Margin="0,4,0,0"
-                       Padding="0"
-                       ToolTip="Clear the log file before the process starts?"
-                       VerticalAlignment="Center" />
+                <CheckBox
+                    Name="CheckBoxClearLogFile"
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Margin="0,4,0,0"
+                    Padding="0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    IsChecked="{Binding Path=ClearLogFile,
+                                        Mode=TwoWay,
+                                        UpdateSourceTrigger=PropertyChanged}"
+                    IsEnabled="{Binding Path=OptionsEnabled}"
+                    Style="{DynamicResource Esri_CheckboxToggleSwitch}"
+                    ToolTip="Clear the log file before the process starts?" />
+                <Label Content="Clear log file?"
+                    Name="LabelClearLogFile"
+                    Grid.Row="2"
+                    Grid.Column="2"
+                    Margin="0,4,0,0"
+                    Padding="0"
+                    VerticalAlignment="Center"
+                    ToolTip="Clear the log file before the process starts?" />
 
-                <CheckBox Name="CheckBoxOpenLogFile"
-                          Grid.Row="2"
-                          Grid.Column="5"
-                          Margin="0,4,0,0"
-                          Padding="0"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          Style="{DynamicResource Esri_CheckboxToggleSwitch}"
-                          ToolTip="Open the log file when the process is complete?"
-                          IsChecked="{Binding Path=OpenLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          IsEnabled="{Binding Path=OptionsEnabled}" />
-                <Label Name="LabelOpenLogFile"
-                       Content="Open log file?"
-                       Grid.Row="2"
-                       Grid.Column="6"
-                       Margin="0,4,4,0"
-                       Padding="0"
-                       ToolTip="Open the log file when the process is complete?"
-                       VerticalAlignment="Center" />
+                <CheckBox
+                    Name="CheckBoxOpenLogFile"
+                    Grid.Row="2"
+                    Grid.Column="5"
+                    Margin="0,4,0,0"
+                    Padding="0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    IsChecked="{Binding Path=OpenLogFile,
+                                        Mode=TwoWay,
+                                        UpdateSourceTrigger=PropertyChanged}"
+                    IsEnabled="{Binding Path=OptionsEnabled}"
+                    Style="{DynamicResource Esri_CheckboxToggleSwitch}"
+                    ToolTip="Open the log file when the process is complete?" />
+                <Label Content="Open log file?"
+                    Name="LabelOpenLogFile"
+                    Grid.Row="2"
+                    Grid.Column="6"
+                    Margin="0,4,4,0"
+                    Padding="0"
+                    VerticalAlignment="Center"
+                    ToolTip="Open the log file when the process is complete?" />
             </Grid>
 
-            <controls:MessageLabel
+            <controls:MessageLabel Content="{Binding Path=Message}"
                 Grid.Row="10"
-                Margin="0,8,0,0"
                 Height="24"
+                Margin="0,8,0,0"
+                CanClose="False"
                 MessageType="{Binding Path=MessageLevel}"
                 Severity="High"
                 ShowHelp="False"
-                Content="{Binding Path=Message}"
                 ToolTip="{Binding Path=Message}"
-                CanClose="False"
                 Visibility="{Binding Path=HasMessage}" />
         </Grid>
     </DockPanel>
