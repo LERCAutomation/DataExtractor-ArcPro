@@ -46,7 +46,7 @@
             <controls:BurgerButton DockPanel.Dock="Right"
 				      ToolTip="Options"
 				      PopupMenu="{Binding BurgerButtonPopupMenu}"
-                      HorizontalAlignment="Right" />            -->
+                      HorizontalAlignment="Right" />-->
             <ListBox ItemsSource="{Binding PrimaryMenuList}"
                 x:Name="primaryNavigator"
                 DockPanel.Dock="Left"

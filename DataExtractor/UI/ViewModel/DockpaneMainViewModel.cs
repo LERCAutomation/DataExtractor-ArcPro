@@ -4,7 +4,7 @@
 //
 // Copyright © 2024-25 Andy Foy Consulting.
 //
-// This file is part of DataTools suite of programs..
+// This file is part of DataTools suite of programs.
 //
 // DataTools are free software: you can redistribute it and/or modify
 // them under the terms of the GNU General Public License as published by
@@ -63,16 +63,17 @@ namespace DataExtractor.UI
         /// </summary>
         protected DockpaneMainViewModel()
         {
-            InitializeComponent();
+            InitializeComponentAsync();
         }
 
         /// <summary>
         /// Initialise the DockPane components.
         /// </summary>
-        public async void InitializeComponent()
+        public async void InitializeComponentAsync()
         {
             _dockPane = this;
             _initialised = false;
+            _initialising = true;
             _inError = false;
 
             // Setup the tab controls.
@@ -109,6 +110,7 @@ namespace DataExtractor.UI
 
             // Indicate that the dockpane has been initialised.
             _initialised = true;
+            _initialised = false;
         }
 
         /// <summary>
@@ -125,8 +127,8 @@ namespace DataExtractor.UI
             DockpaneMainViewModel vm = pane as DockpaneMainViewModel;
 
             // If the ViewModel is uninitialised then initialise it.
-            if (!vm.Initialised)
-                vm.InitializeComponent();
+            if ((!vm.Initialised) && (!vm.Initialising))
+                vm.InitializeComponentAsync();
 
             // If the ViewModel is in error then don't show the dockpane.
             if (vm.InError)
@@ -305,6 +307,20 @@ namespace DataExtractor.UI
             set
             {
                 _initialised = value;
+            }
+        }
+
+        private bool _initialising = false;
+
+        /// <summary>
+        /// Is the DockPane initialising?
+        /// </summary>
+        public bool Initialising
+        {
+            get { return _initialising; }
+            set
+            {
+                _initialising = value;
             }
         }
 

@@ -4,7 +4,7 @@
 //
 // Copyright © 2024-25 Andy Foy Consulting.
 //
-// This file is part of DataTools suite of programs..
+// This file is part of DataTools suite of programs.
 //
 // DataTools are free software: you can redistribute it and/or modify
 // them under the terms of the GNU General Public License as published by

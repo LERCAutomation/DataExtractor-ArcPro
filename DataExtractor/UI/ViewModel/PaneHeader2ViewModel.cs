@@ -61,8 +61,6 @@ namespace DataExtractor.UI
 
         private readonly DockpaneMainViewModel _dockPane;
 
-        private string _sdeFile;
-
         private bool _extractErrors;
 
         private string _logFilePath;
@@ -75,13 +73,14 @@ namespace DataExtractor.UI
         private string _csvFolder;
         private string _txtFolder;
 
+        // SQL table fields.
+        private string _sdeFile;
+
         private string _defaultSchema;
         private string _targetSchema;
         private string _objectsTable;
 
-        // SQL table fields.
         private string _spatialStoredProcedure;
-
         private string _subsetStoredProcedure;
         private string _clearSpatialStoredProcedure;
         private string _includeWildcard;
@@ -1141,6 +1140,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Set all of the form fields to their default values.
         /// </summary>
+        /// <param name="reset"></param>
         /// <returns></returns>
         public async Task ResetFormAsync(bool reset)
         {
@@ -2892,8 +2892,8 @@ namespace DataExtractor.UI
 
             // Initialize result counters.
             _pointCount = _polyCount = _tableCount = 0;
-            long maxCount = 0;
-            long rowLength = 0;
+            long maxCount;
+            long rowLength;
 
             // Construct output table names.
             string pointFC = $"{schema}.{targetTable}_point";

@@ -28,38 +28,64 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 	<value>H:\Data\Thames\ExtractorExtracts\Logfiles</value>
   </LogFilePath>
 
-  <!-- The location of the SDE file that specifies which SQL Server database to connect to. -->
-  <SDEFile>
-	<value>D:\Data Tools\DataExtractor\Config\NBNExtract.sde</value>
-  </SDEFile>
+  <!-- The connection string for ADO connection (to allow stored procedures to be run with parameters) -->
+  <DbConnectionString>
+	<value>Data Source=ACEY\SQLSERVER2017;Initial Catalog=NBNExtract;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;</value>
+  </DbConnectionString>
+
+  <!-- The timeout (seconds) for the maximum number of seconds that the stored procedures are allowed to run. -->
+  <!-- If you are experiencing timeout errors while running the tool, increase this number -->
+  <!-- Default is 60 seconds -->
+  <DbTimeoutSeconds>
+  	<value>60</value>
+  </DbTimeoutSeconds>
+
+  <!-- The existing file location where the SDE file will be found/saved. -->
+  <SDEFilePath>
+	<value>D:\Data Tools\DataExtractor\Config</value>
+  </SDEFilePath>
+
+  <!-- The name of the SDE file that specifies which SQL Server database to connect to.
+       Leave blank to use the userid. -->
+  <SDEFileName>
+	<value></value>
+  </SDEFileName>
+
+  <!-- The SQL Server database instance to connect to.
+       Leave blank if SDE file name specified above. -->
+  <DbInstance>
+	<value>ACEY\SQLSERVER2017</value>
+  </DbInstance>
+
+  <!-- The name of the SQL Server database to connect to.
+       Leave blank if SDE file name specified above. -->
+  <DbName>
+	<value>NBNExtract</value>
+  </DbName>
 
   <!-- The stored procedure to execute spatial selection in SQL Server. -->
   <SpatialStoredProcedure>
-	<value>AFSelectSppRecords</value>
+	<value>AFSelectSppSpatial_ArcPro</value>
   </SpatialStoredProcedure>
 
   <!-- The stored procedure to execute non-spatial subset selection in SQL Server. -->
   <SubsetStoredProcedure>
-	<value>AFSelectSppSubset2</value>
+	<value>AFSelectSppSubset_ArcPro</value>
   </SubsetStoredProcedure>
 
-  <!-- The stored procedure to clear selection in SQL Server. -->
+  <!-- The stored procedure to clear selections in SQL Server. -->
   <ClearSpatialStoredProcedure>
-	<value>HLClearSpatialSubset</value>
+	<value>AFClearSpatialSubset_ArcPro</value>
   </ClearSpatialStoredProcedure>
 
-  <!-- The stored procedure to clear selection in SQL Server. -->
-  <ClearSubsetStoredProcedure>
-	<value>HLClearSppSubset</value>
-  </ClearSubsetStoredProcedure>
   <!-- The existing file location under which all partner sub-folders will be created -->
   <DefaultPath>
-	<value>H:\Data\Thames\ExtractorExtracts</value>
+	<value>D:\Data Tools\DataExtractor\Extracts\Partners\DataExchange_%qq%_%ffff%</value>
   </DefaultPath>
 
   <!-- The output sub-folder in which each partner's file will be created. -->
   <PartnerFolder>
-	<value>%partner%_DataExchange_%qq%_%ffff%</value>
+	<value>%partner%_GiGL_DataExchange_%qq%_%ffff%\Data</value>
   </PartnerFolder>
 
   <!-- The output filegeodatabase into which GDB files will be saved. -->
@@ -87,13 +113,18 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 	<value>dbo</value>
   </DatabaseSchema>
 
+  <!-- The table used to list the spatial objects in the SQL Server database. -->
+  <ObjectsTable>
+	<value>Spatial_Objects</value>
+  </ObjectsTable>
+
   <!-- the Include wildcard for table names to list all the species tables in SQL Server that can be selected
        by the user to extract from. -->
   <IncludeWildcard>
 	<value>Spp_PointPoly_*Names|Spp_Poly_*Names</value>
   </IncludeWildcard>
 
-  <!-- the Exclude wildcard for table names that should NOT be used for species tables in SQL Server that can be selected
+  <!-- The Exclude wildcard for table names that should NOT be used for species tables in SQL Server that can be selected
        by the user to extract from. -->
   <ExcludeWildcard>
 	<value>Spp_*_*_*</value>
@@ -112,7 +143,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   <!-- The name of the column in the partner GIS layer containing the partner name passed to SQL
        Server by the tool to use as the partner's boundary for selecting the records. -->
   <PartnerColumn>
-	<value>PartnerName</value>
+	<value>Partner</value>
   </PartnerColumn>
 
   <!-- The name of the column in the partner GIS layer containing the abbreviated name passed to
@@ -161,7 +192,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   <!-- The name of the column in the partner GIS layer indicating which Map files should be
   		created for each partner -->
   <MapFilesColumn>
-  	<value>MapFiles</value>
+	<value>MapFiles</value>
   </MapFilesColumn>
 
   <!-- The name of the column in the partner GIS layer indicating which survey tags, if any
@@ -177,7 +208,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 
   <!-- The where clause to determine which partners to display. -->
   <PartnerClause>
-	<value>Active = "Y"</value>
+	<value>Active = 'Y'</value>
   </PartnerClause>
 
   <!-- The options for the selection types. -->
@@ -207,7 +238,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 
   <!-- The default value for uploading the partner table to the server. Leave blank to hide option in dialog. -->
   <DefaultUploadToServer>
-	<value>Yes</value>
+  	<value>Yes</value>
   </DefaultUploadToServer>
 
   <!-- By default, should an existing log file be cleared? -->

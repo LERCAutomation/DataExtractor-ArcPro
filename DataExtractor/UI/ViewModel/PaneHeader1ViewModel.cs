@@ -4,7 +4,7 @@
 //
 // Copyright © 2024-25 Andy Foy Consulting.
 //
-// This file is part of DataTools suite of programs..
+// This file is part of DataTools suite of programs.
 //
 // DataTools are free software: you can redistribute it and/or modify
 // them under the terms of the GNU General Public License as published by
@@ -87,6 +87,10 @@ namespace DataExtractor.UI
             // file will be used.
             ToolConfig toolConfig = new(_xmlFolder, _displayName, false);
 
+            // If the user didn't select a folder when prompted.
+            if (toolConfig.SelectCancelled)
+                return;
+
             // If the tool config file can't be found or hasn't been loaded.
             if ((!toolConfig.XMLFound) || (!toolConfig.XMLLoaded))
             {
@@ -99,6 +103,7 @@ namespace DataExtractor.UI
                 OnPropertyChanged(nameof(AvailableXMLFiles));
                 OnPropertyChanged(nameof(SelectedXMLProfile));
                 OnPropertyChanged(nameof(CanSelectXMLPath));
+                OnPropertyChanged(nameof(CanSelectXMLProfile));
                 OnPropertyChanged(nameof(CanLoadProfile));
 
                 return;
@@ -166,6 +171,7 @@ namespace DataExtractor.UI
             OnPropertyChanged(nameof(AvailableXMLFiles));
             OnPropertyChanged(nameof(SelectedXMLProfile));
             OnPropertyChanged(nameof(CanSelectXMLPath));
+            OnPropertyChanged(nameof(CanSelectXMLProfile));
             OnPropertyChanged(nameof(CanLoadProfile));
 
             // If the XML config file has been set (and it exists) then load it.
@@ -415,8 +421,7 @@ namespace DataExtractor.UI
             // Open the tool XML config file and determine if the user will
             // choose which tool XML config file to load or if the default
             // file will be used.
-            ToolConfig toolConfig;
-            toolConfig = new(_xmlFolder, _displayName, true);
+            ToolConfig toolConfig = new(_xmlFolder, _displayName, true);
 
             // If the user didn't select a folder when prompted.
             if (toolConfig.SelectCancelled)
@@ -434,6 +439,7 @@ namespace DataExtractor.UI
                 OnPropertyChanged(nameof(AvailableXMLFiles));
                 OnPropertyChanged(nameof(SelectedXMLProfile));
                 OnPropertyChanged(nameof(CanSelectXMLPath));
+                OnPropertyChanged(nameof(CanSelectXMLProfile));
                 OnPropertyChanged(nameof(CanLoadProfile));
 
                 return;
@@ -511,6 +517,7 @@ namespace DataExtractor.UI
             OnPropertyChanged(nameof(AvailableXMLFiles));
             OnPropertyChanged(nameof(SelectedXMLProfile));
             OnPropertyChanged(nameof(CanSelectXMLPath));
+            OnPropertyChanged(nameof(CanSelectXMLProfile));
             OnPropertyChanged(nameof(CanLoadProfile));
 
             // If the XML config file has been set (and it exists) then load it.
