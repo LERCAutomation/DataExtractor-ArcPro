@@ -543,10 +543,6 @@ namespace DataExtractor.UI
                 }
             }
 
-            // If userid is temp.
-            if (_userID == "Temp")
-                FileFunctions.WriteLine(_logFile, "User ID not found. User ID used will be 'Temp'.");
-
             // Set process status to blank to mimick process is running.
             _dockPane.ProcessStatus = "";
 
@@ -1086,9 +1082,10 @@ namespace DataExtractor.UI
             if (string.IsNullOrEmpty(_userID))
                 _userID = "Temp";
 
-            // If the SDE file name is not set then set the name and target schema
-            // (otherwise the target schema will be the default schema).
-            if (string.IsNullOrEmpty(sdeFileName))
+            // If the SDE file name is not set or not found then set the
+            // name and target schema (otherwise the target schema will
+            // be the default schema).
+            if ((string.IsNullOrEmpty(sdeFileName)) || (!FileFunctions.FileExists(sdeFilePath + @"\" + sdeFileName)))
             {
                 sdeFileName = serverName + "_" + databaseName + "_" + _userID + ".sde";
                 _targetSchema = _userID;
@@ -1627,6 +1624,14 @@ namespace DataExtractor.UI
             FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
             FileFunctions.WriteLine(_logFile, "Process started!");
             FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
+
+            // If userid is temp.
+            if (_userID == "Temp")
+                FileFunctions.WriteLine(_logFile, "User ID not found. User ID used will be 'Temp'.");
+
+            // If exclusion clause is being applied.
+            if (applyExclusionClause && !String.IsNullOrEmpty(_exclusionClause))
+                FileFunctions.WriteLine(_logFile, "Exclusion clause will be applied.");
 
             // Clear the partner features selection.
             await _mapFunctions.ClearLayerSelectionAsync(_partnerTable);
