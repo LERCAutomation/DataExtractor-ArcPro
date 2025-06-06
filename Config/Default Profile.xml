@@ -48,7 +48,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   <!-- The name of the SDE file that specifies which SQL Server database to connect to.
        Leave blank to use the userid. -->
   <SDEFileName>
-	<value></value>
+	<value>NBNExtract.sde</value>
   </SDEFileName>
 
   <!-- The SQL Server database instance to connect to.

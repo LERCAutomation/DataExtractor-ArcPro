@@ -224,7 +224,7 @@ namespace DataExtractor.UI
             get
             {
                 return ((!_dockPane.ExtractRunning)
-                    && (!_dockPane.FormListsLoading));
+                    && (!_dockPane.FormLoading));
             }
         }
 
@@ -269,7 +269,7 @@ namespace DataExtractor.UI
             get
             {
                 return ((!_dockPane.ExtractRunning)
-                    && (!_dockPane.FormListsLoading)
+                    && (!_dockPane.FormLoading)
                     && (!string.IsNullOrEmpty(XMLFolder)));
             }
         }
@@ -321,18 +321,18 @@ namespace DataExtractor.UI
             // Load the selected profile.
             LoadXMLProfile(xmlConfigFile, true);
 
-            // Reset the search pane if the XML wasn't loaded.
+            // Reset the extract pane if the XML wasn't loaded.
             if (!XMLLoaded)
             {
-                // Reset the search pane.
+                // Reset the extract pane.
                 _dockPane.ClearExtractPane();
                 return;
             }
 
-            // Initialise the search pane.
+            // Initialise the extract pane.
             if (await _dockPane.InitialiseExtractPaneAsync(true))
             {
-                // Select the search pane.
+                // Select the extract pane.
                 _dockPane.SelectedPanelHeaderIndex = 1;
             }
         }
@@ -347,7 +347,7 @@ namespace DataExtractor.UI
             {
                 return ((!string.IsNullOrEmpty(SelectedXMLProfile))
                     && (!_dockPane.ExtractRunning)
-                    && (!_dockPane.FormListsLoading));
+                    && (!_dockPane.FormLoading));
             }
         }
 
@@ -600,7 +600,7 @@ namespace DataExtractor.UI
 
         /// <summary>
         /// Refresh the buttons on the pane (before/after the
-        /// search runs from the second pane).
+        /// extract runs from the second pane).
         /// </summary>
         public void RefreshButtons()
         {

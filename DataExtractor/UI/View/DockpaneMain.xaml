@@ -164,7 +164,7 @@
                 </StackPanel>
                 <Button.ToolTip>
                     <ToolTip>
-                        <TextBlock Text="Run the search"
+                        <TextBlock Text="Run the extract"
                             FontWeight="Normal" />
                     </ToolTip>
                 </Button.ToolTip>

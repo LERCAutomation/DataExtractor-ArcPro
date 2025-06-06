@@ -338,15 +338,15 @@ namespace DataExtractor.UI
             }
         }
 
-        private bool _formListsLoading;
+        private bool _formLoading;
 
         /// <summary>
-        /// Are the form lists loading?
+        /// Is the form loading?
         /// </summary>
-        public bool FormListsLoading
+        public bool FormLoading
         {
-            get { return _formListsLoading; }
-            set { _formListsLoading = value; }
+            get { return _formLoading; }
+            set { _formLoading = value; }
         }
 
         private bool _extractRunning;

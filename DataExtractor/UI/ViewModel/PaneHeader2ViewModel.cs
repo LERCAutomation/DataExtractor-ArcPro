@@ -37,6 +37,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using MessageBox = ArcGIS.Desktop.Framework.Dialogs.MessageBox;
 
 namespace DataExtractor.UI
@@ -1082,49 +1083,83 @@ namespace DataExtractor.UI
             if (string.IsNullOrEmpty(_userID))
                 _userID = "Temp";
 
-            // If the SDE file name is not set or not found then set the
-            // name and target schema (otherwise the target schema will
-            // be the default schema).
-            if ((string.IsNullOrEmpty(sdeFileName)) || (!FileFunctions.FileExists(sdeFilePath + @"\" + sdeFileName)))
-            {
-                sdeFileName = serverName + "_" + databaseName + "_" + _userID + ".sde";
-                _targetSchema = _userID;
-            }
-
             // Set the SDE file name.
             _sdeFile = sdeFilePath + @"\" + sdeFileName;
 
-            // Check if the SDE file exists.
-            if (!FileFunctions.FileExists(_sdeFile))
-            {
-                // Create the SDE file.
-                if (!await SQLServerFunctions.CreateSDEConnectionAsync(sdeFilePath, sdeFileName, dbInstance, dbName))
-                {
-                    if (message)
-                        MessageBox.Show("SDE connection file '" + _sdeFile + "' not created.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
-
-                    return false;
-                }
-            }
-
-            // Open the SQL Server geodatabase.
-            try
-            {
-                if (!await SQLServerFunctions.CheckSDEConnectionAsync(_sdeFile))
-                {
-                    if (message)
-                        MessageBox.Show("SDE connection file '" + _sdeFile + "' not valid.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
-
-                    return false;
-                }
-            }
-            catch (Exception)
+            // If the SDE file name is not found then exit.
+            if ((!string.IsNullOrWhiteSpace(sdeFileName)) && (!FileFunctions.FileExists(sdeFilePath + @"\" + sdeFileName)))
             {
                 if (message)
-                    MessageBox.Show("SDE connection file '" + _sdeFile + "' not valid.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("SDE connection file '" + _sdeFile + "' not found.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
 
                 return false;
             }
+
+            // If the SDE file name is not set then set the name.
+            if (string.IsNullOrWhiteSpace(sdeFileName))
+            {
+                sdeFileName = serverName + "_" + databaseName + "_" + _userID + ".sde";
+                _sdeFile = sdeFilePath + @"\" + sdeFileName;
+
+                // No need to change the target schema to the userid as ArcGIS Pro
+                // will set the the target schema based on the SDE file anyway.
+                //_targetSchema = _userID;
+            }
+
+            _dockPane.FormLoading = true;
+            _dockPane.ProgressUpdate("Establishing connection...");
+
+            // Check if the SDE file exists.
+            bool sdeFileExists = FileFunctions.FileExists(_sdeFile);
+            if (!sdeFileExists)
+            {
+                // Create the SDE file.
+                if (await SQLServerFunctions.CreateSDEConnectionAsync(sdeFilePath, sdeFileName, dbInstance, dbName))
+                {
+                    sdeFileExists = true;
+                }
+                else
+                {
+                    if (message)
+                        MessageBox.Show("SDE connection file '" + _sdeFile + "' not created.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+
+            // Check the connection works.
+            bool sdeFileValid = false;
+            if (sdeFileExists)
+            {
+                try
+                {
+                    if (await SQLServerFunctions.CheckSDEConnectionAsync(_sdeFile))
+                    {
+                        sdeFileValid = true;
+                    }
+                    else
+                    {
+                        if (message)
+                            MessageBox.Show("SDE connection file '" + _sdeFile + "' not valid.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                catch (Exception)
+                {
+                    if (message)
+                        MessageBox.Show("SDE connection file '" + _sdeFile + "' not valid.", "DataExtractor", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+
+            // Hide progress update.
+            _dockPane.ProgressUpdate(null, -1, -1);
+
+            // Indicate the connection has been established.
+            _dockPane.FormLoading = false;
+
+            // Force UI update
+            //await Task.Delay(1);
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
+
+            if (!sdeFileValid)
+                return false;
 
             // Create a new SQL functions object.
             string dbConnectionString = _toolConfig.DbConnectionString;
@@ -1212,11 +1247,15 @@ namespace DataExtractor.UI
             _sqlLayersListHeight = Double.NaN;
             _mapLayersListHeight = Double.NaN;
 
-            _dockPane.FormListsLoading = true;
+            _dockPane.FormLoading = true;
             if (reset)
                 _dockPane.ProgressUpdate("Refreshing lists...");
             else
                 _dockPane.ProgressUpdate("Loading lists...");
+
+            // Force UI update
+            //await Task.Delay(1);
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
 
             // Clear any messages.
             ClearMessage();
@@ -1251,8 +1290,8 @@ namespace DataExtractor.UI
             // Hide progress update.
             _dockPane.ProgressUpdate(null, -1, -1);
 
-            // Indicate the refresh has finished.
-            _dockPane.FormListsLoading = false;
+            // Indicate the load has finished.
+            _dockPane.FormLoading = false;
 
             // Update the fields and buttons in the form.
             UpdateFormControls();
