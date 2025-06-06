@@ -11,7 +11,7 @@
 		<Image>Images\AddinDesktop32.png</Image>
 		<Author>Andy Foy, andy@andyfoyconsulting.co.uk</Author>
 		<Company>Andy Foy Consulting</Company>
-		<Date>06/06/2025 11:02:00 AM</Date>
+		<Date>06/06/2025 11:36:00 AM</Date>
 		<Subject>Framework, Geodatabase</Subject>
 		<!-- Note subject can be one or more of these topics:
                     Content, Framework, Editing, Geodatabase, Geometry, Geoprocessing, Layouts, Map Authoring, Map Exploration -->
@@ -35,7 +35,7 @@
 						smallImage="pack://application:,,,/DataExtractor;component/Images/DataExtractor16.png"
 						largeImage="pack://application:,,,/DataExtractor;component/Images/DataExtractor32.png">
 					<tooltip heading="Data Extractor tool"
-							 image="pack://application:,,,/DataExtractor;component/Images/DataExtractor16.png">
+							 image="pack://application:,,,/DataExtractor;component/Images/DataExtractor32.png">
 						Automate spatial data extracts.<disabledText />
 					</tooltip>
 				</button>
