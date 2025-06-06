@@ -216,7 +216,7 @@ namespace DataTools
 
         #region Members
 
-        private bool _xmlFound;
+        private readonly bool _xmlFound;
 
         /// <summary>
         /// Has the XML file been found.
@@ -229,7 +229,7 @@ namespace DataTools
             }
         }
 
-        private bool _xmlLoaded;
+        private readonly bool _xmlLoaded;
 
         /// <summary>
         /// Has the XML file been loaded.

@@ -684,7 +684,7 @@ namespace DataExtractor.UI
         /// </summary>
         /// <param name="param"></param>
         /// <remarks></remarks>
-        private async void RunCommandClick(object param)
+        private void RunCommandClick(object param)
         {
             // Run the extract (but don't wait).
             _paneH2VM.RunExtractAsync();
