@@ -1226,8 +1226,8 @@ namespace DataExtractor.UI
             // Pause map.
             PauseMap = _toolConfig.PauseMap;
 
-            // Reload the list of partners, SQL tables, and open GIS map layers (don't wait for the response).
-            LoadListsAsync(reset, true);
+            // Reload the list of partners, SQL tables, and open GIS map layers.
+            await LoadListsAsync(reset, true);
         }
 
         /// <summary>
