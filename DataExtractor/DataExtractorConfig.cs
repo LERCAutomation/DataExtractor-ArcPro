@@ -19,6 +19,8 @@
 // You should have received a copy of the GNU General Public License
 // along with with program.  If not, see <http://www.gnu.org/licenses/>.
 
+using ArcGIS.Desktop.Internal.KnowledgeGraph;
+using ArcGIS.Desktop.Mapping;
 using DataExtractor.UI;
 using System;
 using System.Collections.Generic;
@@ -336,18 +338,10 @@ namespace DataExtractor
             }
 
             // Whether the map processing should be paused during processing?
-            try
-            {
-                _pauseMap = false;
-                rawText = _xmlDataExtractor["PauseMap"].InnerText;
-                if (rawText.ToLower(System.Globalization.CultureInfo.CurrentCulture) is "yes" or "y")
-                    _pauseMap = true;
-            }
-            catch
-            {
-                // This is an optional node
-                _pauseMap = false;
-            }
+            rawText = _xmlDataExtractor?["PauseMap"]?.InnerText?.Trim();
+            _pauseMap =
+                string.Equals(rawText, "yes", StringComparison.CurrentCultureIgnoreCase) ||
+                string.Equals(rawText, "y", StringComparison.CurrentCultureIgnoreCase);
 
             // The name of the partner GIS layer in SQL Server used to select the records.
             try
@@ -407,7 +401,7 @@ namespace DataExtractor
             }
 
             // The name of the column in the partner GIS layer containing the
-            // GIS format required for the output records (SHP or GDB).
+            // GIS format required for the output records (SHP, GDB or GPKG).
             try
             {
                 _formatColumn = _xmlDataExtractor["FormatColumn"].InnerText;
@@ -657,19 +651,29 @@ namespace DataExtractor
                         SQLLayer layer = new(nodeName);
 
                         // Replace any underscores with spaces for better display.
-                        nodeName = nodeName.Replace("_", " ");
+                        nodeName = nodeName?.Replace("_", " ");
 
-                        try
+                        if (!string.IsNullOrWhiteSpace(nodeName))
                         {
-                            string nodeGroup = nodeName.Substring(0, nodeName.IndexOf('-')).Trim();
-                            string nodeTable = nodeName.Substring(nodeName.IndexOf('-') + 1).Trim();
-                            layer.NodeGroup = nodeGroup;
-                            layer.NodeTable = nodeTable;
+                            int dashIndex = nodeName.IndexOf('-');
+
+                            if (dashIndex > 0 && dashIndex < nodeName.Length - 1)
+                            {
+                                layer.NodeGroup = nodeName.Substring(0, dashIndex).Trim();
+                                layer.NodeTable = nodeName.Substring(dashIndex + 1).Trim();
+                            }
+                            else
+                            {
+                                // Not in "Group-Table" format
+                                layer.NodeGroup = null;
+                                layer.NodeTable = nodeName;
+                            }
                         }
-                        catch
+                        else
                         {
+                            // Missing altogether
                             layer.NodeGroup = null;
-                            layer.NodeTable = nodeName;
+                            layer.NodeTable = null;
                         }
 
                         try
@@ -690,55 +694,12 @@ namespace DataExtractor
                             throw new("Could not locate the item 'Columns' for sql table " + nodeName + " in the XML file");
                         }
 
-                        try
-                        {
-                            layer.OutputType = node["OutputType"].InnerText;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.OutputType = null;
-                        }
-
-                        try
-                        {
-                            layer.WhereClause = node["WhereClause"].InnerText;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.WhereClause = null;
-                        }
-
-                        try
-                        {
-                            layer.OrderColumns = node["OrderColumns"].InnerText;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.OrderColumns = null;
-                        }
-
-                        try
-                        {
-                            layer.MacroName = node["MacroName"].InnerText;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.MacroName = null;
-                        }
-
-                        try
-                        {
-                            layer.MacroParms = node["MacroParms"].InnerText;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.MacroParms = null;
-                        }
+                        // Optional nodes.
+                        layer.OutputType = node?["OutputType"]?.InnerText;
+                        layer.WhereClause = node?["WhereClause"]?.InnerText;
+                        layer.OrderColumns = node?["OrderColumns"]?.InnerText;
+                        layer.MacroName = node?["MacroName"]?.InnerText;
+                        layer.MacroParms = node?["MacroParms"]?.InnerText;
 
                         // Add the layer to the list of SQL tables.
                         SQLLayers.Add(layer);
@@ -789,20 +750,29 @@ namespace DataExtractor
                         MapLayer layer = new(nodeName);
 
                         // Replace any underscores with spaces for better display.
-                        nodeName = nodeName.Replace("_", " ");
+                        nodeName = nodeName?.Replace("_", " ");
 
-                        try
+                        if (!string.IsNullOrWhiteSpace(nodeName))
                         {
-                            string nodeGroup = nodeName.Substring(0, nodeName.IndexOf('-')).Trim();
-                            string nodeLayer = nodeName.Substring(nodeName.IndexOf('-') + 1).Trim();
-                            layer.NodeGroup = nodeGroup;
-                            layer.NodeLayer = nodeLayer;
+                            int dashIndex = nodeName.IndexOf('-');
+
+                            if (dashIndex > 0 && dashIndex < nodeName.Length - 1)
+                            {
+                                layer.NodeGroup = nodeName.Substring(0, dashIndex).Trim();
+                                layer.NodeLayer = nodeName.Substring(dashIndex + 1).Trim();
+                            }
+                            else
+                            {
+                                // Not in "Group-Table" format
+                                layer.NodeGroup = null;
+                                layer.NodeLayer = nodeName;
+                            }
                         }
-                        catch
+                        else
                         {
-                            // This is an optional node
+                            // Missing altogether
                             layer.NodeGroup = null;
-                            layer.NodeLayer = nodeName;
+                            layer.NodeLayer = null;
                         }
 
                         try
@@ -832,70 +802,18 @@ namespace DataExtractor
                             throw new("Could not locate the item 'Columns' for map layer " + nodeName + " in the XML file");
                         }
 
-                        try
-                        {
-                            layer.OutputType = node["OutputType"].InnerText;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.OutputType = null;
-                        }
+                        // Optional nodes.
+                        layer.OutputType = node?["OutputType"]?.InnerText;
+                        layer.WhereClause = node?["WhereClause"]?.InnerText;
+                        layer.OrderColumns = node?["OrderColumns"]?.InnerText;
 
-                        try
-                        {
-                            layer.WhereClause = node["WhereClause"].InnerText;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.WhereClause = null;
-                        }
+                        rawText = node?["LoadWarning"]?.InnerText?.Trim();
+                        layer.LoadWarning =
+                            rawText.Equals("yes", StringComparison.CurrentCultureIgnoreCase) ||
+                            rawText.Equals("y", StringComparison.CurrentCultureIgnoreCase);
 
-                        try
-                        {
-                            layer.OrderColumns = node["OrderColumns"].InnerText;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.OrderColumns = null;
-                        }
-
-                        try
-                        {
-                            bool loadWarning = false;
-                            rawText = node["LoadWarning"].InnerText;
-                            if (rawText.ToLower(System.Globalization.CultureInfo.CurrentCulture) is "yes" or "y")
-                                loadWarning = true;
-
-                            layer.LoadWarning = loadWarning;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.LoadWarning = false;
-                        }
-
-                        try
-                        {
-                            layer.MacroName = node["MacroName"].InnerText;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.MacroName = null;
-                        }
-
-                        try
-                        {
-                            layer.MacroParms = node["MacroParms"].InnerText;
-                        }
-                        catch
-                        {
-                            // This is an optional node
-                            layer.MacroParms = null;
-                        }
+                        layer.MacroName = node?["MacroName"]?.InnerText;
+                        layer.MacroParms = node?["MacroParms"]?.InnerText;
 
                         // Add the layer to the list of map layers.
                         MapLayers.Add(layer);

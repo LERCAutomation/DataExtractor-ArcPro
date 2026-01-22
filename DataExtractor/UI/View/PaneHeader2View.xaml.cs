@@ -47,7 +47,7 @@ namespace DataExtractor.UI
         private void ListViewPartners_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Get the list of removed items.
-            List<Partner> removed = e.RemovedItems.OfType<Partner>().ToList();
+            List<Partner> removed = [.. e.RemovedItems.OfType<Partner>()];
 
             // Ensure any removed items are actually unselected.
             if (removed.Count > 1)
@@ -123,7 +123,7 @@ namespace DataExtractor.UI
         private void ListViewSQLLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Get the list of removed items.
-            List<SQLLayer> removed = e.RemovedItems.OfType<SQLLayer>().ToList();
+            List<SQLLayer> removed = [.. e.RemovedItems.OfType<SQLLayer>()];
 
             // Ensure any removed items are actually unselected.
             if (removed.Count > 1)
@@ -203,7 +203,7 @@ namespace DataExtractor.UI
         private void ListViewMapLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Get the list of removed items.
-            List<MapLayer> removed = e.RemovedItems.OfType<MapLayer>().ToList();
+            List<MapLayer> removed = [.. e.RemovedItems.OfType<MapLayer>()];
 
             // Ensure any removed items are actually unselected.
             if (removed.Count > 1)

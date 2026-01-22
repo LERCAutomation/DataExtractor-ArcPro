@@ -459,8 +459,8 @@ namespace DataExtractor.UI
             if (!await _paneH2VM.EstablishSDEConnectionAsync(message))
                 return false;
 
-            // Load the form (don't wait for the response).
-            _paneH2VM.ResetFormAsync(false);
+            // Load the form
+            await _paneH2VM.ResetFormAsync(false);
 
             return true;
         }

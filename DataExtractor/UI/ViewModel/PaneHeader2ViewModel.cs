@@ -1226,8 +1226,8 @@ namespace DataExtractor.UI
             // Pause map.
             PauseMap = _toolConfig.PauseMap;
 
-            // Reload the list of partners, SQL tables, and open GIS map layers (don't wait for the response).
-            LoadListsAsync(reset, true);
+            // Reload the list of partners, SQL tables, and open GIS map layers.
+            await LoadListsAsync(reset, true);
         }
 
         /// <summary>
@@ -1589,9 +1589,9 @@ namespace DataExtractor.UI
             _extractErrors = false;
 
             // Selected list items.
-            _selectedPartners = PartnersList.Where(p => p.IsSelected).ToList();
-            _selectedSQLLayers = SQLLayersList.Where(s => s.IsSelected).ToList();
-            _selectedMapLayers = MapLayersList.Where(m => m.IsSelected).ToList();
+            _selectedPartners = [.. PartnersList.Where(p => p.IsSelected)];
+            _selectedSQLLayers = [.. SQLLayersList.Where(s => s.IsSelected)];
+            _selectedMapLayers = [.. MapLayersList.Where(m => m.IsSelected)];
 
             // What is the selection type?
             SelectionTypeOptions selectionTypeOption = SelectionTypeOptions.SpatialOnly;
@@ -1846,8 +1846,8 @@ namespace DataExtractor.UI
             }
 
             // Replace the partner shortname in the output names.
-            partnerFolder = Regex.Replace(partnerFolder, "%partner%", partnerAbbr, RegexOptions.IgnoreCase);
-            gdbName = Regex.Replace(gdbName, "%partner%", partnerAbbr, RegexOptions.IgnoreCase);
+            partnerFolder = partnerFolder.Replace("%partner%", partnerAbbr, StringComparison.OrdinalIgnoreCase);
+            gdbName = gdbName.Replace("%partner%", partnerAbbr, StringComparison.OrdinalIgnoreCase);
 
             // Set up the output folder.
             string outFolder = defaultPath + @"\" + partnerFolder;
@@ -2000,7 +2000,7 @@ namespace DataExtractor.UI
             outputTable = outputTable.Replace("%yy%", _dateYY).Replace("%qq%", _dateQQ).Replace("%yyyy%", _dateYYYY).Replace("%ffff%", _dateFFFF);
 
             // Replace the partner shortname in the output name.
-            outputTable = Regex.Replace(outputTable, "%partner%", partnerAbbr, RegexOptions.IgnoreCase);
+            outputTable = outputTable.Replace("%partner%", partnerAbbr, StringComparison.OrdinalIgnoreCase);
 
             // Set the output file names.
             string pointFeatureClass = _defaultSchema + "." + sqlTable + "_" + _userID + "_point";
@@ -2053,7 +2053,7 @@ namespace DataExtractor.UI
 
             // Set the map output format.
             string mapOutputFormat = gisFormat;
-            if (outputType is "GDB" or "SHP" or "DBF")
+            if (outputType is "GDB" or "SHP" or "DBF" or "GPKG")
             {
                 FileFunctions.WriteLine(_logFile, "Overriding the output type with '" + outputType + "' ...");
                 mapOutputFormat = outputType;
@@ -2089,6 +2089,14 @@ namespace DataExtractor.UI
                         mapOutputFormat = "Geodatabase FC";
                     else
                         mapOutputFormat = "Geodatabase Table";
+
+                    outPoints = outputTable + "_Point";
+                    outPolys = outputTable + "_Poly";
+                    outFlat = outputTable;
+                    break;
+
+                case "GPKG":
+                    mapOutputFormat = "GeoPackage";
 
                     outPoints = outputTable + "_Point";
                     outPolys = outputTable + "_Poly";
@@ -2238,6 +2246,26 @@ namespace DataExtractor.UI
                     }
 
                     FileFunctions.WriteLine(_logFile, "Output geodatabase created.");
+                }
+            }
+            // If the output is in a GeoPackage.
+            else if (mapOutputFormat == "GeoPackage")
+            {
+                // Update the output path to include the GeoPackage name.
+                outPath = outPath + "\\" + gdbName + ".gpkg";
+
+                // Check the output GeoPackage exists.
+                if (!FileFunctions.FileExists(outPath))
+                {
+                    FileFunctions.WriteLine(_logFile, "Creating output GeoPackage ...");
+
+                    if (!await ArcGISFunctions.CreateGeoPackageAsync(outPath))
+                    {
+                        FileFunctions.WriteLine(_logFile, "Error: Creating output GeoPackage '" + outPath + "'.");
+                        return false;
+                    }
+
+                    FileFunctions.WriteLine(_logFile, "Output GeoPackage created.");
                 }
             }
 
@@ -2482,7 +2510,7 @@ namespace DataExtractor.UI
             outputTable = outputTable.Replace("%yy%", _dateYY).Replace("%qq%", _dateQQ).Replace("%yyyy%", _dateYYYY).Replace("%ffff%", _dateFFFF);
 
             // Replace the partner shortname in the output name.
-            outputTable = Regex.Replace(outputTable, "%partner%", partnerAbbr, RegexOptions.IgnoreCase);
+            outputTable = outputTable.Replace("%partner%", partnerAbbr, StringComparison.OrdinalIgnoreCase);
 
             // Build a list of all of the columns required.
             List<string> mapFields = [];
@@ -2554,7 +2582,7 @@ namespace DataExtractor.UI
 
             // Set the map output format.
             string mapOutputFormat = gisFormat;
-            if (outputType is "GDB" or "SHP" or "DBF")
+            if (outputType is "GDB" or "SHP" or "DBF" or "GPKG")
             {
                 FileFunctions.WriteLine(_logFile, "Overriding the output type with '" + outputType + "' ...");
                 mapOutputFormat = outputType;
@@ -2580,6 +2608,11 @@ namespace DataExtractor.UI
             {
                 case "GDB":
                     mapOutputFormat = "Geodatabase FC";
+                    outFile = outputTable;
+                    break;
+
+                case "GPKG":
+                    mapOutputFormat = "GeoPackage";
                     outFile = outputTable;
                     break;
 
@@ -2695,6 +2728,12 @@ namespace DataExtractor.UI
                 // Update the output path to include the geodatabase name.
                 outPath = outPath + "\\" + gdbName + ".gdb";
             }
+            // If the output is in a GeoPackage.
+            else if (mapOutputFormat == "GeoPackage")
+            {
+                // Update the output path to include the GeoPackage name.
+                outPath = outPath + "\\" + gdbName + ".gpkg";
+            }
 
             // Remove and delete the feature layer from the map.
             await ClearMapTablesAsync(outputTable, outPath + @"\" + outFile, deleteOutput);
@@ -2749,6 +2788,27 @@ namespace DataExtractor.UI
                     }
 
                     FileFunctions.WriteLine(_logFile, "Output geodatabase created.");
+                }
+            }
+
+            // If the output is in a GeoPackage.
+            if (mapOutputFormat == "GeoPackage")
+            {
+                // Update the output path to include the GeoPackage name.
+                outPath = outPath + "\\" + gdbName + ".gpkg";
+
+                // Check the output GeoPackage exists.
+                if (!FileFunctions.FileExists(outPath))
+                {
+                    FileFunctions.WriteLine(_logFile, "Creating output GeoPackage ...");
+
+                    if (!await ArcGISFunctions.CreateGeoPackageAsync(outPath))
+                    {
+                        FileFunctions.WriteLine(_logFile, "Error: Creating output GeoPackage '" + outPath + "'.");
+                        return false;
+                    }
+
+                    FileFunctions.WriteLine(_logFile, "Output GeoPackage created.");
                 }
             }
 
@@ -3293,7 +3353,7 @@ namespace DataExtractor.UI
             List<string> filteredTableList = FilterTableNames(tabList, _defaultSchema, includeWC, excludeWC, false);
 
             // Set the tables list in sort order.
-            _sqlTableNames = new(filteredTableList.OrderBy(t => t));
+            _sqlTableNames = [.. filteredTableList.OrderBy(t => t)];
         }
 
         /// <summary>

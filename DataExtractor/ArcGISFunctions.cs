@@ -1209,7 +1209,7 @@ namespace DataTools
 
             // Get the list of field names for the input table that
             // aren't mandatory fields (i.e. excluding FID and Shape).
-            List<string> optionalFieldNames = inputfields.Where(x => !x.IsRequired).Select(y => y.Name).ToList();
+            List<string> optionalFieldNames = [.. inputfields.Where(x => !x.IsRequired).Select(y => y.Name)];
 
             // Get the list of fields to keep that do exist in the layer.
             List<string> keepFieldNames = await GetExistingFieldsAsync(layerName, fieldList);
@@ -3024,10 +3024,9 @@ namespace DataTools
                     rowCursor.Dispose();
 
                     // Get a list of any duplicate keys.
-                    List<string> duplicateKeys = keys.GroupBy(x => x)
+                    List<string> duplicateKeys = [.. keys.GroupBy(x => x)
                       .Where(g => g.Count() > 1)
-                      .Select(y => y.Key)
-                      .ToList();
+                      .Select(y => y.Key)];
 
                     // Return how many duplicate keys there are.
                     featureCount = duplicateKeys.Count;
@@ -3856,6 +3855,57 @@ namespace DataTools
         }
 
         #endregion Geodatabase
+
+        #region GeoPackage
+
+
+        /// <summary>
+        /// Create a new GeoPackage (.gpkg) using the Create SQLite Database geoprocessing tool.
+        /// </summary>
+        /// <param name="fullPath">Full path to the .gpkg file to create.</param>
+        /// <returns>bool</returns>
+        public static async Task<bool> CreateGeoPackageAsync(string fullPath)
+        {
+            // Check if there is an input full path.
+            if (string.IsNullOrEmpty(fullPath))
+                return false;
+
+            // Make a value array of strings to be passed to the tool.
+            // Note: The tool will create a GeoPackage when spatial_type is GEOPACKAGE.
+            var parameters = Geoprocessing.MakeValueArray(fullPath, "GEOPACKAGE");
+
+            // Make a value array of the environments to be passed to the tool.
+            var environments = Geoprocessing.MakeEnvironmentArray(overwriteoutput: true);
+
+            // Set the geoprocessing flags.
+            GPExecuteToolFlags executeFlags = GPExecuteToolFlags.GPThread;
+
+            //Geoprocessing.OpenToolDialog("management.CreateSQLiteDatabase", parameters);  // Useful for debugging.
+
+            // Execute the tool.
+            try
+            {
+                IGPResult gp_result = await Geoprocessing.ExecuteToolAsync("management.CreateSQLiteDatabase", parameters, environments, null, null, executeFlags);
+
+                if (gp_result.IsFailed)
+                {
+                    Geoprocessing.ShowMessageBox(gp_result.Messages, "GP Messages", GPMessageBoxStyle.Error);
+
+                    var messages = gp_result.Messages;
+                    var errMessages = gp_result.ErrorMessages;
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                // Handle Exception.
+                return false;
+            }
+
+            return true;
+        }
+
+        #endregion GeoPackage
 
         #region Table
 

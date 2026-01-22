@@ -52,8 +52,8 @@ namespace DataTools
             _sqlConnectionString = dbConnectionString;
             _dbTimeoutSeconds = dbTimeoutSeconds;
 
-            // Open a connection to the geodatabase (don't wait it will be checked later).
-            OpenGeodatabaseAsync();
+            //// Open a connection to the geodatabase (don't wait it will be checked later).
+            //OpenGeodatabaseAsync();
         }
 
         #endregion Constructor
@@ -946,10 +946,9 @@ namespace DataTools
                     rowCursor.Dispose();
 
                     // Get a list of any duplicate keys.
-                    List<string> duplicateKeys = keys.GroupBy(x => x)
+                    List<string> duplicateKeys = [.. keys.GroupBy(x => x)
                       .Where(g => g.Count() > 1)
-                      .Select(y => y.Key)
-                      .ToList();
+                      .Select(y => y.Key)];
 
                     // Return how many duplicate keys there are.
                     featureCount = duplicateKeys.Count;
