@@ -19,9 +19,6 @@
 // You should have received a copy of the GNU General Public License
 // along with with program.  If not, see <http://www.gnu.org/licenses/>.
 
-using ArcGIS.Desktop.Internal.KnowledgeGraph;
-using ArcGIS.Desktop.Mapping;
-using DataExtractor.UI;
 using System;
 using System.Collections.Generic;
 using System.Windows;

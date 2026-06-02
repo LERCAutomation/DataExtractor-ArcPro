@@ -42,6 +42,19 @@ namespace DataExtractor.UI
     /// </summary>
     internal class DockpaneMainViewModel : DockPane, INotifyPropertyChanged
     {
+        #region Enums
+
+        public enum ExtractStatuses
+        {
+            NotStarted,
+            Initialising,
+            Running,
+            Completing,
+            Cancelled
+        }
+
+        #endregion Enums
+
         #region Fields
 
         private DockpaneMainViewModel _dockPane;
@@ -63,17 +76,16 @@ namespace DataExtractor.UI
         /// </summary>
         protected DockpaneMainViewModel()
         {
-            InitializeComponentAsync();
+            InitializeComponent();
         }
 
         /// <summary>
         /// Initialise the DockPane components.
         /// </summary>
-        public async void InitializeComponentAsync()
+        public async void InitializeComponent()
         {
             _dockPane = this;
             _initialised = false;
-            _initialising = true;
             _inError = false;
 
             // Setup the tab controls.
@@ -110,7 +122,6 @@ namespace DataExtractor.UI
 
             // Indicate that the dockpane has been initialised.
             _initialised = true;
-            _initialised = false;
         }
 
         /// <summary>
@@ -127,8 +138,8 @@ namespace DataExtractor.UI
             DockpaneMainViewModel vm = pane as DockpaneMainViewModel;
 
             // If the ViewModel is uninitialised then initialise it.
-            if ((!vm.Initialised) && (!vm.Initialising))
-                vm.InitializeComponentAsync();
+            if (!vm.Initialised)
+                vm.InitializeComponent();
 
             // If the ViewModel is in error then don't show the dockpane.
             if (vm.InError)
@@ -187,14 +198,14 @@ namespace DataExtractor.UI
         /// <summary>
         /// Can the Cancel button be pressed?
         /// </summary>
-        /// <value></value>
-        /// <returns></returns>
+        /// <returns>True if the Cancel button can be pressed.</returns>
         /// <remarks></remarks>
         public bool CancelButtonEnabled
         {
             get
             {
-                return !_extractCancelled
+                return (_extractStatus == ExtractStatuses.Initialising
+                    || _extractStatus == ExtractStatuses.Running)
                     && _processStatus != null;
             }
         }
@@ -202,8 +213,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Can the Run button be pressed?
         /// </summary>
-        /// <value></value>
-        /// <returns></returns>
+        /// <returns>True if the Run button can be pressed.</returns>
         /// <remarks></remarks>
         public bool RunButtonEnabled
         {
@@ -310,20 +320,6 @@ namespace DataExtractor.UI
             }
         }
 
-        private bool _initialising = false;
-
-        /// <summary>
-        /// Is the DockPane initialising?
-        /// </summary>
-        public bool Initialising
-        {
-            get { return _initialising; }
-            set
-            {
-                _initialising = value;
-            }
-        }
-
         private bool _inError = false;
 
         /// <summary>
@@ -349,26 +345,15 @@ namespace DataExtractor.UI
             set { _formLoading = value; }
         }
 
-        private bool _extractRunning;
+        private ExtractStatuses _extractStatus;
 
         /// <summary>
-        /// Is the extract running?
+        /// What is the status of the extract process?
         /// </summary>
-        public bool ExtractRunning
+        public ExtractStatuses ExtractStatus
         {
-            get { return _extractRunning; }
-            set { _extractRunning = value; }
-        }
-
-        private bool _extractCancelled = false;
-
-        /// <summary>
-        /// Has the extract been cancelled?
-        /// </summary>
-        public bool ExtractCancelled
-        {
-            get { return _extractCancelled; }
-            set { _extractCancelled = value; }
+            get { return _extractStatus; }
+            set { _extractStatus = value; }
         }
 
         private string _helpURL;
@@ -400,6 +385,12 @@ namespace DataExtractor.UI
 
         private void OnActiveMapViewChanged(ActiveMapViewChangedEventArgs obj)
         {
+            // Ignore map view changes whilst extract is initialising
+            // or completing as that's probably the add-in switching panes.
+            if ((ExtractStatus == ExtractStatuses.Initialising)
+                || (ExtractStatus == ExtractStatuses.Completing))
+                return;
+
             if (MapView.Active == null)
             {
                 DockpaneVisibility = Visibility.Hidden;
@@ -450,7 +441,8 @@ namespace DataExtractor.UI
         /// <summary>
         /// Initialise the extract pane.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The task returns true if the extract pane was initialised.</returns>
+        /// <param name="message">Whether to inform the user of any messages.</param>
         public async Task<bool> InitialiseExtractPaneAsync(bool message)
         {
             _paneH2VM = new PaneHeader2ViewModel(_dockPane, _paneH1VM.ToolConfig);
@@ -610,9 +602,9 @@ namespace DataExtractor.UI
         /// <summary>
         /// Update the progress bar.
         /// </summary>
-        /// <param name="processText"></param>
-        /// <param name="progressValue"></param>
-        /// <param name="maxProgressValue"></param>
+        /// <param name="processText">The process text to show.</param>
+        /// <param name="progressValue">The current progress value; 0 to maxProgressValue, or -1 to ignore.</param>
+        /// <param name="maxProgressValue">The maximum progress value; greater than 0, or -1 to ignore.</param>
         public void ProgressUpdate(string processText = null, int progressValue = -1, int maxProgressValue = -1)
         {
             if (Application.Current.Dispatcher.CheckAccess())
@@ -662,8 +654,6 @@ namespace DataExtractor.UI
         /// <summary>
         /// Create Run button command.
         /// </summary>
-        /// <value></value>
-        /// <returns></returns>
         /// <remarks></remarks>
         public ICommand RunCommand
         {
@@ -682,7 +672,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Handles event when Run button is clicked.
         /// </summary>
-        /// <param name="param"></param>
+        /// <param name="param">The command parameter.</param>
         /// <remarks></remarks>
         private void RunCommandClick(object param)
         {
@@ -699,8 +689,6 @@ namespace DataExtractor.UI
         /// <summary>
         /// Create Cancel button command.
         /// </summary>
-        /// <value></value>
-        /// <returns></returns>
         /// <remarks></remarks>
         public ICommand CancelCommand
         {
@@ -718,12 +706,12 @@ namespace DataExtractor.UI
         /// <summary>
         /// Handles event when Cancel button is pressed.
         /// </summary>
-        /// <param name="param"></param>
+        /// <param name="param">The command parameter.</param>
         /// <remarks></remarks>
         private void CancelCommandClick(object param)
         {
             // Cancel the extract.
-            _extractCancelled = true;
+            _extractStatus = ExtractStatuses.Cancelled;
 
             OnPropertyChanged(nameof(CancelButtonEnabled));
         }

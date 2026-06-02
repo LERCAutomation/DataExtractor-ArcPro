@@ -21,6 +21,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace DataTools
@@ -35,8 +36,8 @@ namespace DataTools
         /// <summary>
         /// Check if a directory exists.
         /// </summary>
-        /// <param name="filePath"></param>
-        /// <returns>bool</returns>
+        /// <param name="filePath">The full path of the directory to check.</param>
+        /// <returns>True if it exists, else false.</returns>
         public static bool DirExists(string filePath)
         {
             // Check input first.
@@ -54,8 +55,8 @@ namespace DataTools
         /// <summary>
         /// Get the name of a directory from a full path.
         /// </summary>
-        /// <param name="fullPath"></param>
-        /// <returns></returns>
+        /// <param name="fullPath">The full path of the file.</param>
+        /// <returns>The directory name as a string.</returns>
         public static string GetDirectoryName(string fullPath)
         {
             // Check input first.
@@ -76,9 +77,9 @@ namespace DataTools
         /// <summary>
         /// Check if a file exists from a file path and name.
         /// </summary>
-        /// <param name="filePath"></param>
-        /// <param name="fileName"></param>
-        /// <returns>bool</returns>
+        /// <param name="filePath">The full path of the directory.</param>
+        /// <param name="fileName">The name of the file.</param>
+        /// <returns>True if it exists, else false.</returns>
         public static bool FileExists(string filePath, string fileName)
         {
             // Check input first.
@@ -114,8 +115,8 @@ namespace DataTools
         /// <summary>
         /// Check if a file exists from a full path.
         /// </summary>
-        /// <param name="fullPath"></param>
-        /// <returns>bool</returns>
+        /// <param name="fullPath">The full path of the file.</param>
+        /// <returns>True if it exists, else false.</returns>
         public static bool FileExists(string fullPath)
         {
             // Check input first.
@@ -133,8 +134,8 @@ namespace DataTools
         /// <summary>
         /// Get the name of a file from a full path.
         /// </summary>
-        /// <param name="fullPath"></param>
-        /// <returns>string</returns>
+        /// <param name="fullPath">The full path of the file.</param>
+        /// <returns>The file name as a string.</returns>
         public static string GetFileName(string fullPath)
         {
             // Check input first.
@@ -151,8 +152,8 @@ namespace DataTools
         /// <summary>
         /// Get a file extension from a full path.
         /// </summary>
-        /// <param name="fullPath"></param>
-        /// <returns>string</returns>
+        /// <param name="fullPath">The full path of the file.</param>
+        /// <returns>The file extension as a string.</returns>
         public static string GetExtension(string fullPath)
         {
             // Check input first.
@@ -169,8 +170,8 @@ namespace DataTools
         /// <summary>
         /// Get all files in a directory.
         /// </summary>
-        /// <param name="filePath"></param>
-        /// <returns>List<string></returns>
+        /// <param name="filePath">The full path of the directory.</param>
+        /// <returns>The list of files as a List of strings.</returns>
         public static List<string> GetAllFilesInDirectory(string filePath)
         {
             // Check input first.
@@ -193,8 +194,8 @@ namespace DataTools
         /// <summary>
         /// Get a full file name without the extension.
         /// </summary>
-        /// <param name="fullName"></param>
-        /// <returns>string</returns>
+        /// <param name="fullName">The full path of the file.</param>
+        /// <returns>The full file name without the extension as a string.</returns>
         public static string GetFullNameWithoutExtension(string fullName)
         {
             // Check input first.
@@ -213,8 +214,8 @@ namespace DataTools
         /// <summary>
         /// Get a full file name without the extension.
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns>string</returns>
+        /// <param name="fileName">The full path of the file.</param>
+        /// <returns>The file name without the extension as a string.</returns>
         public static string GetFileNameWithoutExtension(string fileName)
         {
             // Check input first.
@@ -230,8 +231,8 @@ namespace DataTools
         /// <summary>
         /// Delete a file.
         /// </summary>
-        /// <param name="fullPath"></param>
-        /// <returns>bool</returns>
+        /// <param name="fullPath">The full path of the file.</param>
+        /// <returns>True if successful, else false.</returns>
         public static bool DeleteFile(string fullPath)
         {
             // Check input first.
@@ -257,9 +258,9 @@ namespace DataTools
         /// <summary>
         /// Write a new text file with optional headers.
         /// </summary>
-        /// <param name="outTable"></param>
-        /// <param name="outHeader"></param>
-        /// <returns>bool</returns>
+        /// <param name="outTable">The full path of the output text file.</param>
+        /// <param name="outHeader">The optional header line to write.</param>
+        /// <returns>True if successful, else false.</returns>
         public static bool WriteEmptyTextFile(string outTable, string outHeader)
         {
             // Check input first.
@@ -315,54 +316,22 @@ namespace DataTools
         #region Logfile
 
         /// <summary>
-        /// Create a log file.
-        /// </summary>
-        /// <param name="logFile"></param>
-        /// <returns>bool</returns>
-        public static bool CreateLogFile(string logFile)
-        {
-            // Check input first.
-            if (string.IsNullOrEmpty(logFile))
-                return false;
-
-            StreamWriter myWriter = new(logFile, false);
-
-            // Write the first line of the log file.
-            myWriter.WriteLine("Log file started on " + DateTime.Now.ToString());
-
-            // Close the log file and dispose of the object.
-            myWriter.Close();
-            myWriter.Dispose();
-
-            return true;
-        }
-
-        /// <summary>
         /// Write to the end of a log file.
         /// </summary>
-        /// <param name="logFile"></param>
-        /// <param name="logLine"></param>
-        /// <returns>bool</returns>
+        /// <param name="logFile">The full path of the log file.</param>
+        /// <param name="logLine">The line to write to the log file.</param>
+        /// <returns>True if successful, else false.</returns>
         public static bool WriteLine(string logFile, string logLine)
         {
-            // Check input first.
+            // Check log file name has been supplied (even though it's not used here).
             if (string.IsNullOrEmpty(logFile))
                 return false;
 
             try
             {
-                // Add the date and time to the start of the text.
-                logLine = DateTime.Now.ToString() + " : " + logLine;
-
-                // Open the log file.
-                StreamWriter myWriter = new(logFile, true);
-
-                // Write the line to the end of the log file.
-                myWriter.WriteLine(logLine);
-
-                // Close the log file and dispose of the object.
-                myWriter.Close();
-                myWriter.Dispose();
+                // Write to the Trace log if it is not null (the date and time will be added later).
+                if (logLine != null)
+                    TraceLog(logLine);
             }
             catch
             {
@@ -370,6 +339,17 @@ namespace DataTools
             }
 
             return true;
+        }
+
+        private const string ToolLogPrefix = "DE|";
+
+        /// <summary>
+        /// Writes any message to the Trace log with a timestamp.
+        /// </summary>
+        /// <param name="message">The message to write.</param>
+        private static void TraceLog(string message)
+        {
+            Trace.WriteLine($"{ToolLogPrefix}{DateTime.Now:G} : {message}");
         }
 
         #endregion Logfile

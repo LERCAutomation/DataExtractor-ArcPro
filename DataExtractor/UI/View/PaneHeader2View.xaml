@@ -1,4 +1,5 @@
-﻿<UserControl x:Class="DataExtractor.UI.PaneHeader2View"
+﻿<UserControl
+    x:Class="DataExtractor.UI.PaneHeader2View"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:ArcGIS.Desktop.Framework.Controls;assembly=ArcGIS.Desktop.Framework"
@@ -10,9 +11,7 @@
     d:DesignWidth="300"
     mc:Ignorable="d">
 
-    <DockPanel
-        MinWidth="270"
-        Margin="6,6,6,6">
+    <DockPanel MinWidth="270" Margin="6,6,6,6">
 
         <Grid DockPanel.Dock="Top">
             <Grid.RowDefinitions>
@@ -39,32 +38,34 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Content="*"
+                <Label
                     Name="AsterixPartners"
                     Grid.Row="0"
                     Grid.Column="0"
                     Margin="0,0,0,0"
                     Padding="0"
                     VerticalAlignment="Top"
+                    Content="*"
                     Foreground="Red" />
-                <Label Content="Active Partners:"
+                <Label
                     Name="LabelPartners"
                     Grid.Row="0"
                     Grid.Column="1"
                     Margin="0,0,0,2"
                     Padding="0"
-                    VerticalAlignment="Center" />
-                <ListView ItemsSource="{Binding Path=PartnersList}"
+                    VerticalAlignment="Center"
+                    Content="Active Partners:" />
+                <ListView
                     Name="ListViewPartners"
                     Grid.Row="1"
                     Grid.Column="1"
                     HorizontalContentAlignment="Stretch"
                     IsEnabled="{Binding Path=PartnersListEnabled}"
+                    ItemsSource="{Binding Path=PartnersList}"
                     MouseDoubleClick="ListViewPartners_MouseDoubleClick"
                     PreviewKeyDown="ListViewPartners_KeyDown"
                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                    SelectedIndex="{Binding Path=PartnersList_SelectedIndex,
-                                            Mode=OneWayToSource}"
+                    SelectedIndex="{Binding Path=PartnersList_SelectedIndex, Mode=OneWayToSource}"
                     SelectionChanged="ListViewPartners_SelectionChanged"
                     SelectionMode="Extended"
                     SizeChanged="ListViewPartners_SizeChanged">
@@ -78,9 +79,10 @@
                             <GridViewColumn DisplayMemberBinding="{Binding Path=PartnerName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding}"
+                                        <TextBlock
                                             Width="Auto"
-                                            HorizontalAlignment="Stretch" />
+                                            HorizontalAlignment="Stretch"
+                                            Text="{Binding}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -105,7 +107,7 @@
                     </ListView.ItemContainerStyle>
                 </ListView>
 
-                <Button Content="{Binding Path=PartnersListExpandButtonContent}"
+                <Button
                     Name="ButtonPartnersListExpand"
                     Grid.Row="1"
                     Grid.Column="1"
@@ -119,6 +121,7 @@
                     VerticalAlignment="Bottom"
                     BorderBrush="LightBlue"
                     Command="{Binding Path=PartnersListExpandCommand}"
+                    Content="{Binding Path=PartnersListExpandButtonContent}"
                     Focusable="False"
                     IsCancel="False"
                     IsDefault="False"
@@ -142,37 +145,39 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Content="*"
+                <Label
                     Name="AsterixSQLLayers"
                     Grid.Row="0"
                     Grid.Column="0"
                     Margin="0,0,0,0"
                     Padding="0"
                     VerticalAlignment="Top"
+                    Content="*"
                     Foreground="Red" />
-                <Label Content="SQL Layers:"
+                <Label
                     Name="LabelSQLLayers"
                     Grid.Row="0"
                     Grid.Column="1"
                     Margin="0,0,0,2"
                     Padding="0"
-                    VerticalAlignment="Center" />
+                    VerticalAlignment="Center"
+                    Content="SQL Layers:" />
                 <Label
                     Name="LabelSQLLayersMax"
                     Grid.Row="0"
                     Grid.Column="1"
                     Visibility="Hidden" />
-                <ListView ItemsSource="{Binding Path=SQLLayersList}"
+                <ListView
                     Name="ListViewSQLLayers"
                     Grid.Row="1"
                     Grid.Column="1"
                     HorizontalContentAlignment="Stretch"
                     IsEnabled="{Binding Path=SQLLayersListEnabled}"
+                    ItemsSource="{Binding Path=SQLLayersList}"
                     MouseDoubleClick="ListViewSQLLayers_MouseDoubleClick"
                     PreviewKeyDown="ListViewSQLLayers_KeyDown"
                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                    SelectedIndex="{Binding Path=SQLLayersList_SelectedIndex,
-                                            Mode=OneWayToSource}"
+                    SelectedIndex="{Binding Path=SQLLayersList_SelectedIndex, Mode=OneWayToSource}"
                     SelectionChanged="ListViewSQLLayers_SelectionChanged"
                     SelectionMode="Extended"
                     SizeChanged="ListViewSQLLayers_SizeChanged">
@@ -186,9 +191,10 @@
                             <GridViewColumn DisplayMemberBinding="{Binding Path=NodeName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding}"
+                                        <TextBlock
                                             Width="Auto"
-                                            HorizontalAlignment="Stretch" />
+                                            HorizontalAlignment="Stretch"
+                                            Text="{Binding}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -213,7 +219,7 @@
                     </ListView.ItemContainerStyle>
                 </ListView>
 
-                <Button Content="{Binding Path=SQLLayersListExpandButtonContent}"
+                <Button
                     Name="ButtonSQLLayersListExpand"
                     Grid.Row="1"
                     Grid.Column="1"
@@ -227,6 +233,7 @@
                     VerticalAlignment="Bottom"
                     BorderBrush="LightBlue"
                     Command="{Binding Path=SQLLayersListExpandCommand}"
+                    Content="{Binding Path=SQLLayersListExpandButtonContent}"
                     Focusable="False"
                     IsCancel="False"
                     IsDefault="False"
@@ -250,32 +257,34 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Content="*"
+                <Label
                     Name="AsterixMapLayers"
                     Grid.Row="0"
                     Grid.Column="0"
                     Margin="0,0,0,0"
                     Padding="0"
                     VerticalAlignment="Top"
+                    Content="*"
                     Foreground="Red" />
-                <Label Content="Map Layers:"
+                <Label
                     Name="LabelMapLayers"
                     Grid.Row="0"
                     Grid.Column="1"
                     Margin="0,0,0,2"
                     Padding="0"
-                    VerticalAlignment="Center" />
-                <ListView ItemsSource="{Binding Path=MapLayersList}"
+                    VerticalAlignment="Center"
+                    Content="Map Layers:" />
+                <ListView
                     Name="ListViewMapLayers"
                     Grid.Row="1"
                     Grid.Column="1"
                     HorizontalContentAlignment="Stretch"
                     IsEnabled="{Binding Path=MapLayersListEnabled}"
+                    ItemsSource="{Binding Path=MapLayersList}"
                     MouseDoubleClick="ListViewMapLayers_MouseDoubleClick"
                     PreviewKeyDown="ListViewMapLayers_KeyDown"
                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                    SelectedIndex="{Binding Path=MapLayersList_SelectedIndex,
-                                            Mode=OneWayToSource}"
+                    SelectedIndex="{Binding Path=MapLayersList_SelectedIndex, Mode=OneWayToSource}"
                     SelectionChanged="ListViewMapLayers_SelectionChanged"
                     SelectionMode="Extended"
                     SizeChanged="ListViewMapLayers_SizeChanged">
@@ -289,9 +298,10 @@
                             <GridViewColumn DisplayMemberBinding="{Binding Path=NodeName}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding}"
+                                        <TextBlock
                                             Width="Auto"
-                                            HorizontalAlignment="Stretch" />
+                                            HorizontalAlignment="Stretch"
+                                            Text="{Binding}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -316,7 +326,7 @@
                     </ListView.ItemContainerStyle>
                 </ListView>
 
-                <Button Content="{Binding Path=MapLayersListExpandButtonContent}"
+                <Button
                     Name="ButtonMapLayersListExpand"
                     Grid.Row="1"
                     Grid.Column="1"
@@ -330,6 +340,7 @@
                     VerticalAlignment="Bottom"
                     BorderBrush="LightBlue"
                     Command="{Binding Path=MapLayersListExpandCommand}"
+                    Content="{Binding Path=MapLayersListExpandButtonContent}"
                     Focusable="False"
                     IsCancel="False"
                     IsDefault="False"
@@ -351,26 +362,29 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Label Content="*"
+                <Label
                     Name="AsterixSelectionType"
                     Grid.Column="0"
                     Margin="0,0,0,0"
                     Padding="0"
                     VerticalAlignment="Top"
+                    Content="*"
                     Foreground="Red" />
-                <Label Content="SQL Selection Type:"
+                <Label
                     Name="LabelSelectionType"
                     Grid.Column="1"
                     Margin="0,0,4,0"
                     Padding="0"
-                    VerticalAlignment="Center" />
-                <ComboBox ItemsSource="{Binding Path=SelectionTypeList, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                    VerticalAlignment="Center"
+                    Content="SQL Selection Type:" />
+                <ComboBox
                     Name="ComboBoxSelectionType"
                     Grid.Column="2"
                     Margin="0,0,0,0"
                     IsEditable="False"
                     IsEnabled="{Binding Path=SelectionTypeListEnabled}"
                     IsReadOnly="True"
+                    ItemsSource="{Binding Path=SelectionTypeList, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                     SelectedValue="{Binding Path=SelectionType}"
                     ToolTip="Select type of selection" />
             </Grid>
@@ -403,20 +417,19 @@
                     Padding="0"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
-                    IsChecked="{Binding Path=UseCentroids,
-                                        Mode=TwoWay,
-                                        UpdateSourceTrigger=PropertyChanged}"
+                    IsChecked="{Binding Path=UseCentroids, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     IsEnabled="{Binding Path=OptionsEnabled}"
                     Style="{DynamicResource Esri_CheckboxToggleSwitch}"
                     ToolTip="Select polygons by centroids?"
                     Visibility="{Binding Path=UseCentroidsVisibility}" />
-                <Label Content="Use Centroids?"
+                <Label
                     Name="LabelUseCentroids"
                     Grid.Row="0"
                     Grid.Column="2"
                     Margin="0,4,0,4"
                     Padding="0"
                     VerticalAlignment="Center"
+                    Content="Use Centroids?"
                     ToolTip="Select polygons by centroids?"
                     Visibility="{Binding Path=UseCentroidsVisibility}" />
 
@@ -428,20 +441,19 @@
                     Padding="0"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
-                    IsChecked="{Binding Path=ApplyExclusionClause,
-                                        Mode=TwoWay,
-                                        UpdateSourceTrigger=PropertyChanged}"
+                    IsChecked="{Binding Path=ApplyExclusionClause, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     IsEnabled="{Binding Path=OptionsEnabled}"
                     Style="{DynamicResource Esri_CheckboxToggleSwitch}"
                     ToolTip="Apply the additional exclusion clause?"
                     Visibility="{Binding Path=ApplyExclusionClauseVisibility}" />
-                <Label Content="Apply Exclusion Clause?"
+                <Label
                     Name="LabelApplyExclusionClause"
                     Grid.Row="0"
                     Grid.Column="6"
                     Margin="0,4,4,4"
                     Padding="0"
                     VerticalAlignment="Center"
+                    Content="Apply Exclusion Clause?"
                     ToolTip="Apply the additional exclusion clause?"
                     Visibility="{Binding Path=ApplyExclusionClauseVisibility}" />
 
@@ -453,20 +465,19 @@
                     Padding="0"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
-                    IsChecked="{Binding Path=UploadToServer,
-                                        Mode=TwoWay,
-                                        UpdateSourceTrigger=PropertyChanged}"
+                    IsChecked="{Binding Path=UploadToServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     IsEnabled="{Binding Path=OptionsEnabled}"
                     Style="{DynamicResource Esri_CheckboxToggleSwitch}"
                     ToolTip="Upload the partner table to the server when the process starts?"
                     Visibility="{Binding Path=UploadToServerVisibility}" />
-                <Label Content="Upload to server?"
+                <Label
                     Name="LabelUploadToServer"
                     Grid.Row="1"
                     Grid.Column="2"
                     Margin="0,4,0,4"
                     Padding="0"
                     VerticalAlignment="Center"
+                    Content="Upload to server?"
                     ToolTip="Upload the partner table to the server when the process starts?"
                     Visibility="{Binding Path=UploadToServerVisibility}" />
 
@@ -478,19 +489,18 @@
                     Padding="0"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
-                    IsChecked="{Binding Path=ClearLogFile,
-                                        Mode=TwoWay,
-                                        UpdateSourceTrigger=PropertyChanged}"
+                    IsChecked="{Binding Path=ClearLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     IsEnabled="{Binding Path=OptionsEnabled}"
                     Style="{DynamicResource Esri_CheckboxToggleSwitch}"
                     ToolTip="Clear the log file before the process starts?" />
-                <Label Content="Clear log file?"
+                <Label
                     Name="LabelClearLogFile"
                     Grid.Row="2"
                     Grid.Column="2"
                     Margin="0,4,0,0"
                     Padding="0"
                     VerticalAlignment="Center"
+                    Content="Clear log file?"
                     ToolTip="Clear the log file before the process starts?" />
 
                 <CheckBox
@@ -501,27 +511,27 @@
                     Padding="0"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
-                    IsChecked="{Binding Path=OpenLogFile,
-                                        Mode=TwoWay,
-                                        UpdateSourceTrigger=PropertyChanged}"
+                    IsChecked="{Binding Path=OpenLogFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     IsEnabled="{Binding Path=OptionsEnabled}"
                     Style="{DynamicResource Esri_CheckboxToggleSwitch}"
                     ToolTip="Open the log file when the process is complete?" />
-                <Label Content="Open log file?"
+                <Label
                     Name="LabelOpenLogFile"
                     Grid.Row="2"
                     Grid.Column="6"
                     Margin="0,4,4,0"
                     Padding="0"
                     VerticalAlignment="Center"
+                    Content="Open log file?"
                     ToolTip="Open the log file when the process is complete?" />
             </Grid>
 
-            <controls:MessageLabel Content="{Binding Path=Message}"
+            <controls:MessageLabel
                 Grid.Row="10"
                 Height="24"
                 Margin="0,8,0,0"
                 CanClose="False"
+                Content="{Binding Path=Message}"
                 MessageType="{Binding Path=MessageLevel}"
                 Severity="High"
                 ShowHelp="False"

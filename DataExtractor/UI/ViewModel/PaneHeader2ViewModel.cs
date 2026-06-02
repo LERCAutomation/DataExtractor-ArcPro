@@ -31,6 +31,7 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -38,6 +39,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using ArcGIS.Desktop.Framework.Contracts;
 using MessageBox = ArcGIS.Desktop.Framework.Dialogs.MessageBox;
 
 namespace DataExtractor.UI
@@ -57,6 +59,13 @@ namespace DataExtractor.UI
         };
 
         #endregion Enums
+
+        #region Constants
+
+        private const string _displayName = "DataExtractor";
+        private const string _addInId = "{2ad6fcf5-1ab0-41b3-a4aa-ace372bc7139}";
+
+        #endregion Constants
 
         #region Fields
 
@@ -137,8 +146,6 @@ namespace DataExtractor.UI
 
         private int _extractCnt;
         private int _extractTot;
-
-        private const string _displayName = "DataExtractor";
 
         private readonly DataExtractorConfig _toolConfig;
         private MapFunctions _mapFunctions;
@@ -481,15 +488,15 @@ namespace DataExtractor.UI
         /// </summary>
         public async void RunExtractAsync()
         {
-            // Reset the cancel flag.
-            _dockPane.ExtractCancelled = false;
-
             // Validate the parameters.
             if (!ValidateParameters())
                 return;
 
+			// Indicate the extract has not started.
+			_dockPane.ExtractStatus = DockpaneMainViewModel.ExtractStatuses.NotStarted;
+
             // Clear any messages.
-            ClearMessage();
+			ClearMessage();
 
             // Set the date variables.
             DateTime dateNow = DateTime.Now;
@@ -568,8 +575,8 @@ namespace DataExtractor.UI
                 message = "Process ended with errors!";
                 image = "Error";
             }
-            else if (_dockPane.ExtractCancelled)
-            {
+            else if (_dockPane.ExtractStatus == DockpaneMainViewModel.ExtractStatuses.Cancelled)
+			{
                 message = "Process cancelled!";
                 image = "Warning";
             }
@@ -582,8 +589,8 @@ namespace DataExtractor.UI
             // Finish up now the extract has stopped (successfully or not).
             StopExtract(message, image);
 
-            // Reset the cancel flag.
-            _dockPane.ExtractCancelled = false;
+			// Indicate the extract is completing.
+			_dockPane.ExtractStatus = DockpaneMainViewModel.ExtractStatuses.Completing;
 
             // Update the fields and buttons in the form.
             UpdateFormControls();
@@ -593,7 +600,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Validate the form parameters.
         /// </summary>
-        /// <returns>bool</returns>
+        /// <returns>True if parameters are valid, false otherwise.</returns>
         private bool ValidateParameters()
         {
             // At least one partner must be selected,
@@ -1032,6 +1039,21 @@ namespace DataExtractor.UI
         #region Methods
 
         /// <summary>
+        /// Gets the add-in version as declared in config.daml.
+        /// </summary>
+        /// <returns>The add-in version, or "Unknown" if it cannot be resolved.</returns>
+        public static string GetAddInVersion()
+        {
+            var addInInfo = FrameworkApplication
+                .GetAddInInfos()
+                .FirstOrDefault(ai =>
+                    ai != null &&
+                    string.Equals(ai.ID, _addInId, StringComparison.OrdinalIgnoreCase));
+
+            return addInInfo?.Version ?? "Unknown";
+        }
+
+        /// <summary>
         /// Update the fields and buttons in the form.
         /// </summary>
         private void UpdateFormControls()
@@ -1173,7 +1195,7 @@ namespace DataExtractor.UI
         /// Set all of the form fields to their default values.
         /// </summary>
         /// <param name="reset"></param>
-        /// <returns></returns>
+        /// <returns>The task performing the asynchronous operation.</returns>
         public async Task ResetFormAsync(bool reset)
         {
             // Clear the partner selections first (to avoid selections being retained).
@@ -1235,7 +1257,7 @@ namespace DataExtractor.UI
         /// </summary>
         /// <param name="reset"></param>
         /// <param name="message"></param>
-        /// <returns></returns>
+        /// <returns>The task performing the asynchronous operation.</returns>
         public async Task LoadListsAsync(bool reset, bool message)
         {
             // If already processing then exit.
@@ -1347,7 +1369,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Load the list of active partners.
         /// </summary>
-        /// <returns>string: error message</returns>
+        /// <returns>The task returns an error message, or null if successful.</returns>
         public async Task<string> LoadPartnersAsync()
         {
             if (_mapFunctions == null || _mapFunctions.MapName == null || MapView.Active.Map.Name != _mapFunctions.MapName)
@@ -1366,7 +1388,7 @@ namespace DataExtractor.UI
                 return null;
 
             // Check the partner table is loaded.
-            if (_mapFunctions.FindLayer(_partnerTable) == null)
+            if (await _mapFunctions.FindLayerAsync(_partnerTable) == null)
                 return "Partner table '" + _partnerTable + "' not found.";
 
             // Check all of the partner columns are in the partner table.
@@ -1389,7 +1411,7 @@ namespace DataExtractor.UI
 
             // Set the default partner where clause
             _partnerClause = _toolConfig.PartnerClause;
-            if (String.IsNullOrEmpty(_partnerClause))
+            if (string.IsNullOrEmpty(_partnerClause))
                 _partnerClause = _toolConfig.ActiveColumn + " = 'Y'";
 
             // Get the list of active partners from the partner layer.
@@ -1414,7 +1436,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Load the list of SQL layers.
         /// </summary>
-        /// <returns>string: error message</returns>
+        /// <returns>The task returns an error message, or null if successful.</returns>
         public async Task<string> LoadSQLLayersAsync()
         {
             // Reset the list of SQL tables.
@@ -1460,7 +1482,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Load the list of open GIS layers.
         /// </summary>
-        /// <returns>string: error message</returns>
+        /// <returns>The task returns an error message, or null if successful.</returns>
         public async Task<string> LoadMapLayersAsync()
         {
             // Reset the list of open layers.
@@ -1492,7 +1514,7 @@ namespace DataExtractor.UI
             // Get all of the map layer details.
             _mapLayers = _toolConfig.MapLayers;
 
-            await Task.Run(() =>
+            await Task.Run(async() =>
             {
                 if (_mapFunctions == null || _mapFunctions.MapName == null || MapView.Active is null || MapView.Active.Map.Name != _mapFunctions.MapName)
                 {
@@ -1511,7 +1533,7 @@ namespace DataExtractor.UI
                     // in the active map.
                     foreach (MapLayer layer in allLayers)
                     {
-                        if (_mapFunctions.FindLayer(layer.LayerName) != null)
+                        if (await _mapFunctions.FindLayerAsync(layer.LayerName) != null)
                         {
                             // Add the open layers to the list.
                             _openMapLayersList.Add(layer);
@@ -1553,7 +1575,6 @@ namespace DataExtractor.UI
         /// <summary>
         /// Clear the list of partners, SQL tables, and open GIS map layers.
         /// </summary>
-        /// <returns></returns>
         public void ClearFormLists()
         {
             // If not already processing.
@@ -1576,7 +1597,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Validate and run the extract.
         /// </summary>
-        /// <returns>bool</returns>
+        /// <returns>The task returns true if successful, false otherwise.</returns>
         private async Task<bool> ProcessExtractsAsync()
         {
             if (_mapFunctions == null || _mapFunctions.MapName == null)
@@ -1644,7 +1665,7 @@ namespace DataExtractor.UI
             string txtFolder = _txtFolder.Trim();
 
             // Set a default GDB name if it's empty.
-            if (String.IsNullOrEmpty(gdbName))
+            if (string.IsNullOrEmpty(gdbName))
                 gdbName = "Data";
 
             // Count the total number of steps to process.
@@ -1652,24 +1673,26 @@ namespace DataExtractor.UI
             _extractTot = SelectedPartners.Count * (SelectedSQLLayers.Count + SelectedMapLayers.Count);
 
             // Stop if the user cancelled the process.
-            if (_dockPane.ExtractCancelled)
-                return false;
+            if (_dockPane.ExtractStatus == DockpaneMainViewModel.ExtractStatuses.Cancelled)
+				return false;
 
-            // Indicate the extract has started.
-            _dockPane.ExtractCancelled = false;
-            _dockPane.ExtractRunning = true;
+			// Indicate the extract is running.
+			_dockPane.ExtractStatus = DockpaneMainViewModel.ExtractStatuses.Running;
 
-            // Write the first line to the log file.
-            FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
+			// Write the first line to the log file.
+			FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
             FileFunctions.WriteLine(_logFile, "Process started!");
             FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
+
+            // Log version info.
+            FileFunctions.WriteLine(_logFile, "DataExtractor version: " + GetAddInVersion());
 
             // If userid is temp.
             if (_userID == "Temp")
                 FileFunctions.WriteLine(_logFile, "User ID not found. User ID used will be 'Temp'.");
 
             // If exclusion clause is being applied.
-            if (applyExclusionClause && !String.IsNullOrEmpty(_exclusionClause))
+            if (applyExclusionClause && !string.IsNullOrEmpty(_exclusionClause))
                 FileFunctions.WriteLine(_logFile, "Exclusion clause will be applied.");
 
             // Clear the partner features selection.
@@ -1693,7 +1716,7 @@ namespace DataExtractor.UI
                     FileFunctions.WriteLine(_logFile, "Uploading partner table to server ...");
 
                     // Get the full layer path (in case it's nested in one or more groups).
-                    string partnerLayerPath = _mapFunctions.GetLayerPath(_partnerTable);
+                    string partnerLayerPath = await _mapFunctions.GetLayerPathAsync(_partnerTable);
 
                     if (!await ArcGISFunctions.CopyFeaturesAsync(partnerLayerPath, _sdeFile + @"\" + _targetSchema + "." + _partnerTable, false))
                     {
@@ -1714,7 +1737,7 @@ namespace DataExtractor.UI
             foreach (Partner selectedPartner in SelectedPartners)
             {
                 // Stop if the user cancelled the process.
-                if (_dockPane.ExtractCancelled)
+                if (_dockPane.ExtractStatus == DockpaneMainViewModel.ExtractStatuses.Cancelled)
                     break;
 
                 // Get the partner name and abbreviation.
@@ -1742,7 +1765,7 @@ namespace DataExtractor.UI
             await CleanUpExtractAsync();
 
             // If there were errors or the process was cancelled then exit.
-            if ((_extractErrors) || (_dockPane.ExtractCancelled))
+            if ((_extractErrors) || (_dockPane.ExtractStatus == DockpaneMainViewModel.ExtractStatuses.Cancelled))
                 return false;
 
             return true;
@@ -1763,9 +1786,10 @@ namespace DataExtractor.UI
             // Resume the map redrawing.
             _mapFunctions.PauseDrawing(false);
 
-            // Indicate extract has finished.
-            _dockPane.ExtractRunning = false;
-            _dockPane.ProgressUpdate(null, -1, -1);
+			// Indicate search has finished.
+			_dockPane.ExtractStatus = DockpaneMainViewModel.ExtractStatuses.NotStarted;
+
+			_dockPane.ProgressUpdate(null, -1, -1);
 
             string imageSource = string.Format("pack://application:,,,/DataExtractor;component/Images/{0}32.png", image);
 
@@ -1787,7 +1811,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Clean up after the extract has completed (successfully or not).
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The task performing the asynchronous operation.</returns>
         private async Task CleanUpExtractAsync()
         {
             FileFunctions.WriteLine(_logFile, "");
@@ -1809,7 +1833,7 @@ namespace DataExtractor.UI
         /// <param name="arcGISFolder"></param>
         /// <param name="csvFolder"></param>
         /// <param name="txtFolder"></param>
-        /// <returns>bool</returns>
+        /// <returns>The task returns true if successful, false otherwise.</returns>
         private async Task<bool> ProcessPartnerAsync(Partner partner, int selectionTypeNum, bool applyExclusionClause, bool useCentroids,
             string defaultPath, string partnerFolder, string gdbName, string arcGISFolder, string csvFolder, string txtFolder)
         {
@@ -1829,7 +1853,7 @@ namespace DataExtractor.UI
             }
 
             // Get the partner table feature layer.
-            FeatureLayer partnerLayer = _mapFunctions.FindLayer(_partnerTable);
+            FeatureLayer partnerLayer = await _mapFunctions.FindLayerAsync(_partnerTable);
             if (partnerLayer == null)
                 return false;
 
@@ -1851,7 +1875,11 @@ namespace DataExtractor.UI
 
             // Set up the output folder.
             string outFolder = defaultPath + @"\" + partnerFolder;
-            if (!FileFunctions.DirExists(outFolder))
+            if (FileFunctions.DirExists(outFolder))
+            {
+                FileFunctions.WriteLine(_logFile, "Writing to output path '" + outFolder + "'.");
+            }
+            else
             {
                 FileFunctions.WriteLine(_logFile, "Creating output path '" + outFolder + "'.");
                 try
@@ -1864,6 +1892,16 @@ namespace DataExtractor.UI
                     return false;
                 }
             }
+
+            // Log the GIS output formats required.
+            string gisFormat = partner.GISFormat?.ToUpper().Trim();
+            if (!string.IsNullOrEmpty(gisFormat))
+                FileFunctions.WriteLine(_logFile, "GIS output format(s) required: " + gisFormat);
+
+            // Log the export formats required.
+            string exportFormat = partner.ExportFormat?.ToUpper().Trim();
+            if (!string.IsNullOrEmpty(exportFormat))
+                FileFunctions.WriteLine(_logFile, "Export format(s) required: " + exportFormat);
 
             //------------------------------------------------------------------
             // Let's start the SQL layers.
@@ -1960,7 +1998,7 @@ namespace DataExtractor.UI
         /// <param name="arcGISFolder"></param>
         /// <param name="csvFolder"></param>
         /// <param name="txtFolder"></param>
-        /// <returns>bool</returns>
+        /// <returns>The task returns true if successful, false otherwise.</returns>
         private async Task<bool> ProcessSQLLayerAsync(Partner partner, SQLLayer sqlLayer, bool applyExclusionClause, string outFolder,
             string gdbName, string arcGISFolder, string csvFolder, string txtFolder)
         {
@@ -2030,9 +2068,9 @@ namespace DataExtractor.UI
             }
 
             // Add the exclusion clause if required.
-            if (applyExclusionClause && !String.IsNullOrEmpty(_exclusionClause))
+            if (applyExclusionClause && !string.IsNullOrEmpty(_exclusionClause))
             {
-                if (String.IsNullOrEmpty(whereClause))
+                if (string.IsNullOrEmpty(whereClause))
                     whereClause = _exclusionClause;
                 else
                     whereClause = "(" + whereClause + ") AND (" + _exclusionClause + ")";
@@ -2208,7 +2246,7 @@ namespace DataExtractor.UI
         /// <param name="outPoints"></param>
         /// <param name="outPolys"></param>
         /// <param name="outFlat"></param>
-        /// <returns>bool</returns>
+        /// <returns>The task returns true if successful, false otherwise.</returns>
         private async Task<bool> CreateSQLOutput(string outputTable, string mapOutputFormat, string outPath, string gdbName,
             bool isSpatial, string inPoints, string inPolys, string inFlatTable, string outPoints, string outPolys, string outFlat)
         {
@@ -2367,7 +2405,7 @@ namespace DataExtractor.UI
         /// <param name="inPolys"></param>
         /// <param name="inFlatTable"></param>
         /// <param name="expFile"></param>
-        /// <returns>bool</returns>
+        /// <returns>The task returns true if successful, false otherwise.</returns>
         private async Task<bool> CreateSQLExport(string outputTable, string exportOutputFormat, string outPath,
             bool isSpatial, string inPoints, string inPolys, string inFlatTable, string expFile)
         {
@@ -2470,7 +2508,7 @@ namespace DataExtractor.UI
         /// <param name="arcGISFolder"></param>
         /// <param name="csvFolder"></param>
         /// <param name="txtFolder"></param>
-        /// <returns>bool</returns>
+        /// <returns>The task returns true if successful, false otherwise.</returns>
         private async Task<bool> ProcessMapLayerAsync(Partner partner, MapLayer mapLayer, string outFolder,
             string gdbName, string arcGISFolder, string csvFolder, string txtFolder)
         {
@@ -2535,10 +2573,10 @@ namespace DataExtractor.UI
             FileFunctions.WriteLine(_logFile, "Executing spatial selection ...");
 
             // Get the full layer path (in case it's nested in one or more groups).
-            string mapLayerPath = _mapFunctions.GetLayerPath(layerName);
+            string mapLayerPath = await _mapFunctions.GetLayerPathAsync(layerName);
 
             // Get the full layer path (in case it's nested in one or more groups).
-            string partnerLayerPath = _mapFunctions.GetLayerPath(_partnerTable);
+            string partnerLayerPath = await _mapFunctions.GetLayerPathAsync(_partnerTable);
 
             // Firstly do the spatial selection.
             if (!await MapFunctions.SelectLayerByLocationAsync(mapLayerPath, partnerLayerPath))
@@ -2548,7 +2586,7 @@ namespace DataExtractor.UI
             }
 
             // Find the map layer by name.
-            FeatureLayer inputLayer = _mapFunctions.FindLayer(layerName);
+            FeatureLayer inputLayer = await _mapFunctions.FindLayerAsync(layerName);
 
             if (inputLayer == null)
             {
@@ -2750,7 +2788,7 @@ namespace DataExtractor.UI
         /// <param name="outPath"></param>
         /// <param name="gdbName"></param>
         /// <param name="outFile"></param>
-        /// <returns>bool</returns>
+        /// <returns>The task returns true if successful, false otherwise.</returns>
         private async Task<bool> CreateMapOutput(string layerName, string outputTable, string mapOutputFormat,
             string outPath, string gdbName, string outFile)
         {
@@ -2837,7 +2875,7 @@ namespace DataExtractor.UI
         /// <param name="outPath"></param>
         /// <param name="expFile"></param>
         /// <param name="outputColumns"></param>
-        /// <returns>bool</returns>
+        /// <returns>The task returns true if successful, false otherwise.</returns>
         private async Task<bool> CreateMapExport(string outputTable, string exportOutputFormat, string outPath,
             string expFile, string outputColumns)
         {
@@ -2891,7 +2929,7 @@ namespace DataExtractor.UI
         /// <param name="schema">The target schema name (e.g., 'dbo').</param>
         /// <param name="selectionTypeNum">An integer representing the selection type.</param>
         /// <param name="useCentroids">Whether to use centroids in the spatial query.</param>
-        /// <returns>Returns the number of selected features, or -1 if failed.</returns>
+        /// <returns>The task returns the count of selected features, or -1 if an error occurs.</returns>
         internal async Task<long> PerformSpatialSelectionAsync(Partner partner, string schema, int selectionTypeNum, bool useCentroids)
         {
             // Get the partner abbreviation and source table name.
@@ -2969,7 +3007,7 @@ namespace DataExtractor.UI
         /// <param name="orderClause">The ORDER BY clause.</param>
         /// <param name="userID">The user ID to append to output tables.</param>
         /// <param name="checkOutputSize">Whether to validate maximum data size.</param>
-        /// <returns>True if selection succeeds; false if failed or oversized.</returns>
+        /// <returns>The task returns true if successful, false otherwise.</returns>
         internal async Task<bool> PerformSubsetSelectionAsync(bool isSpatial, bool isSplit, string schema, string tableName,
             string columnNames, string whereClause, string groupClause, string orderClause, string userID, bool checkOutputSize)
         {
@@ -3110,7 +3148,7 @@ namespace DataExtractor.UI
         /// <param name="schema">Schema where the table resides (e.g., 'dbo').</param>
         /// <param name="tableName">Base name of the spatial table to clear.</param>
         /// <param name="userID">User ID appended to the table name.</param>
-        /// <returns>True if successful; false if an error occurs.</returns>
+        /// <returns>The task returns true if successful, false otherwise.</returns>
         internal async Task<bool> ClearSpatialTableAsync(string schema, string tableName, string userID)
         {
             // Get the stored procedure used to clear spatial tables.
@@ -3166,7 +3204,7 @@ namespace DataExtractor.UI
         /// <param name="macroParm"></param>
         /// <param name="outPath"></param>
         /// <param name="outFile"></param>
-        /// <returns>bool</returns>
+        /// <returns>True if successful, false otherwise.</returns>
         public bool StartProcess(string macroName, string macroParm, string outPath, string outFile)
         {
             using Process scriptProc = new();
@@ -3249,9 +3287,6 @@ namespace DataExtractor.UI
         /// <summary>
         /// Create SQLLayersList Expand button command.
         /// </summary>
-        /// <value></value>
-        /// <returns></returns>
-        /// <remarks></remarks>
         public ICommand SQLLayersListExpandCommand
         {
             get
@@ -3326,7 +3361,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Get a list of the SQL table names from the SQL Server.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The task performing the asynchronous operation.</returns>
         public async Task GetSQLTableNamesAsync()
         {
             // Get the full list of feature classes and tables from SQL Server.
@@ -3364,7 +3399,7 @@ namespace DataExtractor.UI
         /// <param name="includeWildcard"></param>
         /// <param name="excludeWildcard"></param>
         /// <param name="includeFullName"></param>
-        /// <returns>list: filtered table list</returns>
+        /// <returns>A list of filtered table names.</returns>
         internal static List<string> FilterTableNames(List<string> inputNames, string schema, string includeWildcard, string excludeWildcard,
                               bool includeFullName = false)
         {
@@ -3403,7 +3438,7 @@ namespace DataExtractor.UI
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="columnsText"></param>
-        /// <returns>string: spatial column</returns>
+        /// <returns>The task returns the name of the geometry column if found, null otherwise.</returns>
         internal async Task<string> IsSQLTableSpatialAsync(string tableName, string columnsText)
         {
             string[] geometryFields = ["SP_GEOMETRY", "Shape"]; // Expand as required.
@@ -3496,264 +3531,4 @@ namespace DataExtractor.UI
 
         #endregion INotifyPropertyChanged Members
     }
-
-    #region Partner Class
-
-    /// <summary>
-    /// Partner to extract.
-    /// </summary>
-    public class Partner : INotifyPropertyChanged
-    {
-        #region Fields
-
-        public string PartnerName { get; set; }
-
-        public string ShortName { get; set; }
-
-        public string GISFormat { get; set; }
-
-        public string ExportFormat { get; set; }
-
-        public string SQLTable { get; set; }
-
-        public string SQLFiles { get; set; }
-
-        public string MapFiles { get; set; }
-
-        public string Tags { get; set; }
-
-        public string Notes { get; set; }
-
-        private bool _isSelected;
-
-        public bool IsSelected
-        {
-            get { return _isSelected; }
-            set
-            {
-                _isSelected = value;
-
-                OnPropertyChanged(nameof(IsSelected));
-            }
-        }
-
-        #endregion Fields
-
-        #region Creator
-
-        public Partner()
-        {
-            // constructor takes no arguments.
-        }
-
-        public Partner(string partnerName)
-        {
-            PartnerName = partnerName;
-        }
-
-        #endregion Creator
-
-        #region INotifyPropertyChanged Members
-
-        /// <summary>
-        /// Raised when a property on this object has a new value.
-        /// </summary>
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        /// <summary>
-        /// Raises this object's PropertyChanged event.
-        /// </summary>
-        /// <param name="propertyName">The property that has a new value.</param>
-        internal virtual void OnPropertyChanged(string propertyName)
-        {
-            //VerifyPropertyName(propertyName);
-
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null)
-            {
-                PropertyChangedEventArgs e = new(propertyName);
-                handler(this, e);
-            }
-        }
-
-        #endregion INotifyPropertyChanged Members
-    }
-
-    #endregion Partner Class
-
-    #region SQLLayer Class
-
-    /// <summary>
-    /// SQL layers to extract.
-    /// </summary>
-    public class SQLLayer : INotifyPropertyChanged
-    {
-        #region Fields
-
-        public string NodeName { get; set; }
-
-        public string NodeGroup { get; set; }
-
-        public string NodeTable { get; set; }
-
-        public string OutputName { get; set; }
-
-        public string OutputType { get; set; }
-
-        public string Columns { get; set; }
-
-        public string WhereClause { get; set; }
-
-        public string OrderColumns { get; set; }
-
-        public string MacroName { get; set; }
-
-        public string MacroParms { get; set; }
-
-        private bool _isSelected;
-
-        public bool IsSelected
-        {
-            get { return _isSelected; }
-            set
-            {
-                _isSelected = value;
-
-                OnPropertyChanged(nameof(IsSelected));
-            }
-        }
-
-        #endregion Fields
-
-        #region Creator
-
-        public SQLLayer()
-        {
-            // constructor takes no arguments.
-        }
-
-        public SQLLayer(string nodeName)
-        {
-            NodeName = nodeName;
-        }
-
-        #endregion Creator
-
-        #region INotifyPropertyChanged Members
-
-        /// <summary>
-        /// Raised when a property on this object has a new value.
-        /// </summary>
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        /// <summary>
-        /// Raises this object's PropertyChanged event.
-        /// </summary>
-        /// <param name="propertyName">The property that has a new value.</param>
-        internal virtual void OnPropertyChanged(string propertyName)
-        {
-            //VerifyPropertyName(propertyName);
-
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null)
-            {
-                PropertyChangedEventArgs e = new(propertyName);
-                handler(this, e);
-            }
-        }
-
-        #endregion INotifyPropertyChanged Members
-    }
-
-    #endregion SQLLayer Class
-
-    #region MapLayer Class
-
-    /// <summary>
-    /// Map layers to extract.
-    /// </summary>
-    public class MapLayer : INotifyPropertyChanged
-    {
-        #region Fields
-
-        public string NodeName { get; set; }
-
-        public string NodeGroup { get; set; }
-
-        public string NodeLayer { get; set; }
-
-        public string LayerName { get; set; }
-
-        public string OutputName { get; set; }
-
-        public string OutputType { get; set; }
-
-        public string Columns { get; set; }
-
-        public string WhereClause { get; set; }
-
-        public string OrderColumns { get; set; }
-
-        public bool LoadWarning { get; set; }
-
-        public string MacroName { get; set; }
-
-        public string MacroParms { get; set; }
-
-        private bool _isSelected;
-
-        public bool IsSelected
-        {
-            get { return _isSelected; }
-            set
-            {
-                _isSelected = value;
-
-                OnPropertyChanged(nameof(IsSelected));
-            }
-        }
-
-        #endregion Fields
-
-        #region Creator
-
-        public MapLayer()
-        {
-            // constructor takes no arguments.
-        }
-
-        public MapLayer(string nodeName)
-        {
-            NodeName = nodeName;
-        }
-
-        #endregion Creator
-
-        #region INotifyPropertyChanged Members
-
-        /// <summary>
-        /// Raised when a property on this object has a new value.
-        /// </summary>
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        /// <summary>
-        /// Raises this object's PropertyChanged event.
-        /// </summary>
-        /// <param name="propertyName">The property that has a new value.</param>
-        internal virtual void OnPropertyChanged(string propertyName)
-        {
-            //VerifyPropertyName(propertyName);
-
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null)
-            {
-                PropertyChangedEventArgs e = new(propertyName);
-                handler(this, e);
-            }
-        }
-
-        #endregion INotifyPropertyChanged Members
-    }
-
-    #endregion MapLayer Class
 }

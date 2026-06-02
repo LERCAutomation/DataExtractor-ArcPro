@@ -1,4 +1,4 @@
-﻿// The DataTools are a suite of ArcGIS Pro addins used to extract
+﻿// The DataTools are a suite of ArcGIS Pro addins used to extract, sync
 // and manage biodiversity information from ArcGIS Pro and SQL Server
 // based on pre-defined or user specified criteria.
 //
@@ -198,8 +198,8 @@ namespace DataExtractor.UI
         /// <summary>
         /// Ensure any removed map layers are actually unselected.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <param name="sender">The sender object.</param>
+        /// <param name="e">The event arguments.</param>
         private void ListViewMapLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Get the list of removed items.
@@ -212,7 +212,7 @@ namespace DataExtractor.UI
                 e.RemovedItems.OfType<MapLayer>().ToList().ForEach(p => p.IsSelected = false);
 
                 // Get the list of currently selected items.
-                var listView = sender as System.Windows.Controls.ListView;
+                var listView = sender as ListView;
                 var selectedItems = listView.SelectedItems.OfType<MapLayer>().ToList();
 
                 if (selectedItems.Count == 1)
@@ -322,8 +322,8 @@ namespace DataExtractor.UI
         /// <summary>
         /// Reset the width of the map layer column to match the width of the list view.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <param name="sender">The sender object.</param>
+        /// <param name="e">The event arguments.</param>
         private void ListViewMapLayers_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             // Get the SQL layer list view.
@@ -345,9 +345,8 @@ namespace DataExtractor.UI
         /// Return the first visual child object of the required type
         /// for the specified object.
         /// </summary>
-        /// <typeparam name="childItem"></typeparam>
-        /// <param name="obj"></param>
-        /// <returns></returns>
+        /// <typeparam name="childItem">The type of child object to find.</typeparam>
+        /// <param name="obj">The parent object.</param>
         private static childItem FindVisualChild<childItem>(DependencyObject obj)
                where childItem : DependencyObject
         {

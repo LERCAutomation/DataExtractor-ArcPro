@@ -81,11 +81,11 @@ namespace DataTools
         public static string SetSDEConnectionString(string dbInstance, string dbName)
         {
             // Check there is a database instance name.
-            if (String.IsNullOrEmpty(dbInstance))
+            if (string.IsNullOrEmpty(dbInstance))
                 return null;
 
             // Check there is a database name.
-            if (String.IsNullOrEmpty(dbName))
+            if (string.IsNullOrEmpty(dbName))
                 return null;
 
             // Set the SQL Server connection string.
@@ -114,19 +114,19 @@ namespace DataTools
             string database)
         {
             // Check there is an output folder path.
-            if (String.IsNullOrEmpty(out_folder_path))
+            if (string.IsNullOrEmpty(out_folder_path))
                 return false;
 
             // Check there is an output database connnection file name.
-            if (String.IsNullOrEmpty(out_name))
+            if (string.IsNullOrEmpty(out_name))
                 return false;
 
             // Check there is a database server or instance name.
-            if (String.IsNullOrEmpty(instance))
+            if (string.IsNullOrEmpty(instance))
                 return false;
 
             // Check there is a database name.
-            if (String.IsNullOrEmpty(database))
+            if (string.IsNullOrEmpty(database))
                 return false;
 
             // Make a value array of strings to be passed to the tool.
@@ -382,11 +382,11 @@ namespace DataTools
         public static async Task<IReadOnlyList<Field>> GetFieldNamesAsync(string filePath, string fileName)
         {
             // Check there is an input file path.
-            if (String.IsNullOrEmpty(filePath))
+            if (string.IsNullOrEmpty(filePath))
                 return null;
 
             // Check there is an input file name.
-            if (String.IsNullOrEmpty(fileName))
+            if (string.IsNullOrEmpty(fileName))
                 return null;
 
             IReadOnlyList<Field> fields = null;
@@ -424,7 +424,7 @@ namespace DataTools
         public static async Task<IReadOnlyList<Field>> GetFieldNamesAsync(string fullPath)
         {
             // Check there is an input file path.
-            if (String.IsNullOrEmpty(fullPath))
+            if (string.IsNullOrEmpty(fullPath))
                 return null;
 
             return await GetFieldNamesAsync(FileFunctions.GetDirectoryName(fullPath), FileFunctions.GetFileName(fullPath));
@@ -494,7 +494,7 @@ namespace DataTools
         public async Task<bool> ExecuteSQLOnGeodatabaseAsync(string sqlStatement)
         {
             // Check there is a sql statement.
-            if (String.IsNullOrEmpty(sqlStatement))
+            if (string.IsNullOrEmpty(sqlStatement))
                 return false;
 
             bool success = true;
@@ -580,11 +580,11 @@ namespace DataTools
         public async Task<bool> CopyToCSVAsync(string inTable, string outFile, bool isSpatial, bool append)
         {
             // Check if there is an input table name.
-            if (String.IsNullOrEmpty(inTable))
+            if (string.IsNullOrEmpty(inTable))
                 return false;
 
             // Check if there is an output file.
-            if (String.IsNullOrEmpty(outFile))
+            if (string.IsNullOrEmpty(outFile))
                 return false;
 
             string separator = ",";
@@ -602,11 +602,11 @@ namespace DataTools
         public async Task<bool> CopyToTabAsync(string inTable, string outFile, bool isSpatial, bool append)
         {
             // Check if there is an input table name.
-            if (String.IsNullOrEmpty(inTable))
+            if (string.IsNullOrEmpty(inTable))
                 return false;
 
             // Check if there is an output file.
-            if (String.IsNullOrEmpty(outFile))
+            if (string.IsNullOrEmpty(outFile))
                 return false;
 
             string separator = "\t";
@@ -626,11 +626,11 @@ namespace DataTools
         public async Task<bool> CopyToTextFileAsync(string inTable, string outFile, string separator, bool isSpatial, bool append, bool includeHeader = true)
         {
             // Check if there is an input table name.
-            if (String.IsNullOrEmpty(inTable))
+            if (string.IsNullOrEmpty(inTable))
                 return false;
 
             // Check if there is an output file.
-            if (String.IsNullOrEmpty(outFile))
+            if (string.IsNullOrEmpty(outFile))
                 return false;
 
             string filePath = FileFunctions.GetDirectoryName(inTable);
@@ -779,7 +779,7 @@ namespace DataTools
         public async Task<bool> FeatureClassExistsAsync(string featureClassName)
         {
             // Check there is an input feature class name.
-            if (String.IsNullOrEmpty(featureClassName))
+            if (string.IsNullOrEmpty(featureClassName))
                 return false;
 
             bool exists = false;
@@ -822,7 +822,7 @@ namespace DataTools
         public async Task<long> GetFeaturesCountAsync(string featureClassName, string whereClause = null, string subfields = null, string prefixClause = null, string postfixClause = null)
         {
             // Check there is an input feature class name.
-            if (String.IsNullOrEmpty(featureClassName))
+            if (string.IsNullOrEmpty(featureClassName))
                 return -1;
 
             // Open a connection to the geodatabase if not already open.
@@ -885,7 +885,7 @@ namespace DataTools
         public async Task<long> GetDuplicateFeaturesCountAsync(string featureClassName, string keyField, string whereClause = null)
         {
             // Check there is an input feature class name.
-            if (String.IsNullOrEmpty(featureClassName))
+            if (string.IsNullOrEmpty(featureClassName))
                 return -1;
 
             // Check if there is a input key field.
@@ -975,7 +975,7 @@ namespace DataTools
         public async Task<bool> TableExistsAsync(string tableName)
         {
             // Check there is an input table name.
-            if (String.IsNullOrEmpty(tableName))
+            if (string.IsNullOrEmpty(tableName))
                 return false;
 
             bool exists = false;
@@ -1014,7 +1014,7 @@ namespace DataTools
         public async Task<long> GetTableRowCountAsync(string tableName)
         {
             // Check there is an input table name.
-            if (String.IsNullOrEmpty(tableName))
+            if (string.IsNullOrEmpty(tableName))
                 return -1;
 
             // Open a connection to the geodatabase if not already open.
@@ -1055,7 +1055,7 @@ namespace DataTools
         public async Task<int> GetTableRowLengthAsync(string tableName)
         {
             // Check there is an input table name.
-            if (String.IsNullOrEmpty(tableName))
+            if (string.IsNullOrEmpty(tableName))
                 return -1;
 
             int rowLength = 0;
@@ -1110,7 +1110,7 @@ namespace DataTools
         public async Task<bool> DeleteTableAsync(string tableName)
         {
             // Check there is an input table name.
-            if (String.IsNullOrEmpty(tableName))
+            if (string.IsNullOrEmpty(tableName))
                 return false;
 
             bool success = false;

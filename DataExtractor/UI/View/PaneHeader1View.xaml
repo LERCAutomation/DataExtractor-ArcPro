@@ -1,4 +1,5 @@
-﻿<UserControl x:Class="DataExtractor.UI.PaneHeader1View"
+﻿<UserControl
+    x:Class="DataExtractor.UI.PaneHeader1View"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -9,9 +10,7 @@
     d:DesignWidth="300"
     mc:Ignorable="d">
 
-    <DockPanel
-        MinWidth="270"
-        Margin="6,6,6,6">
+    <DockPanel MinWidth="270" Margin="6,6,6,6">
 
         <Grid>
             <Grid.RowDefinitions>
@@ -29,14 +28,15 @@
                     <ColumnDefinition Width="22" />
                 </Grid.ColumnDefinitions>
 
-                <Label Content="XML Folder:"
+                <Label
                     Name="LabelXMLFilePath"
                     Grid.Column="0"
                     Margin="0,0,0,0"
                     Padding="0"
                     HorizontalAlignment="Left"
-                    VerticalAlignment="Center" />
-                <TextBox Text="{Binding Path=XMLFolder}"
+                    VerticalAlignment="Center"
+                    Content="XML Folder:" />
+                <TextBox
                     Name="TextXMLFilePath"
                     Grid.Column="1"
                     Height="22"
@@ -44,7 +44,8 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Center"
                     IsReadOnly="True"
-                    TabIndex="0" />
+                    TabIndex="0"
+                    Text="{Binding Path=XMLFolder}" />
                 <Button
                     Name="ButtonXMLFilePath"
                     Grid.Column="2"
@@ -66,8 +67,7 @@
                         Source="{Binding ButtonXMLFilePathImg}" />
                     <Button.ToolTip>
                         <ToolTip>
-                            <TextBlock Text="Browse to the XML config folder"
-                                FontWeight="Normal" />
+                            <TextBlock FontWeight="Normal" Text="Browse to the XML config folder" />
                         </ToolTip>
                     </Button.ToolTip>
                 </Button>
@@ -82,14 +82,15 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="60" />
                 </Grid.ColumnDefinitions>
-                <Label Content="XML Profile:"
+                <Label
                     Name="LabelChooseXML"
                     Grid.Column="0"
                     Margin="0,0,0,2"
                     Padding="0"
                     HorizontalAlignment="Left"
-                    VerticalAlignment="Center" />
-                <ComboBox ItemsSource="{Binding Path=AvailableXMLFiles, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    VerticalAlignment="Center"
+                    Content="XML Profile:" />
+                <ComboBox
                     Name="ComboBoxChooseXML"
                     Grid.Column="1"
                     Height="22"
@@ -98,10 +99,10 @@
                     IsEditable="False"
                     IsEnabled="{Binding Path=CanSelectXMLProfile}"
                     IsReadOnly="True"
-                    SelectedValue="{Binding Path=SelectedXMLProfile,
-                                            ValidatesOnDataErrors=True}"
+                    ItemsSource="{Binding Path=AvailableXMLFiles, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    SelectedValue="{Binding Path=SelectedXMLProfile, ValidatesOnDataErrors=True}"
                     TabIndex="2" />
-                <Button Content="Load"
+                <Button
                     Name="ButtonLoadProfile"
                     Grid.Column="2"
                     Height="22"
@@ -111,13 +112,13 @@
                     Padding="0"
                     VerticalAlignment="Center"
                     Command="{Binding Path=LoadProfileCommand}"
+                    Content="Load"
                     IsEnabled="{Binding Path=CanLoadProfile}"
                     Style="{DynamicResource Esri_SimpleButton}"
                     TabIndex="3">
                     <Button.ToolTip>
                         <ToolTip>
-                            <TextBlock Text="Load XML profile"
-                                FontWeight="Normal" />
+                            <TextBlock FontWeight="Normal" Text="Load XML profile" />
                         </ToolTip>
                     </Button.ToolTip>
                 </Button>

@@ -191,6 +191,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Create the SelectXMLPath button command.
         /// </summary>
+        /// <remarks></remarks>
         public ICommand SelectXMLPathCommand
         {
             get
@@ -208,7 +209,8 @@ namespace DataExtractor.UI
         /// <summary>
         /// Handles the event when the SelectXMLPath button is clicked.
         /// </summary>
-        /// <param name="param"></param>
+        /// <param name="param">The command parameter.</param>
+        /// <remarks></remarks>
         private void SelectXMLPathCommandClick(object param)
         {
             // Load the selected config file.
@@ -218,12 +220,13 @@ namespace DataExtractor.UI
         /// <summary>
         /// Can the SelectXMLPath button be pressed?
         /// </summary>
-        /// <value></value>
+        /// <returns>True if the button can be pressed, false if not.</returns>
+        /// <remarks></remarks>
         public bool CanSelectXMLPath
         {
             get
             {
-                return ((!_dockPane.ExtractRunning)
+                return ((_dockPane.ExtractStatus == DockpaneMainViewModel.ExtractStatuses.NotStarted)
                     && (!_dockPane.FormLoading));
             }
         }
@@ -263,13 +266,13 @@ namespace DataExtractor.UI
         /// <summary>
         /// Can the user select an XML profile?
         /// </summary>
-        /// <value></value>
+        /// <returns>True if the user can select an XML profile, false if not.</returns>
+        /// <remarks></remarks>
         public bool CanSelectXMLProfile
         {
             get
             {
-                return ((!_dockPane.ExtractRunning)
-                    && (!_dockPane.FormLoading)
+                return ((_dockPane.ExtractStatus == DockpaneMainViewModel.ExtractStatuses.NotStarted)
                     && (!string.IsNullOrEmpty(XMLFolder)));
             }
         }
@@ -283,7 +286,7 @@ namespace DataExtractor.UI
         /// <summary>
         /// Create the Open XML button command.
         /// </summary>
-        /// <value></value>
+        /// <remarks></remarks>
         public ICommand LoadProfileCommand
         {
             get
@@ -301,7 +304,8 @@ namespace DataExtractor.UI
         /// <summary>
         /// Handles the event when the Open XML button is clicked.
         /// </summary>
-        /// <param name="param"></param>
+        /// <param name="param">The command parameter.</param>
+        /// <remarks></remarks>
         private async void LoadProfileCommandClick(object param)
         {
             // Skip if no profile selected (shouldn't be possible).
@@ -340,13 +344,14 @@ namespace DataExtractor.UI
         /// <summary>
         /// Can the Load Profile button be pressed (has a profile been selected)?
         /// </summary>
-        /// <value></value>
+        /// <returns>True if the button can be pressed, false if not.</returns>
+        /// <remarks></remarks>
         public bool CanLoadProfile
         {
             get
             {
                 return ((!string.IsNullOrEmpty(SelectedXMLProfile))
-                    && (!_dockPane.ExtractRunning)
+                    && (_dockPane.ExtractStatus == DockpaneMainViewModel.ExtractStatuses.NotStarted)
                     && (!_dockPane.FormLoading));
             }
         }
@@ -480,7 +485,7 @@ namespace DataExtractor.UI
             }
 
             // If the user is allowed to choose the XML profile and there are
-            // more then just the default profile in the folder, load the
+            // more than just the default profile in the folder, load the
             // list of files for the user to choose.
             if (toolConfig.ChooseConfig && !blOnlyDefault)
             {
@@ -532,11 +537,11 @@ namespace DataExtractor.UI
         /// Get a list of valid XML files from the specified folder, and check
         /// if any of the files is the default profile and if only the
         /// </summary>
-        /// <param name="strXMLFolder"></param>
-        /// <param name="strDefaultXMLName"></param>
-        /// <param name="xmlFilesList"></param>
-        /// <param name="blDefaultFound"></param>
-        /// <param name="blOnlyDefault"></param>
+        /// <param name="strXMLFolder">The folder containing the XML files.</param>
+        /// <param name="strDefaultXMLName">The default XML file name.</param>
+        /// <param name="xmlFilesList">The list of valid XML files found.</param>
+        /// <param name="blDefaultFound">Whether the default XML file was found.</param>
+        /// <param name="blOnlyDefault">Whether only the default XML file was found.</param>
         private static void GetValidXMLFiles(string strXMLFolder, string strDefaultXMLName, ref List<string> xmlFilesList, ref bool blDefaultFound, ref bool blOnlyDefault)
         {
             blDefaultFound = false;
@@ -570,8 +575,8 @@ namespace DataExtractor.UI
         /// <summary>
         /// Load the selected XML profile.
         /// </summary>
-        /// <param name="xmlConfigPath"></param>
-        /// <param name="msgErrors"></param>
+        /// <param name="xmlConfigPath">The full path to the XML config file.</param>
+        /// <param name="msgErrors">Whether to report any errors to the user.</param>
         public void LoadXMLProfile(string xmlConfigPath, bool msgErrors)
         {
             // Load the selected XML config file.
