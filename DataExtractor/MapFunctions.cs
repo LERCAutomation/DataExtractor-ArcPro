@@ -1337,10 +1337,8 @@ namespace DataTools
         /// <param name="fieldNames">A delimited string containing the names of the fields to check for existence. Field names are separated by
         /// the specified separator character or a comma.</param>
         /// <param name="separator">The character used to separate field names in the <paramref name="fieldNames"/> string.</param>
-        /// <param name="checkStrings">Indicates whether to perform additional string-based checks when verifying field existence. The default is
-        /// <see langword="false"/>.</param>
         /// <returns>True if all specified field names exist in the collection; otherwise, false.</returns>
-        public static bool FieldsExist(IReadOnlyList<Field> fields, string fieldNames, char separator, bool checkStrings = false)
+        public static bool FieldsExist(IReadOnlyList<Field> fields, string fieldNames, char separator)
         {
             // Check there is an input field name.
             if (string.IsNullOrEmpty(fieldNames))

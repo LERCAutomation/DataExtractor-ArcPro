@@ -34,27 +34,17 @@ using System.Threading.Tasks;
 
 namespace DataTools
 {
-    public class SQLServerFunctions
+    public class SQLServerFunctions(string sdeFileName, string dbConnectionString, int dbTimeoutSeconds)
     {
         #region Fields
 
-        private readonly string _sdeFileName;
-        private readonly string _sqlConnectionString;
-        private readonly int _dbTimeoutSeconds;
+        private readonly string _sdeFileName = sdeFileName;
+        private readonly string _sqlConnectionString = dbConnectionString;
+        private readonly int _dbTimeoutSeconds = dbTimeoutSeconds;
 
         #endregion Fields
 
         #region Constructor
-
-        public SQLServerFunctions(string sdeFileName, string dbConnectionString, int dbTimeoutSeconds)
-        {
-            _sdeFileName = sdeFileName;
-            _sqlConnectionString = dbConnectionString;
-            _dbTimeoutSeconds = dbTimeoutSeconds;
-
-            //// Open a connection to the geodatabase (don't wait it will be checked later).
-            //OpenGeodatabaseAsync();
-        }
 
         #endregion Constructor
 

@@ -96,6 +96,10 @@ namespace DataExtractor.UI
         private string _includeWildcard;
         private string _excludeWildcard;
 
+        // Output suffix fields.
+        private string _outputPointSuffix;
+        private string _outputPolySuffix;
+
         // Partner table fields.
         private string _partnerTable;
 
@@ -196,6 +200,9 @@ namespace DataExtractor.UI
             _spatialStoredProcedure = _toolConfig.SpatialStoredProcedure;
             _subsetStoredProcedure = _toolConfig.SubsetStoredProcedure;
             _clearSpatialStoredProcedure = _toolConfig.ClearSpatialStoredProcedure;
+
+            _outputPointSuffix = _toolConfig.OutputPointSuffix;
+            _outputPolySuffix = _toolConfig.OutputPolySuffix;
 
             _defaultPath = _toolConfig.DefaultPath;
             _partnerFolder = _toolConfig.PartnerFolder;
@@ -2128,30 +2135,30 @@ namespace DataExtractor.UI
                     else
                         mapOutputFormat = "Geodatabase Table";
 
-                    outPoints = outputTable + "_Point";
-                    outPolys = outputTable + "_Poly";
+                    outPoints = outputTable + _outputPointSuffix;
+                    outPolys = outputTable + _outputPolySuffix;
                     outFlat = outputTable;
                     break;
 
                 case "GPKG":
                     mapOutputFormat = "GeoPackage";
 
-                    outPoints = outputTable + "_Point";
-                    outPolys = outputTable + "_Poly";
+                    outPoints = outputTable + _outputPointSuffix;
+                    outPolys = outputTable + _outputPolySuffix;
                     outFlat = outputTable;
                     break;
 
                 case "SHP":
                     mapOutputFormat = "Shapefile";
 
-                    outPoints = outputTable + "_Point.shp";
-                    outPolys = outputTable + "_Poly.shp";
+                    outPoints = outputTable + _outputPointSuffix + ".shp";
+                    outPolys = outputTable + _outputPolySuffix + ".shp";
                     outFlat = outputTable + ".dbf";
                     break;
 
                 case "DBF":
-                    outPoints = outputTable + "_Point.dbf";
-                    outPolys = outputTable + "_Poly.dbf";
+                    outPoints = outputTable + _outputPointSuffix + ".dbf";
+                    outPolys = outputTable + _outputPolySuffix + ".dbf";
                     outFlat = outputTable + ".dbf";
                     break;
 

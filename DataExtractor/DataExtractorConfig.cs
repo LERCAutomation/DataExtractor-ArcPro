@@ -607,6 +607,28 @@ namespace DataExtractor
                 _defaultOpenLogFile = false;
             }
 
+            // The suffix appended to the partner output point file name.
+            try
+            {
+                rawText = _xmlDataExtractor["OutputPointSuffix"]?.InnerText;
+                _outputPointSuffix = string.IsNullOrEmpty(rawText) ? "_Point" : rawText;
+            }
+            catch
+            {
+                _outputPointSuffix = "_Point";
+            }
+
+            // The suffix appended to the partner output polygon file name.
+            try
+            {
+                rawText = _xmlDataExtractor["OutputPolySuffix"]?.InnerText;
+                _outputPolySuffix = string.IsNullOrEmpty(rawText) ? "_Poly" : rawText;
+            }
+            catch
+            {
+                _outputPolySuffix = "_Poly";
+            }
+
             // All mandatory variables were loaded successfully.
             return true;
         }
@@ -1171,6 +1193,20 @@ namespace DataExtractor
         public bool DefaultOpenLogFile
         {
             get { return _defaultOpenLogFile; }
+        }
+
+        private string _outputPointSuffix;
+
+        public string OutputPointSuffix
+        {
+            get { return _outputPointSuffix; }
+        }
+
+        private string _outputPolySuffix;
+
+        public string OutputPolySuffix
+        {
+            get { return _outputPolySuffix; }
         }
 
         #endregion Variables
