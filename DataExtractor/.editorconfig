@@ -2,3 +2,6 @@
 
 # IDE0057: Use range operator
 dotnet_diagnostic.IDE0057.severity = silent
+
+# CS0618: Type or member is obsolete
+dotnet_diagnostic.CS0618.severity = silent

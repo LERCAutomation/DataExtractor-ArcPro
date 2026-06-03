@@ -42,6 +42,8 @@ namespace DataExtractor
         // Initialise component to read XML
         private readonly XmlElement _xmlDataExtractor;
 
+        private readonly string _xmlFile;
+
         #endregion Fields
 
         #region Constructor
@@ -55,6 +57,7 @@ namespace DataExtractor
         public DataExtractorConfig(string xmlFile, string toolName, bool msgErrors)
         {
             _toolName = toolName;
+            _xmlFile = xmlFile;
 
             // The user has specified the xmlFile and we've checked it exists.
             _xmlFound = true;
@@ -871,6 +874,17 @@ namespace DataExtractor
             get
             {
                 return _xmlLoaded;
+            }
+        }
+
+        /// <summary>
+        /// The XML profile file path.
+        /// </summary>
+        public string XMLFile
+        {
+            get
+            {
+                return _xmlFile;
             }
         }
 

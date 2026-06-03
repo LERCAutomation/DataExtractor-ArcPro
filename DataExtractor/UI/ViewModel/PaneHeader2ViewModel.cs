@@ -20,6 +20,7 @@
 // along with with program.  If not, see <http://www.gnu.org/licenses/>.
 
 using ArcGIS.Desktop.Framework;
+using ArcGIS.Desktop.Framework.Contracts;
 using ArcGIS.Desktop.Internal.Framework.Controls;
 using ArcGIS.Desktop.Mapping;
 using DataTools;
@@ -39,7 +40,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using ArcGIS.Desktop.Framework.Contracts;
 using MessageBox = ArcGIS.Desktop.Framework.Dialogs.MessageBox;
 
 namespace DataExtractor.UI
@@ -558,6 +558,9 @@ namespace DataExtractor.UI
                 }
             }
 
+            // Initialize the application-wide trace logging to redirect the output to the log file.
+            InitializeTraceLogging(_logFile);
+
             // Set process status to blank to mimick process is running.
             _dockPane.ProcessStatus = "";
 
@@ -1042,6 +1045,69 @@ namespace DataExtractor.UI
         }
 
         #endregion Properties
+
+        #region Debug Logging
+
+        /// <summary>
+        /// Initializes trace logging by redirecting Trace output to a log file.
+        /// This method ensures the log file is opened in append mode with proper flushing
+        /// and listener setup for reliable logging output.
+        /// </summary>
+        /// <param name="logFilePath">The full path to the log file.</param>
+        private static void InitializeTraceLogging(string logFilePath)
+        {
+            // Close any existing listeners before setting up a new one.
+            CloseTraceLogging();
+
+            // Open the log file stream in append mode, allowing concurrent read/write access.
+            var logFileStream = new FileStream(
+                logFilePath,
+                FileMode.Append,      // Ensure new logs are added to the end of the file.
+                FileAccess.Write,     // Only write access is needed.
+                FileShare.ReadWrite); // Allow other processes to read or write concurrently.
+
+            // Wrap the file stream with a StreamWriter for better buffering and encoding control.
+            var writer = new StreamWriter(logFileStream)
+            {
+                AutoFlush = true // Ensure log messages are written immediately without buffering delay.
+            };
+
+            // Create a trace listener that writes to the StreamWriter.
+            var listener = new FilteredTraceListener(writer)
+            {
+                // Include timestamp in trace output.
+                TraceOutputOptions = TraceOptions.DateTime
+            };
+
+            // Enable automatic flushing of the Trace buffer after each write.
+            Trace.AutoFlush = true;
+
+            // Add our configured listener to the Trace system.
+            Trace.Listeners.Add(listener);
+        }
+
+        /// <summary>
+        /// Closes and removes all FilteredTraceListener instances from the Trace listeners collection, ensuring that
+        /// any buffered trace output is flushed and resources are released.
+        /// </summary>
+        /// <remarks>This method only affects listeners of type FilteredTraceListener and does not remove
+        /// or modify other trace listeners. It should be called when trace logging is no longer needed to release file
+        /// handles and other resources associated with custom trace listeners.</remarks>
+        private static void CloseTraceLogging()
+        {
+            // Only remove our own listeners; don't clobber ArcGIS Pro / other add-ins.
+            for (int i = Trace.Listeners.Count - 1; i >= 0; i--)
+            {
+                if (Trace.Listeners[i] is FilteredTraceListener listener)
+                {
+                    listener.Flush(); // Ensure all buffered output is written to the underlying stream.
+                    listener.Close(); // Release the file handle and resources used by the listener.
+                    Trace.Listeners.RemoveAt(i);
+                }
+            }
+        }
+
+        #endregion Debug Logging
 
         #region Methods
 
@@ -1693,6 +1759,7 @@ namespace DataExtractor.UI
 
             // Log version info.
             FileFunctions.WriteLine(_logFile, "DataExtractor version: " + GetAddInVersion());
+            FileFunctions.WriteLine(_logFile, "XML profile: " + _toolConfig.XMLFile);
 
             // If userid is temp.
             if (_userID == "Temp")
@@ -1809,6 +1876,9 @@ namespace DataExtractor.UI
                 ImageSource = new BitmapImage(new Uri(imageSource)) as ImageSource
             };
             FrameworkApplication.AddNotification(notification);
+
+            // Flushes and closes all trace listeners.
+            CloseTraceLogging();
 
             // Open the log file (if required).
             if (OpenLogFile || _extractErrors)

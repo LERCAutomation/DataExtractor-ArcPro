@@ -316,17 +316,25 @@ namespace DataTools
         #region Logfile
 
         /// <summary>
-        /// Write to the end of a log file.
+        /// Write to the trace log.
         /// </summary>
-        /// <param name="logFile">The full path of the log file.</param>
+        /// <param name="logFile">Unused parameter (kept for backward compatibility).</param>
         /// <param name="logLine">The line to write to the log file.</param>
         /// <returns>True if successful, else false.</returns>
+        [Obsolete("The logFile parameter is unused. Consider using WriteLine(string logLine) instead.")]
         public static bool WriteLine(string logFile, string logLine)
         {
-            // Check log file name has been supplied (even though it's not used here).
-            if (string.IsNullOrEmpty(logFile))
-                return false;
+            // Write to the Trace log.
+            return WriteLine(logLine);
+        }
 
+        /// <summary>
+        /// Write to the trace log.
+        /// </summary>
+        /// <param name="logLine">The line to write to the log.</param>
+        /// <returns>True if successful, else false.</returns>
+        public static bool WriteLine(string logLine)
+        {
             try
             {
                 // Write to the Trace log if it is not null (the date and time will be added later).
