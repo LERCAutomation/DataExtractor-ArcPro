@@ -5,3 +5,6 @@ dotnet_diagnostic.IDE0057.severity = silent
 
 # CS0618: Type or member is obsolete
 dotnet_diagnostic.CS0618.severity = silent
+
+# IDE0130: Namespace does not match folder structure
+dotnet_diagnostic.IDE0130.severity = silent

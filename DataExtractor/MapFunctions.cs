@@ -136,7 +136,7 @@ namespace DataTools
         /// <returns>
         /// A <see cref="Map"/> instance if found; otherwise, <c>null</c>.
         /// </returns>
-        public async Task<Map> GetMapFromNameAsync(string mapName)
+        public static async Task<Map> GetMapFromNameAsync(string mapName)
         {
             // Return null if the input name is invalid.
             if (mapName == null)
@@ -167,7 +167,7 @@ namespace DataTools
         /// <returns>
         /// The corresponding <see cref="Map"/> if the pane is open and initialized; otherwise, <c>null</c>.
         /// </returns>
-        public async Task<Map> GetMapFromCaptionAsync(string mapViewCaption)
+        public static async Task<Map> GetMapFromCaptionAsync(string mapViewCaption)
         {
             if (string.IsNullOrWhiteSpace(mapViewCaption))
             {
@@ -303,7 +303,7 @@ namespace DataTools
         /// <returns>
         /// A <see cref="MapView"/> instance if the map caption is found in an open pane; otherwise, <c>null</c>.
         /// </returns>
-        public MapView GetMapViewFromName(string mapName)
+        public static MapView GetMapViewFromName(string mapName)
         {
             // Return null if no map name was provided.
             if (mapName == null)
@@ -336,7 +336,7 @@ namespace DataTools
         /// A task that returns the <see cref="MapView"/> displaying the map,
         /// or <c>null</c> if no such map view is found.
         /// </returns>
-        public async Task<MapView> GetMapViewFromMapAsync(Map map)
+        public static async Task<MapView> GetMapViewFromMapAsync(Map map)
         {
             if (map == null)
             {
@@ -1675,7 +1675,7 @@ namespace DataTools
         /// </summary>
         /// <param name="layer">The layer to get the path for.</param>
         /// <returns>The task result is the full layer path as a string.</returns>
-        public Task<string> GetLayerPathAsync(Layer layer)
+        public static Task<string> GetLayerPathAsync(Layer layer)
         {
             return QueuedTask.Run(async () =>
             {
@@ -1758,7 +1758,7 @@ namespace DataTools
         /// </summary>
         /// <param name="featureLayer">The feature layer.</param>
         /// <returns>The task result is string: point, line, polygon</returns>
-        public async Task<string> GetFeatureClassTypeAsync(FeatureLayer featureLayer)
+        public static async Task<string> GetFeatureClassTypeAsync(FeatureLayer featureLayer)
         {
             // Check there is an input feature layer.
             if (featureLayer == null)

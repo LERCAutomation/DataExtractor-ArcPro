@@ -1760,14 +1760,32 @@ namespace DataExtractor.UI
             // Log version info.
             FileFunctions.WriteLine(_logFile, "DataExtractor version: " + GetAddInVersion());
             FileFunctions.WriteLine(_logFile, "XML profile: " + _toolConfig.XMLFile);
+            FileFunctions.WriteLine(_logFile, "Tool started by user: " + _userID);
 
             // If userid is temp.
             if (_userID == "Temp")
                 FileFunctions.WriteLine(_logFile, "User ID not found. User ID used will be 'Temp'.");
 
+            // Log the selected UI options.
+            FileFunctions.WriteLine(_logFile, "");
+            FileFunctions.WriteLine(_logFile, "Selected UI options:");
+            FileFunctions.WriteLine(_logFile, "Upload partner table to server = '" + (uploadToServer ? "Yes" : "No") + "'");
+            if (uploadToServer && _selectedSQLLayers.Count == 0)
+                FileFunctions.WriteLine(_logFile, "Partner upload will be skipped because no SQL tables are selected");
+            FileFunctions.WriteLine(_logFile, "Apply exclusion clause = '" + (applyExclusionClause ? "Yes" : "No") + "'");
+            FileFunctions.WriteLine(_logFile, "Use centroids = '" + (useCentroids ? "Yes" : "No") + "'");
+            FileFunctions.WriteLine(_logFile, "Selection type = '" + selectionTypeOption.ToString() + "' (" + selectionTypeNum + ")");
+
+            FileFunctions.WriteLine(_logFile, "Partners selected = " + _selectedPartners.Count);
+            FileFunctions.WriteLine(_logFile, "SQL extracts selected = " + _selectedSQLLayers.Count);
+            FileFunctions.WriteLine(_logFile, "Map extracts selected = " + _selectedMapLayers.Count);
+            FileFunctions.WriteLine(_logFile, "");
+
             // If exclusion clause is being applied.
             if (applyExclusionClause && !string.IsNullOrEmpty(_exclusionClause))
-                FileFunctions.WriteLine(_logFile, "Exclusion clause will be applied.");
+                FileFunctions.WriteLine(_logFile, "Applying exclusion clause ... " + _exclusionClause);
+            else
+                FileFunctions.WriteLine(_logFile, "No exclusion clause will be applied");
 
             // Clear the partner features selection.
             await _mapFunctions.ClearLayerSelectionAsync(_partnerTable);
@@ -1819,7 +1837,7 @@ namespace DataExtractor.UI
                 string partnerAbbr = selectedPartner.ShortName;
 
                 FileFunctions.WriteLine(_logFile, "");
-                FileFunctions.WriteLine(_logFile, "----------------------------------------------------------------------");
+                FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
                 FileFunctions.WriteLine(_logFile, "Processing partner '" + partnerName + "' (" + partnerAbbr + ") ...");
                 FileFunctions.WriteLine(_logFile, "");
 
@@ -1829,7 +1847,7 @@ namespace DataExtractor.UI
 
                 // Log the completion of this partner.
                 FileFunctions.WriteLine(_logFile, "Processing for partner complete.");
-                FileFunctions.WriteLine(_logFile, "----------------------------------------------------------------------");
+                FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
             }
 
             // Increment the progress value to the last step.
@@ -1853,19 +1871,21 @@ namespace DataExtractor.UI
         /// <param name="image"></param>
         private void StopExtract(string message, string image)
         {
-            FileFunctions.WriteLine(_logFile, "---------------------------------------------------------------------------");
+            FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
             FileFunctions.WriteLine(_logFile, message);
-            FileFunctions.WriteLine(_logFile, "---------------------------------------------------------------------------");
+            FileFunctions.WriteLine(_logFile, "-----------------------------------------------------------------------");
 
             // Resume the map redrawing.
             _mapFunctions.PauseDrawing(false);
 
 			// Indicate search has finished.
 			_dockPane.ExtractStatus = DockpaneMainViewModel.ExtractStatuses.NotStarted;
-
 			_dockPane.ProgressUpdate(null, -1, -1);
 
-            string imageSource = string.Format("pack://application:,,,/DataExtractor;component/Images/{0}32.png", image);
+			// Refresh the panel 1 controls now the extract has finished.
+			_dockPane.RefreshPanel1Buttons();
+
+			string imageSource = string.Format("pack://application:,,,/DataExtractor;component/Images/{0}32.png", image);
 
             // Notify user of completion.
             Notification notification = new()
