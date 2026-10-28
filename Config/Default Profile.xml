@@ -25,12 +25,12 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 
   <!-- The existing file location where log files will be saved with output messages. -->
   <LogFilePath>
-	<value>H:\Data\Thames\ExtractorExtracts\Logfiles</value>
+	<value>D:\Data Tools\DataExtractor\Logfiles</value>
   </LogFilePath>
 
   <!-- The connection string for ADO connection (to allow stored procedures to be run with parameters). -->
   <DbConnectionString>
-	<value>Data Source=SWT-RECORDER-01-SQLBRC;Initial Catalog=NBNExtract;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;</value>
+	<value>Data Source=RECORDER-SQL;Initial Catalog=NBNExtract;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;</value>
   </DbConnectionString>
 
   <!-- The timeout (seconds) for the maximum number of seconds that the stored procedures are allowed to run. -->
@@ -42,7 +42,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 
   <!-- The existing file location where the SDE file will be found/saved. -->
   <SDEFilePath>
-	<value>T:\SxBRC Tools\ArcGIS Pro\DataExtractor</value>
+	<value>D:\Data Tools\DataExtractor</value>
   </SDEFilePath>
 
   <!-- The name of the SDE file that specifies which SQL Server database to connect to.
@@ -54,7 +54,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   <!-- The SQL Server database instance to connect to.
        Leave blank if an SDE file name is specified above. -->
   <DbInstance>
-	<value>SWT-RECORDER-01-SQLBRC</value>
+	<value>RECORDER-SQL</value>
   </DbInstance>
 
   <!-- The name of the SQL Server database to connect to.
@@ -85,12 +85,12 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 
   <!-- The output sub-folder in which each partner's file will be created. -->
   <PartnerFolder>
-	<value>%partner%_GiGL_DataExchange_%qq%_%ffff%\Data</value>
+	<value>%partner%_DataExchange_%qq%_%ffff%\Data</value>
   </PartnerFolder>
 
   <!-- The output filegeodatabase or GeoPackage into which GDB or GPKG files will be saved. -->
   <GDBName>
-	<value>GiGL_DataExchange_%qq%_%ffff%</value>
+	<value>DataExchange_%qq%_%ffff%</value>
   </GDBName>
 
   <!-- The output sub-folder into which ArcGIS files will be saved. Leave blank to ignore. -->
@@ -261,16 +261,6 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 	<value>_Poly</value>
   </OutputPolySuffix>
 
-  <!-- The suffix appended to the partner output point file names. -->
-  <OutputPointSuffix>
-  	<value>_Point</value>
-  </OutputPointSuffix>
-
-  <!-- The suffix appended to the partner output polygon file names. -->
-  <OutputPolySuffix>
-  	<value>_Poly</value>
-  </OutputPolySuffix>
-
   <!-- The table columns and SQL where clauses used to select all the required columns for
 	the extract tables -->
   <SQLTables>
@@ -323,7 +313,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 			<value>Special Area of Conservation</value>
 		</LayerName>
 		<OutputName>
-			<value>%shortref%_SACs</value>
+			<value>SACs</value>
 		</OutputName>
 		<Columns>
 			<value>SAC_NAME, SAC_CODE</value> <!-- Use commas to separate. NOTE case sensitive! -->

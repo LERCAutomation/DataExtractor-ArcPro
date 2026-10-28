@@ -7,7 +7,7 @@ can also be commented out as below.
 -->
 
 <!--
-This config file contains all the variables used by the DataSearches
+This config file contains all the variables used by the DataExtractor
 ArcGIS Add-in tool.
 
 The 'configuration' node is the 'root' node and signifies the start of the
@@ -32,7 +32,7 @@ Note a detailed XML profile file must also be set up in order for the tool to ru
 
 	<!-- The URL of the online user guide -->
 	<HelpURL>
-		<value>https://dataextractor-userguide.readthedocs.io/en/latest/</value>
+		<value>https://dataextractor-arcpro-userguide.readthedocs.io/en/latest/</value>
 	</HelpURL>
 </InitialConfig>
 </configuration>

@@ -611,6 +611,7 @@ namespace DataExtractor.UI
         {
             // Update the fields and buttons in the form.
             OnPropertyChanged(nameof(CanSelectXMLPath));
+            OnPropertyChanged(nameof(CanSelectXMLProfile));
             OnPropertyChanged(nameof(CanLoadProfile));
         }
 

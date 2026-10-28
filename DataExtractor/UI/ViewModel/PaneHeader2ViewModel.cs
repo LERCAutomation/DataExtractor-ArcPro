@@ -2124,7 +2124,7 @@ namespace DataExtractor.UI
             }
 
             // Does the partner want this layer?
-            if (!sqlFiles.Contains(nodeName, StringComparison.CurrentCultureIgnoreCase) && !sqlFiles.Equals("all", StringComparison.CurrentCultureIgnoreCase))
+            if (!sqlFiles.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Contains(nodeName.Trim(), StringComparer.CurrentCultureIgnoreCase) && !sqlFiles.Equals("all", StringComparison.CurrentCultureIgnoreCase))
             {
                 FileFunctions.WriteLine(_logFile, "Skipping output = '" + nodeName + "' - not required.");
                 return true;
@@ -2634,7 +2634,7 @@ namespace DataExtractor.UI
             }
 
             // Does the partner want this layer?
-            if (!mapFiles.Contains(nodeName, StringComparison.CurrentCultureIgnoreCase) && !mapFiles.Equals("all", StringComparison.CurrentCultureIgnoreCase))
+            if (!mapFiles.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Contains(nodeName.Trim(), StringComparer.CurrentCultureIgnoreCase) && !mapFiles.Equals("all", StringComparison.CurrentCultureIgnoreCase))
             {
                 FileFunctions.WriteLine(_logFile, "Skipping output = '" + nodeName + "' - not required.");
                 return true;

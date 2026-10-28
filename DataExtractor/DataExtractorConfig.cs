@@ -831,8 +831,8 @@ namespace DataExtractor
 
                         rawText = node?["LoadWarning"]?.InnerText?.Trim();
                         layer.LoadWarning =
-                            rawText.Equals("yes", StringComparison.CurrentCultureIgnoreCase) ||
-                            rawText.Equals("y", StringComparison.CurrentCultureIgnoreCase);
+                            string.Equals(rawText, "yes", StringComparison.CurrentCultureIgnoreCase) ||
+                            string.Equals(rawText, "y", StringComparison.CurrentCultureIgnoreCase);
 
                         layer.MacroName = node?["MacroName"]?.InnerText;
                         layer.MacroParms = node?["MacroParms"]?.InnerText;
