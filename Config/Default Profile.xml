@@ -28,21 +28,21 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 	<value>H:\Data\Thames\ExtractorExtracts\Logfiles</value>
   </LogFilePath>
 
-  <!-- The connection string for ADO connection (to allow stored procedures to be run with parameters) -->
+  <!-- The connection string for ADO connection (to allow stored procedures to be run with parameters). -->
   <DbConnectionString>
-	<value>Data Source=ACEY\SQLSERVER2017;Initial Catalog=NBNExtract;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;</value>
+	<value>Data Source=SWT-RECORDER-01-SQLBRC;Initial Catalog=NBNExtract;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;</value>
   </DbConnectionString>
 
   <!-- The timeout (seconds) for the maximum number of seconds that the stored procedures are allowed to run. -->
-  <!-- If you are experiencing timeout errors while running the tool, increase this number -->
+  <!-- If you are experiencing timeout errors while running the tool, increase this number. -->
   <!-- Default is 60 seconds -->
   <DbTimeoutSeconds>
-  	<value>60</value>
+  	<value>600</value>
   </DbTimeoutSeconds>
 
   <!-- The existing file location where the SDE file will be found/saved. -->
   <SDEFilePath>
-	<value>D:\Data Tools\DataExtractor\Config</value>
+	<value>T:\SxBRC Tools\ArcGIS Pro\DataExtractor</value>
   </SDEFilePath>
 
   <!-- The name of the SDE file that specifies which SQL Server database to connect to.
@@ -52,13 +52,13 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   </SDEFileName>
 
   <!-- The SQL Server database instance to connect to.
-       Leave blank if SDE file name specified above. -->
+       Leave blank if an SDE file name is specified above. -->
   <DbInstance>
-	<value>ACEY\SQLSERVER2017</value>
+	<value>SWT-RECORDER-01-SQLBRC</value>
   </DbInstance>
 
   <!-- The name of the SQL Server database to connect to.
-       Leave blank if SDE file name specified above. -->
+       Leave blank if an SDE file name is specified above. -->
   <DbName>
 	<value>NBNExtract</value>
   </DbName>
@@ -78,7 +78,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 	<value>AFClearSpatialSubset_ArcPro</value>
   </ClearSpatialStoredProcedure>
 
-  <!-- The existing file location under which all partner sub-folders will be created -->
+  <!-- The existing file location under which all partner sub-folders will be created. -->
   <DefaultPath>
 	<value>D:\Data Tools\DataExtractor\Extracts\Partners\DataExchange_%qq%_%ffff%</value>
   </DefaultPath>
@@ -88,27 +88,27 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 	<value>%partner%_GiGL_DataExchange_%qq%_%ffff%\Data</value>
   </PartnerFolder>
 
-  <!-- The output filegeodatabase into which GDB files will be saved. -->
+  <!-- The output filegeodatabase or GeoPackage into which GDB or GPKG files will be saved. -->
   <GDBName>
 	<value>GiGL_DataExchange_%qq%_%ffff%</value>
   </GDBName>
 
-  <!-- The output sub-folder into which ArcGIS files will be saved. -->
+  <!-- The output sub-folder into which ArcGIS files will be saved. Leave blank to ignore. -->
   <ArcGISFolder>
 	<value>ArcGIS</value>
   </ArcGISFolder>
 
-  <!-- The output sub-folder into which CSV files will be saved. -->
+  <!-- The output sub-folder into which CSV files will be saved. Leave blank to ignore. -->
   <CSVFolder>
 	<value>CSV</value>
   </CSVFolder>
 
-  <!-- The output sub-folder into which TXT files will be saved. -->
+  <!-- The output sub-folder into which TXT files will be saved. Leave blank to ignore. -->
   <TXTFolder>
 	<value></value>
   </TXTFolder>
 
-  <!-- The schema used in the SQL Server database. -->
+  <!-- The schema used in the SQL Server database (typically 'dbo'). -->
   <DatabaseSchema>
 	<value>dbo</value>
   </DatabaseSchema>
@@ -118,7 +118,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 	<value>Spatial_Objects</value>
   </ObjectsTable>
 
-  <!-- the Include wildcard for table names to list all the species tables in SQL Server that can be selected
+  <!-- The Include wildcard for table names to list all the species tables in SQL Server that can be selected
        by the user to extract from. -->
   <IncludeWildcard>
 	<value>Spp_PointPoly_*Names|Spp_Poly_*Names</value>
@@ -166,7 +166,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   </ActiveColumn>
 
   <!-- The name of the column in the partner GIS layer containing the GIS format required for
-       the output records (SHP or GDB). -->
+	   the output records (SHP, GDB or GPKG). -->
   <FormatColumn>
 	<value>GISformat</value>
   </FormatColumn>
@@ -251,6 +251,26 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   	<value>Yes</value>
   </DefaultOpenLogFile>
 
+  <!-- The suffix appended to the partner output point file name. -->
+  <OutputPointSuffix>
+	<value>_Point</value>
+  </OutputPointSuffix>
+
+  <!-- The suffix appended to the partner output polygon file name. -->
+  <OutputPolySuffix>
+	<value>_Poly</value>
+  </OutputPolySuffix>
+
+  <!-- The suffix appended to the partner output point file names. -->
+  <OutputPointSuffix>
+  	<value>_Point</value>
+  </OutputPointSuffix>
+
+  <!-- The suffix appended to the partner output polygon file names. -->
+  <OutputPolySuffix>
+  	<value>_Poly</value>
+  </OutputPolySuffix>
+
   <!-- The table columns and SQL where clauses used to select all the required columns for
 	the extract tables -->
   <SQLTables>
@@ -297,7 +317,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
   </SQLTables>
 
   <!-- The names and local names of the map tables and the required columns for the map tables -->
-  <MapLayers>
+  <MapTables>
 	<Polys_-_SACs>
 		<LayerName>
 			<value>Special Area of Conservation</value>
@@ -376,7 +396,7 @@ used by the ArcGIS Pro add-in to select and export GIS data for partners.
 			<Value></Value>
 		</MacroParms>
 	</Polys_-_Ramsars>
-  </MapLayers>
+  </MapTables>
 
 </DataExtractor>
 </configuration>
